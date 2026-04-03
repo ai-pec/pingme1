@@ -78,15 +78,15 @@ const About = () => {
             <div className="bg-primary rounded-2xl p-8">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
                 <div>
-                  <div className="text-3xl font-bold text-foreground">500+</div>
+                  <div className="text-3xl font-bold text-foreground">100+</div>
                   <div className="text-sm text-foreground/80">Happy Customers</div>
                 </div>
                 <div>
-                  <div className="text-3xl font-bold text-foreground">1000+</div>
+                  <div className="text-3xl font-bold text-foreground">200+</div>
                   <div className="text-sm text-foreground/80">Vehicles Protected</div>
                 </div>
                 <div>
-                  <div className="text-3xl font-bold text-foreground">5+</div>
+                  <div className="text-3xl font-bold text-foreground">3+</div>
                   <div className="text-sm text-foreground/80">Cities Covered</div>
                 </div>
                 <div>

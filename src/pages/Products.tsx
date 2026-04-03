@@ -12,14 +12,17 @@ import nfcShinchan from "@/assets/products/nfc_shinchan.png";
 import nfcOnepiece from "@/assets/products/nfc_onepiece.png";
 import nfcPhoenix from "@/assets/products/nfc_phoenix.png";
 import nfcMindset from "@/assets/products/nfc_mindset.png";
-import nfcYoucan from "@/assets/products/nfc_youcan1.png";
-import nfcFront from "@/assets/products/nfc_front.png";
+import nfcYoucan from "@/assets/products/nfc_youcan.png";
+import nfcFront from "@/assets/products/nfc_frontcard.png";
 import backpackSticker from "@/assets/products/backpack_sticker.png";
+import backpackSticker1 from "@/assets/products/backpack_sticker1.png";
+import backpackSticker2 from "@/assets/products/backpack_sticker2.png";
 import keytagBlack from "@/assets/products/keytag_black.png";
 import keytagRed from "@/assets/products/keytag_red.png";
 import keytagNavy from "@/assets/products/keytag_navy.png";
 import keytagTeal from "@/assets/products/keytag_teal.png";
-import tagCircle from "@/assets/products/tag_circle.png";
+import tagCircle1 from "@/assets/products/tag_circle1.png";
+import tagCircle2 from "@/assets/products/tag_circle2.png";
 import tagOval from "@/assets/products/tag_oval.png";
 import tagSquareBlack from "@/assets/products/tag_square_black.png";
 import tagSquareYellow from "@/assets/products/tag_square_yellow.png";
@@ -49,6 +52,13 @@ interface ProductCategory {
   products: ProductVariant[];
 }
 
+interface CategoryTutorial {
+  title: string;
+  subtitle: string;
+  steps: string[];
+  tip: string;
+}
+
 const categories: ProductCategory[] = [
   {
     slug: "car-tags",
@@ -72,19 +82,19 @@ const categories: ProductCategory[] = [
           "Lifetime QR code activation",
         ],
       },
-      {
-        id: "car-card-variant-b",
-        title: "PingME Car Card – Design B",
-        price: "₹499",
-        originalPrice: "₹599",
-        image: carcardBack,
-        features: [
-          "Alternate design layout",
-          "Same premium QR functionality",
-          "Weatherproof and durable",
-          "Lifetime QR code activation",
-        ],
-      },
+      // {
+      //   id: "car-card-variant-b",
+      //   title: "PingME Car Card – Design B",
+      //   price: "₹499",
+      //   originalPrice: "₹599",
+      //   image: carcardBack,
+      //   features: [
+      //     "Alternate design layout",
+      //     "Same premium QR functionality",
+      //     "Weatherproof and durable",
+      //     "Lifetime QR code activation",
+      //   ],
+      // },
     ],
   },
   {
@@ -100,7 +110,16 @@ const categories: ProductCategory[] = [
         title: "Bike Tag – Circle",
         price: "₹249",
         originalPrice: "₹299",
-        image: tagCircle,
+        image: tagCircle1,
+        popular: true,
+        features: ["Circular compact design", "UV resistant material", "Easy keychain installation", "Lifetime QR code activation"],
+      },
+      {
+        id: "bike-tag-classic",
+        title: "Bike Tag – Circle",
+        price: "₹249",
+        originalPrice: "₹299",
+        image: tagCircle2,
         popular: true,
         features: ["Circular compact design", "UV resistant material", "Easy keychain installation", "Lifetime QR code activation"],
       },
@@ -248,7 +267,16 @@ const categories: ProductCategory[] = [
         title: "Backpack Sticker – Standard",
         price: "₹199",
         originalPrice: "₹249",
-        image: backpackSticker,
+        image: backpackSticker1,
+        popular: true,
+        features: ["Sleek motivational design", "Easy peel-and-stick", "UV & water resistant", "Lifetime QR activation"],
+      },
+      {
+        id: "backpack-sticker-standard",
+        title: "Backpack Sticker – Standard",
+        price: "₹199",
+        originalPrice: "₹249",
+        image: backpackSticker2,
         popular: true,
         features: ["Sleek motivational design", "Easy peel-and-stick", "UV & water resistant", "Lifetime QR activation"],
       },
@@ -271,6 +299,75 @@ const categories: ProductCategory[] = [
     ],
   },
 ];
+
+const categoryTutorials: Record<string, CategoryTutorial> = {
+  "car-tags": {
+    title: "How to Use Your Car Tag",
+    subtitle: "Set it once and help people reach you when your car needs attention.",
+    steps: [
+      "Attach the card clearly on your dashboard or near the windshield.",
+      "Activate your profile after purchase and add your preferred contact method.",
+      "If someone scans the QR, they can contact you without seeing your personal details.",
+      "Update phone or emergency message anytime from your profile dashboard.",
+    ],
+    tip: "Best placement: front dashboard where the QR is visible from outside.",
+  },
+  "bike-tags": {
+    title: "How to Use Your Bike Tag",
+    subtitle: "A compact smart tag for quick owner contact and lost bike recovery support.",
+    steps: [
+      "Fix the tag to your bike keyring, handle loop, or visible accessory point.",
+      "Activate the QR profile and add your contact and optional emergency note.",
+      "When scanned, the finder gets a secure contact option to reach you quickly.",
+      "Check your profile regularly and keep your details up to date.",
+    ],
+    tip: "Place it where it is easy to notice but difficult to detach accidentally.",
+  },
+  "pet-tags": {
+    title: "How to Use Your Pet Tag",
+    subtitle: "Help anyone who finds your pet contact you in seconds.",
+    steps: [
+      "Attach the tag to your pet collar with the QR side facing outward.",
+      "Activate the profile and add pet name, your contact, and emergency details.",
+      "If your pet is lost, a quick scan lets finders reach you safely.",
+      "Update profile whenever your address or phone number changes.",
+    ],
+    tip: "Use a secure ring and test the scan once after attaching to the collar.",
+  },
+  "nfc-cards": {
+    title: "How to Use Your NFC Card",
+    subtitle: "Tap or scan to instantly share your profile, links, or contact details.",
+    steps: [
+      "Activate your NFC card and set your public profile details.",
+      "To share, ask the other person to tap phone on card or scan the QR.",
+      "For phones with NFC off, QR scan works as the backup method.",
+      "Edit links and contact details any time without changing the card.",
+    ],
+    tip: "Ask users to unlock their phone before tapping for fastest NFC detection.",
+  },
+  "keychain-tags": {
+    title: "How to Use Your Keychain Tag",
+    subtitle: "Keep your keys protected with a scannable owner-contact tag.",
+    steps: [
+      "Attach the tag to your keychain with QR clearly visible.",
+      "Activate the QR profile and add how you prefer to be contacted.",
+      "If keys are lost, the finder scans and contacts you securely.",
+      "Keep your contact details updated to ensure faster returns.",
+    ],
+    tip: "Use a sturdy ring to avoid bending or accidental tag loss.",
+  },
+  "backpack-stickers": {
+    title: "How to Use Backpack & Laptop Stickers",
+    subtitle: "Smart identification for bags and devices with easy scan recovery.",
+    steps: [
+      "Clean the surface and apply sticker on a flat visible area.",
+      "Press firmly for a few seconds for better long-term adhesion.",
+      "Activate your QR profile with contact details and return note.",
+      "If found, scanner can contact you quickly without exposing private data.",
+    ],
+    tip: "Avoid curved or dusty surfaces for best sticking strength.",
+  },
+};
 
 // ─── Components ─────────────────────────────────────────
 
@@ -447,10 +544,36 @@ const Products = () => {
 
           {/* ── Product Grid (Category View) ── */}
           {selectedCategory && activeCategory && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {activeCategory.products.map((product) => (
-                <ProductCardItem key={product.id} product={product} />
-              ))}
+            <div className="space-y-8">
+              <div className="rounded-2xl border border-primary/20 bg-primary/5 p-6 md:p-8">
+                <h2 className="text-2xl md:text-3xl font-extrabold mb-2">
+                  {categoryTutorials[activeCategory.slug]?.title}
+                </h2>
+                <p className="text-muted-foreground mb-6 max-w-3xl">
+                  {categoryTutorials[activeCategory.slug]?.subtitle}
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 mb-6">
+                  {categoryTutorials[activeCategory.slug]?.steps.map((step, idx) => (
+                    <div key={idx} className="rounded-xl border border-border bg-card p-4 flex gap-3">
+                      <span className="w-7 h-7 rounded-full bg-primary/15 text-primary text-sm font-bold flex items-center justify-center shrink-0 mt-0.5">
+                        {idx + 1}
+                      </span>
+                      <p className="text-sm font-medium leading-relaxed">{step}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="rounded-xl border border-primary/25 bg-primary/10 p-4 text-sm font-medium">
+                  <span className="font-bold">Pro Tip:</span> {categoryTutorials[activeCategory.slug]?.tip}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {activeCategory.products.map((product) => (
+                  <ProductCardItem key={product.id} product={product} />
+                ))}
+              </div>
             </div>
           )}
 
