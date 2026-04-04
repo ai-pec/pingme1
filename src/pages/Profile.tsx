@@ -128,15 +128,18 @@ export default function Profile() {
   // Fetch user orders
   useEffect(() => {
     const fetchOrders = async () => {
-      if (user?.email) {
+      if (user?.uid) {
         setOrdersLoading(true);
-        const results = await getUserPrebookings(user.email);
+        const results = await getUserPrebookings({
+          userId: user.uid,
+          email: user.email || undefined,
+        });
         setOrders(results);
         setOrdersLoading(false);
       }
     };
     fetchOrders();
-  }, [user]);
+  }, [user?.uid, user?.email]);
 
   const onProfileSubmit = async (data: ProfileFormData) => {
     try {
@@ -746,11 +749,25 @@ export default function Profile() {
                       {/* Items */}
                       <div className="space-y-2 mb-3">
                         {order.items?.map((item: any, idx: number) => (
-                          <div key={idx} className="flex justify-between items-center text-sm">
-                            <span className="text-foreground">
-                              {item.emoji && <span className="mr-1">{item.emoji}</span>}
-                              {item.title} <span className="text-muted-foreground">× {item.quantity}</span>
-                            </span>
+                          <div key={idx} className="flex justify-between items-center gap-3 text-sm">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-10 h-10 rounded-md border border-border bg-secondary/40 flex items-center justify-center shrink-0 overflow-hidden">
+                                {item.image ? (
+                                  <img
+                                    src={item.image}
+                                    alt={item.title}
+                                    className="w-full h-full object-contain"
+                                  />
+                                ) : item.emoji ? (
+                                  <span className="text-base">{item.emoji}</span>
+                                ) : (
+                                  <Package className="w-4 h-4 text-muted-foreground" />
+                                )}
+                              </div>
+                              <span className="text-foreground truncate">
+                                {item.title} <span className="text-muted-foreground">× {item.quantity}</span>
+                              </span>
+                            </div>
                             <span className="font-medium">{item.price}</span>
                           </div>
                         ))}

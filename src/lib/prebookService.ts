@@ -1,4 +1,4 @@
-import { collection, addDoc, serverTimestamp, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 export interface CartItem {
@@ -87,15 +87,42 @@ export interface PrebookingRecord extends PrebookingData {
   createdAt: any;
 }
 
-export const getUserPrebookings = async (email: string): Promise<PrebookingRecord[]> => {
+interface GetUserPrebookingsParams {
+  userId?: string;
+  email?: string;
+}
+
+const toMillis = (createdAt: any): number => {
+  if (!createdAt) return 0;
+  if (typeof createdAt?.toMillis === 'function') return createdAt.toMillis();
+  if (createdAt?.seconds) return createdAt.seconds * 1000;
+  return 0;
+};
+
+export const getUserPrebookings = async ({ userId, email }: GetUserPrebookingsParams): Promise<PrebookingRecord[]> => {
   try {
-    const q = query(
-      collection(db, 'prebookings'),
-      where('email', '==', email),
-      orderBy('createdAt', 'desc')
-    );
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PrebookingRecord));
+    if (!userId && !email) return [];
+
+    // Prefer userId query because email can change later in account settings.
+    if (userId) {
+      const byUserId = query(collection(db, 'prebookings'), where('userId', '==', userId));
+      const userSnapshot = await getDocs(byUserId);
+      if (!userSnapshot.empty) {
+        return userSnapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() } as PrebookingRecord))
+          .sort((a, b) => toMillis(b.createdAt) - toMillis(a.createdAt));
+      }
+    }
+
+    if (email) {
+      const byEmail = query(collection(db, 'prebookings'), where('email', '==', email));
+      const emailSnapshot = await getDocs(byEmail);
+      return emailSnapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() } as PrebookingRecord))
+        .sort((a, b) => toMillis(b.createdAt) - toMillis(a.createdAt));
+    }
+
+    return [];
   } catch (error) {
     console.error('Failed to fetch prebookings:', error);
     return [];
