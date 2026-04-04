@@ -100,6 +100,8 @@ export function getAuthErrorMessage(errorCode: string): string {
       return "Too many failed attempts. Please try again later.";
     case "auth/popup-closed-by-user":
       return "Sign-in popup was closed before completing.";
+    case "auth/google-account-not-registered":
+      return "You have not signed up with this Google account yet. Please complete signup first.";
     case "auth/network-request-failed":
       return "Network error. Please check your connection.";
     default:

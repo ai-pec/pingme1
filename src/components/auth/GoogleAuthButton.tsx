@@ -1,23 +1,42 @@
 import { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface GoogleAuthButtonProps {
   onSuccess?: () => void;
+  intent?: "signin" | "signup";
 }
 
-export default function GoogleAuthButton({ onSuccess }: GoogleAuthButtonProps) {
-  const { signInGoogle, error } = useAuth();
+export default function GoogleAuthButton({ onSuccess, intent = "signin" }: GoogleAuthButtonProps) {
+  const { signInGoogle } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
   const handleGoogleSignIn = async () => {
     try {
       setLoading(true);
-      await signInGoogle();
+      await signInGoogle(intent === "signin");
       onSuccess?.();
-    } catch {
-      // Error is handled by AuthContext
+    } catch (err: any) {
+      if (intent === "signin" && err?.code === "auth/google-account-not-registered") {
+        toast({
+          title: "Signup required",
+          description: "You have not signed up with this Google account yet. Please complete signup first.",
+          variant: "destructive",
+        });
+
+        navigate("/signup", {
+          state: {
+            from: location.state?.from,
+            googleEmail: err?.email || "",
+          },
+        });
+      }
     } finally {
       setLoading(false);
     }

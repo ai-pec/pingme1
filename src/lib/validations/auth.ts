@@ -45,6 +45,10 @@ export const profileSchema = z.object({
     .or(z.literal("")),
 });
 
+export const mobileOnlySchema = z.object({
+  mobile: z.string().regex(/^[6-9]\d{9}$/, "Please enter a valid 10-digit mobile number"),
+});
+
 export const addressSchema = z.object({
   pincode: z
     .string()
@@ -68,5 +72,6 @@ export type LoginFormData = z.infer<typeof loginSchema>;
 export type SignupFormData = z.infer<typeof signupSchema>;
 export type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
 export type ProfileFormData = z.infer<typeof profileSchema>;
+export type MobileOnlyFormData = z.infer<typeof mobileOnlySchema>;
 export type AddressFormData = z.infer<typeof addressSchema>;
 export type EmailChangeFormData = z.infer<typeof emailChangeSchema>;

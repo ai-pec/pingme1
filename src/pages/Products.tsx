@@ -417,44 +417,44 @@ const ProductCardItem = ({ product }: { product: ProductVariant }) => {
         </div>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden bg-card rounded-2xl">
-        <div className="bg-secondary/30 p-8 flex justify-center items-center relative">
+      <DialogContent className="w-[calc(100vw-1.25rem)] sm:max-w-[390px] p-0 overflow-hidden bg-card rounded-2xl">
+        <div className="bg-secondary/30 p-4 sm:p-5 flex justify-center items-center relative">
           {product.popular && (
             <span className="absolute top-4 left-4 z-10 px-3 py-1 bg-primary text-primary-foreground rounded-full text-xs font-bold shadow-sm">
               Best Seller
             </span>
           )}
           {product.image ? (
-            <img src={product.image} alt={product.title} className="max-h-[300px] object-contain drop-shadow-xl" />
+            <img src={product.image} alt={product.title} className="max-h-[220px] sm:max-h-[235px] object-contain drop-shadow-xl" />
           ) : (
             <span className="text-9xl">{product.emoji}</span>
           )}
         </div>
-        <div className="p-6">
+        <div className="p-4 sm:p-5">
           <DialogHeader className="mb-2">
-            <DialogTitle className="text-2xl font-bold">{product.title}</DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl font-bold">{product.title}</DialogTitle>
           </DialogHeader>
           
-          <div className="flex items-end gap-3 mb-6">
-            <span className="text-3xl font-black text-primary">{product.price}</span>
+          <div className="flex items-end gap-2 mb-4">
+            <span className="text-xl sm:text-2xl font-black text-primary">{product.price}</span>
             {product.originalPrice && (
-              <span className="text-muted-foreground line-through text-lg mb-1">{product.originalPrice}</span>
+              <span className="text-muted-foreground line-through text-sm sm:text-base mb-1">{product.originalPrice}</span>
             )}
           </div>
 
-          <div className="mb-6">
-            <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-3">Key Features</h4>
-            <ul className="space-y-3">
+          <div className="mb-4">
+            <h4 className="font-semibold text-xs sm:text-sm text-muted-foreground uppercase tracking-wider mb-2.5">Key Features</h4>
+            <ul className="space-y-2">
               {product.features.map((feature, i) => (
-                <li key={i} className="text-sm font-medium flex items-start gap-3">
-                  <Shield className="w-5 h-5 text-primary shrink-0" />
+                <li key={i} className="text-xs sm:text-sm font-medium flex items-start gap-2.5">
+                  <Shield className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                   <span className="leading-snug">{feature}</span>
                 </li>
               ))}
             </ul>
           </div>
 
-          <Button className="w-full h-12 text-lg font-bold shadow-lg shadow-primary/20" onClick={() => {
+          <Button className="w-full h-10 sm:h-11 text-sm sm:text-base font-bold shadow-lg shadow-primary/20" onClick={() => {
             handleAddToCart();
             // Optional: You could close the dialog here by controlling the dialog state, 
             // but for simplicity it stays open and shows toast.

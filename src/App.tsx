@@ -24,6 +24,7 @@ import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import VerifyEmail from "./pages/auth/VerifyEmail";
+import CompletePhone from "./pages/auth/CompletePhone";
 import Profile from "./pages/Profile";
 
 const queryClient = new QueryClient();
@@ -49,6 +50,7 @@ const App = () => (
               <Route path="/signup" element={<Signup />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/verify-email" element={<VerifyEmail />} />
+              <Route path="/complete-phone" element={<CompletePhone />} />
 
               {/* Protected Routes */}
               <Route

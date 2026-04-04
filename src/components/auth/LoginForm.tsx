@@ -42,7 +42,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
 
   return (
     <div className="space-y-6">
-      <GoogleAuthButton onSuccess={onSuccess} />
+      <GoogleAuthButton onSuccess={onSuccess} intent="signin" />
 
       <div className="relative">
         <div className="absolute inset-0 flex items-center">

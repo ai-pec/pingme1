@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Loader2, Mail, Lock, Eye, EyeOff, User, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,8 @@ interface SignupFormProps {
 
 export default function SignupForm({ onSuccess }: SignupFormProps) {
   const { signUp, error, clearError } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -23,10 +25,18 @@ export default function SignupForm({ onSuccess }: SignupFormProps) {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
   });
+
+  useEffect(() => {
+    const googleEmail = location.state?.googleEmail;
+    if (typeof googleEmail === "string" && googleEmail) {
+      setValue("email", googleEmail);
+    }
+  }, [location.state, setValue]);
 
   const onSubmit = async (data: SignupFormData) => {
     try {
@@ -41,9 +51,18 @@ export default function SignupForm({ onSuccess }: SignupFormProps) {
     }
   };
 
+  const handleGoogleSignupSuccess = () => {
+    navigate("/complete-phone", {
+      state: {
+        from: location.state?.from,
+      },
+      replace: true,
+    });
+  };
+
   return (
     <div className="space-y-6">
-      <GoogleAuthButton onSuccess={onSuccess} />
+      <GoogleAuthButton onSuccess={handleGoogleSignupSuccess} intent="signup" />
 
       <div className="relative">
         <div className="absolute inset-0 flex items-center">

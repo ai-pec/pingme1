@@ -6,7 +6,7 @@ import LoginForm from "@/components/auth/LoginForm";
 import { Loader2 } from "lucide-react";
 
 export default function Login() {
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -14,13 +14,15 @@ export default function Login() {
 
   useEffect(() => {
     if (!loading && user) {
-      if (!user.emailVerified) {
+      if (profile?.authProvider === "google" && !profile.mobile) {
+        navigate("/complete-phone", { replace: true, state: { from } });
+      } else if (!user.emailVerified) {
         navigate("/verify-email");
       } else {
         navigate(from, { replace: true });
       }
     }
-  }, [user, loading, navigate, from]);
+  }, [user, profile, loading, navigate, from]);
 
   if (loading) {
     return (
