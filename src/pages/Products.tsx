@@ -26,7 +26,7 @@ import tagCircle2 from "@/assets/products/tag_circle2.png";
 import tagOval from "@/assets/products/tag_oval.png";
 import tagSquareBlack from "@/assets/products/tag_square_black.png";
 import tagSquareYellow from "@/assets/products/tag_square_yellow.png";
-import carcardFront from "@/assets/products/carcard_front.png";
+import carcardFront from "@/assets/products/product-card.png";
 import carcardBack from "@/assets/products/carcard_back.png";
 
 // ─── Data ───────────────────────────────────────────────
@@ -264,7 +264,7 @@ const categories: ProductCategory[] = [
     products: [
       {
         id: "backpack-sticker-standard",
-        title: "Backpack Sticker – Standard",
+        title: "Backpack Sticker – Standard A",
         price: "₹199",
         originalPrice: "₹249",
         image: backpackSticker1,
@@ -273,7 +273,7 @@ const categories: ProductCategory[] = [
       },
       {
         id: "backpack-sticker-standard",
-        title: "Backpack Sticker – Standard",
+        title: "Backpack Sticker – Standard B",
         price: "₹199",
         originalPrice: "₹249",
         image: backpackSticker2,
