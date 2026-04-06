@@ -1,10 +1,10 @@
 import MainLayout from "@/layouts/MainLayout";
 import { Shield, ArrowLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useParams, useNavigate } from "react-router-dom";
 
 // Product images
 import productCard from "@/assets/product-card.png";
@@ -470,7 +470,9 @@ const ProductCardItem = ({ product }: { product: ProductVariant }) => {
 // ─── Main Component ─────────────────────────────────────
 
 const Products = () => {
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const { categorySlug } = useParams<{ categorySlug?: string }>();
+  const navigate = useNavigate();
+  const selectedCategory = categorySlug || null;
 
   const activeCategory = categories.find(c => c.slug === selectedCategory);
 
@@ -484,7 +486,10 @@ const Products = () => {
             <span className="inline-block py-1.5 px-4 rounded-full bg-primary/10 text-primary text-sm font-bold tracking-wider uppercase mb-4">
               Our Products
             </span>
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4">
+            <h1
+              className={`text-4xl md:text-5xl font-extrabold tracking-tight mb-4 ${selectedCategory ? 'cursor-pointer hover:text-primary transition-colors' : ''}`}
+              onClick={() => selectedCategory && navigate("/products")}
+            >
               {selectedCategory ? activeCategory?.name : "Explore PingME Tags"}
             </h1>
             <p className="text-muted-foreground max-w-2xl mx-auto md:text-lg">
@@ -497,7 +502,7 @@ const Products = () => {
           {/* Back Button when inside a category */}
           {selectedCategory && (
             <button
-              onClick={() => setSelectedCategory(null)}
+              onClick={() => navigate("/products")}
               className="flex items-center gap-2 mb-10 text-muted-foreground hover:text-foreground transition-colors group"
             >
               <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
@@ -511,7 +516,7 @@ const Products = () => {
               {categories.map((cat) => (
                 <button
                   key={cat.slug}
-                  onClick={() => setSelectedCategory(cat.slug)}
+                  onClick={() => navigate(`/products/${cat.slug}`)}
                   className={`group relative rounded-2xl border border-border bg-gradient-to-br ${cat.gradient} p-6 text-left transition-all hover:shadow-xl hover:border-primary/40 hover:scale-[1.02] active:scale-[0.98] overflow-hidden`}
                 >
                   {/* Cover Image */}
