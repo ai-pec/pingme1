@@ -16,6 +16,8 @@ pnpm-debug.log*
 # Environment files
 .env
 .env.*
+functions/.env
+functions/.env.*
 
 # Coverage
 coverage/

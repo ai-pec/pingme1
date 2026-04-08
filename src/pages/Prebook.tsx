@@ -5,10 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { createPrebooking } from "@/lib/prebookService";
 import { Loader2, CheckCircle, ShoppingBag, MapPin } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  createRazorpayOrder,
+  openRazorpayCheckout,
+  verifyRazorpayPaymentAndCreatePrebooking,
+} from "@/lib/paymentService";
 
 const indianStates = [
   "Chandigarh", "New Delhi", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", 
@@ -77,7 +81,7 @@ const Prebook = () => {
 
     setSubmitting(true);
     try {
-      await createPrebooking({
+      const prebookingPayload = {
         items,
         totalAmount: cartTotal,
         fullName: fullName.trim(),
@@ -87,15 +91,67 @@ const Prebook = () => {
         city: city.trim(),
         state,
         pincode: pincode.trim(),
-        status: "pending",
+        status: "confirmed" as const,
         userId: user?.uid,
+      };
+
+      const order = await createRazorpayOrder({
+        amount: Math.round(cartTotal * 100),
+        currency: "INR",
+        receipt: `pingme_${Date.now()}`,
+        notes: {
+          userId: user?.uid || "guest",
+        },
       });
-      setSuccess(true);
-      clearCart();
+
+      await openRazorpayCheckout({
+        orderId: order.orderId,
+        amount: order.amount,
+        currency: order.currency,
+        fullName: fullName.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+        onSuccess: async (paymentResponse) => {
+          try {
+            await verifyRazorpayPaymentAndCreatePrebooking({
+              orderId: paymentResponse.razorpay_order_id,
+              paymentId: paymentResponse.razorpay_payment_id,
+              signature: paymentResponse.razorpay_signature,
+              prebooking: {
+                ...prebookingPayload,
+                payment: {
+                  gateway: "razorpay",
+                  orderId: paymentResponse.razorpay_order_id,
+                  paymentId: paymentResponse.razorpay_payment_id,
+                  signature: paymentResponse.razorpay_signature,
+                  amount: order.amount,
+                  currency: order.currency,
+                  paidAt: new Date().toISOString(),
+                },
+              },
+            });
+
+            setSuccess(true);
+            clearCart();
+          } catch (verifyErr: unknown) {
+            const verifyMessage = verifyErr instanceof Error ? verifyErr.message : "Payment verification failed.";
+            toast({ title: "Payment verification failed", description: verifyMessage, variant: "destructive" });
+          } finally {
+            setSubmitting(false);
+          }
+        },
+        onDismiss: () => {
+          setSubmitting(false);
+          toast({
+            title: "Payment cancelled",
+            description: "You can retry payment whenever you are ready.",
+            variant: "destructive",
+          });
+        },
+      });
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "Something went wrong.";
       toast({ title: "Failed", description: errorMessage, variant: "destructive" });
-    } finally {
       setSubmitting(false);
     }
   };
@@ -196,7 +252,7 @@ const Prebook = () => {
               </select>
             </div>
             <Button type="submit" className="w-full mt-6 h-12 text-base" disabled={submitting}>
-              {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : "Confirm Pre-booking"}
+              {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : `Pay ₹${cartTotal.toFixed(2)} & Confirm`}
             </Button>
           </form>
         </div>

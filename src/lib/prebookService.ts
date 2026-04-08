@@ -23,6 +23,15 @@ export interface PrebookingData {
   state: string;
   pincode: string;
   status: 'pending' | 'confirmed' | 'cancelled';
+  payment?: {
+    gateway: 'razorpay';
+    orderId: string;
+    paymentId: string;
+    signature: string;
+    amount: number;
+    currency: string;
+    paidAt?: string;
+  };
 }
 
 // Simple text sanitizer to prevent XSS
@@ -66,6 +75,19 @@ export const createPrebooking = async (data: PrebookingData): Promise<string> =>
     state: sanitizeText(data.state),
     pincode: sanitizeText(data.pincode),
     status: data.status,
+    ...(data.payment
+      ? {
+          payment: {
+            gateway: data.payment.gateway,
+            orderId: sanitizeText(data.payment.orderId),
+            paymentId: sanitizeText(data.payment.paymentId),
+            signature: sanitizeText(data.payment.signature),
+            amount: data.payment.amount,
+            currency: sanitizeText(data.payment.currency),
+            ...(data.payment.paidAt ? { paidAt: sanitizeText(data.payment.paidAt) } : {}),
+          },
+        }
+      : {}),
     ...(data.userId ? { userId: data.userId } : {}),
     createdAt: serverTimestamp(),
   };
