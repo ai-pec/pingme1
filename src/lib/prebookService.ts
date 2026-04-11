@@ -11,6 +11,18 @@ export interface CartItem {
   quantity: number;
 }
 
+export interface NFCProfile {
+  name: string;
+  email: string;
+  phone: string;
+  bio?: string;
+  website?: string;
+  linkedin?: string;
+  twitter?: string;
+  instagram?: string;
+  facebook?: string;
+}
+
 export interface PrebookingData {
   userId?: string;
   items: CartItem[];
@@ -23,6 +35,16 @@ export interface PrebookingData {
   state: string;
   pincode: string;
   status: 'pending' | 'confirmed' | 'cancelled';
+  nfcProfile?: NFCProfile;
+  payment?: {
+    gateway: 'razorpay';
+    orderId: string;
+    paymentId: string;
+    signature: string;
+    amount: number;
+    currency: string;
+    paidAt?: string;
+  };
 }
 
 // Simple text sanitizer to prevent XSS
@@ -66,6 +88,34 @@ export const createPrebooking = async (data: PrebookingData): Promise<string> =>
     state: sanitizeText(data.state),
     pincode: sanitizeText(data.pincode),
     status: data.status,
+    ...(data.nfcProfile
+      ? {
+          nfcProfile: {
+            name: sanitizeText(data.nfcProfile.name),
+            email: sanitizeText(data.nfcProfile.email),
+            phone: sanitizeText(data.nfcProfile.phone),
+            ...(data.nfcProfile.bio ? { bio: sanitizeText(data.nfcProfile.bio) } : {}),
+            ...(data.nfcProfile.website ? { website: sanitizeText(data.nfcProfile.website) } : {}),
+            ...(data.nfcProfile.linkedin ? { linkedin: sanitizeText(data.nfcProfile.linkedin) } : {}),
+            ...(data.nfcProfile.twitter ? { twitter: sanitizeText(data.nfcProfile.twitter) } : {}),
+            ...(data.nfcProfile.instagram ? { instagram: sanitizeText(data.nfcProfile.instagram) } : {}),
+            ...(data.nfcProfile.facebook ? { facebook: sanitizeText(data.nfcProfile.facebook) } : {}),
+          },
+        }
+      : {}),
+    ...(data.payment
+      ? {
+          payment: {
+            gateway: data.payment.gateway,
+            orderId: sanitizeText(data.payment.orderId),
+            paymentId: sanitizeText(data.payment.paymentId),
+            signature: sanitizeText(data.payment.signature),
+            amount: data.payment.amount,
+            currency: sanitizeText(data.payment.currency),
+            ...(data.payment.paidAt ? { paidAt: sanitizeText(data.payment.paidAt) } : {}),
+          },
+        }
+      : {}),
     ...(data.userId ? { userId: data.userId } : {}),
     createdAt: serverTimestamp(),
   };

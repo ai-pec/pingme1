@@ -60,6 +60,50 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
+## Razorpay Payment Setup
+
+This project now uses a secure Razorpay flow:
+
+1. Frontend creates an order via Firebase Functions.
+2. Razorpay Checkout collects payment.
+3. Backend verifies payment signature.
+4. Backend writes to Firestore collections:
+	- `payments`
+	- `prebookings`
+
+### Frontend env (`.env`)
+
+Set:
+
+```sh
+VITE_RAZORPAY_KEY_ID=rzp_test_your_public_key
+VITE_PAYMENT_API_BASE_URL=https://asia-south1-your-project-id.cloudfunctions.net
+```
+
+### Backend env (`functions`)
+
+Inside `functions/.env` (or your deployment secret manager), set:
+
+```sh
+RAZORPAY_KEY_ID=rzp_test_your_public_key
+RAZORPAY_KEY_SECRET=your_server_secret_key
+```
+
+Important:
+
+- Never expose `RAZORPAY_KEY_SECRET` in frontend env.
+- If a secret was added to frontend by mistake, rotate it in Razorpay dashboard immediately.
+
+### Deploy functions
+
+```sh
+cd functions
+npm install
+firebase deploy --only functions
+```
+
+After deploy, use the returned functions URL as `VITE_PAYMENT_API_BASE_URL`.
+
 ## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
