@@ -109,7 +109,7 @@ exports.verifyPayment = onRequest({ region: "asia-south1" }, (req, res) => {
 
       const prebookingData = {
         ...prebooking,
-        status: "confirmed",
+        status: "pending",
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       };
 

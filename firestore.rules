@@ -1,0 +1,56 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email in [
+        'pavitr.4444@gmail.com'
+      ];
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isOwnerOrder() {
+      return isSignedIn() && (
+        request.auth.uid == resource.data.userId ||
+        request.auth.token.email == resource.data.email
+      );
+    }
+
+    function isOwnerOrderCreate() {
+      return isSignedIn() && (
+        request.auth.uid == request.resource.data.userId ||
+        request.auth.token.email == request.resource.data.email
+      );
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create: if isOwner(uid);
+      allow update: if isOwner(uid) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /adminAccess/{docId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /prebookings/{orderId} {
+      allow read: if isOwnerOrder() || isAdmin();
+      allow create: if isOwnerOrderCreate() || isAdmin();
+      allow update: if isOwnerOrder() || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /payments/{paymentId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+  }
+}
