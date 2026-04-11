@@ -41,6 +41,7 @@ const App = () => (
               {/* Public Routes */}
               <Route path="/" element={<Landing />} />
               <Route path="/products" element={<Products />} />
+              <Route path="/products/:categorySlug" element={<Products />} />
               <Route path="/prebook" element={<Prebook />} />
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
