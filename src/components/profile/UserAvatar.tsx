@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
-import { User, Settings, LogOut } from "lucide-react";
+import { User, Shield, LogOut } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -10,10 +11,42 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
+import { canAccessAdminPanel } from "@/lib/adminAccess";
 
 export default function UserAvatar() {
   const { user, profile, logout } = useAuth();
   const navigate = useNavigate();
+  const [showAdmin, setShowAdmin] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    const checkAdminAccess = async () => {
+      if (!user) {
+        if (active) {
+          setShowAdmin(false);
+        }
+        return;
+      }
+
+      try {
+        const allowed = await canAccessAdminPanel();
+        if (active) {
+          setShowAdmin(allowed);
+        }
+      } catch {
+        if (active) {
+          setShowAdmin(false);
+        }
+      }
+    };
+
+    checkAdminAccess();
+
+    return () => {
+      active = false;
+    };
+  }, [user]);
 
   const handleLogout = async () => {
     await logout();
@@ -59,6 +92,14 @@ export default function UserAvatar() {
             Profile
           </Link>
         </DropdownMenuItem>
+        {showAdmin && (
+          <DropdownMenuItem asChild>
+            <Link to="/admin" className="flex items-center cursor-pointer">
+              <Shield className="mr-2 h-4 w-4" />
+              Admin Panel
+            </Link>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={handleLogout}

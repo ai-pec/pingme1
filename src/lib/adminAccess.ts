@@ -1,17 +1,43 @@
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 
 const ADMIN_ACCESS_DOC = "panel";
 const ADMIN_ACCESS_COLLECTION = "adminAccess";
+const RETRYABLE_CODES = new Set(["unavailable", "deadline-exceeded", "aborted", "resource-exhausted"]);
 
 export async function canAccessAdminPanel(): Promise<boolean> {
-  try {
-    await getDoc(doc(db, ADMIN_ACCESS_COLLECTION, ADMIN_ACCESS_DOC));
-    return true;
-  } catch (error: any) {
-    if (error?.code === "permission-denied") {
-      return false;
-    }
-    throw error;
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    return false;
   }
+
+  const adminAccessRef = doc(db, ADMIN_ACCESS_COLLECTION, ADMIN_ACCESS_DOC);
+
+  // Force-refresh token once so recently updated auth claims are reflected.
+  await currentUser.getIdToken(true);
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      await getDoc(adminAccessRef);
+      return true;
+    } catch (error: any) {
+      const code = error?.code;
+
+      if (code === "permission-denied") {
+        if (attempt === 0) {
+          await currentUser.getIdToken(true);
+          continue;
+        }
+        return false;
+      }
+
+      if (RETRYABLE_CODES.has(code) && attempt === 0) {
+        continue;
+      }
+
+      throw error;
+    }
+  }
+
+  return false;
 }

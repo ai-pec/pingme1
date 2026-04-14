@@ -4,6 +4,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
   signOut,
   sendPasswordResetEmail,
   sendEmailVerification,
@@ -42,7 +43,19 @@ export async function signInWithEmail(email: string, password: string) {
 
 // Sign in with Google
 export async function signInWithGoogle() {
-  return signInWithPopup(auth, googleProvider);
+  try {
+    return await signInWithPopup(auth, googleProvider);
+  } catch (error: any) {
+    const code = error?.code;
+    if (
+      code === "auth/popup-blocked" ||
+      code === "auth/operation-not-supported-in-this-environment"
+    ) {
+      await signInWithRedirect(auth, googleProvider);
+      return null;
+    }
+    throw error;
+  }
 }
 
 // Sign out
@@ -100,6 +113,12 @@ export function getAuthErrorMessage(errorCode: string): string {
       return "Too many failed attempts. Please try again later.";
     case "auth/popup-closed-by-user":
       return "Sign-in popup was closed before completing.";
+    case "auth/popup-blocked":
+      return "Popup was blocked by the browser. Please allow popups and try again.";
+    case "auth/unauthorized-domain":
+      return "This domain is not authorized in Firebase Auth. Add this host in Firebase Authentication > Settings > Authorized domains.";
+    case "auth/operation-not-supported-in-this-environment":
+      return "Google sign-in popup is not supported in this browser context. Open the site in Chrome/Safari and try again.";
     case "auth/google-account-not-registered":
       return "You have not signed up with this Google account yet. Please complete signup first.";
     case "auth/network-request-failed":

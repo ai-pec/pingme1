@@ -80,19 +80,60 @@ VITE_RAZORPAY_KEY_ID=rzp_test_your_public_key
 VITE_PAYMENT_API_BASE_URL=https://asia-south1-your-project-id.cloudfunctions.net
 ```
 
-### Backend env (`functions`)
+### Backend secrets (`functions`)
 
-Inside `functions/.env` (or your deployment secret manager), set:
+For production deploys, use Firebase Secret Manager:
+
+```sh
+firebase functions:secrets:set RAZORPAY_KEY_ID
+firebase functions:secrets:set RAZORPAY_KEY_SECRET
+firebase functions:secrets:set SMTP_HOST
+firebase functions:secrets:set SMTP_PORT
+firebase functions:secrets:set SMTP_USER
+firebase functions:secrets:set SMTP_PASS
+firebase functions:secrets:set SMTP_FROM
+```
+
+For local emulator only, you can keep using `functions/.env`:
 
 ```sh
 RAZORPAY_KEY_ID=rzp_test_your_public_key
 RAZORPAY_KEY_SECRET=your_server_secret_key
+
+# Order confirmation email
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@domain.com
+SMTP_PASS=your-email-app-password
+SMTP_FROM=your-email@domain.com
+
+# Order confirmation SMS (Twilio)
+TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_AUTH_TOKEN=your_twilio_auth_token
+TWILIO_PHONE_NUMBER=+1xxxxxxxxxx
+
+# Order confirmation WhatsApp (Twilio)
+# If TWILIO_WHATSAPP_FROM is set, backend sends WhatsApp first.
+TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
+
+# Optional: use an approved WhatsApp template via Twilio Content API
+TWILIO_WHATSAPP_CONTENT_SID=HXxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
 Important:
 
 - Never expose `RAZORPAY_KEY_SECRET` in frontend env.
 - If a secret was added to frontend by mistake, rotate it in Razorpay dashboard immediately.
+- Keep SMTP and Twilio secrets only in backend env/secrets.
+
+### Order confirmation notifications
+
+When an admin changes a prebooking status from `pending` to `confirmed`, a Cloud Function now attempts to send:
+
+1. Email to customer with order ID, items, and expected delivery date.
+2. WhatsApp message to customer if configured; otherwise SMS fallback.
+
+Expected delivery is calculated as current date + 5 days.
 
 ### Deploy functions
 
