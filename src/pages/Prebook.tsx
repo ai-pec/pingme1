@@ -211,7 +211,7 @@ const Prebook = () => {
       <MainLayout>
         <div className="container py-20 text-center max-w-md mx-auto">
           <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold mb-2">Pre-booking Confirmed!</h1>
+          <h1 className="text-2xl font-bold mb-2">Booking Confirmed!</h1>
           <p className="text-muted-foreground mb-6">
             We'll reach out to you shortly with payment and delivery details.
           </p>

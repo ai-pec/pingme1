@@ -802,7 +802,12 @@ export default function Profile() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {orders.map((order) => (
+                  {orders.map((order) => {
+                    const displayStatus = order.status === "pending" && order.payment?.paymentId
+                      ? "confirmed"
+                      : order.status;
+
+                    return (
                     <div key={order.id} className="border border-border rounded-xl p-4 bg-card">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
@@ -810,7 +815,7 @@ export default function Profile() {
                           <span className="text-xs font-mono text-muted-foreground">#{order.id.slice(0, 8).toUpperCase()}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          {isNFCOrder(order) && order.status === "confirmed" && (
+                          {isNFCOrder(order) && displayStatus === "confirmed" && (
                             <Button
                               type="button"
                               variant="outline"
@@ -824,16 +829,16 @@ export default function Profile() {
                           <Badge
                             variant="secondary"
                             className={`text-xs ${
-                              order.status === 'confirmed'
+                              displayStatus === 'confirmed'
                                 ? 'bg-green-100 text-green-700'
-                                : order.status === 'cancelled'
+                                : displayStatus === 'cancelled'
                                 ? 'bg-red-100 text-red-700'
                                 : 'bg-amber-100 text-amber-700'
                             }`}
                           >
-                            {order.status === 'confirmed' && <CheckCircle className="mr-1 h-3 w-3" />}
-                            {order.status === 'pending' && <Clock className="mr-1 h-3 w-3" />}
-                            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                            {displayStatus === 'confirmed' && <CheckCircle className="mr-1 h-3 w-3" />}
+                            {displayStatus === 'pending' && <Clock className="mr-1 h-3 w-3" />}
+                            {displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1)}
                           </Badge>
                         </div>
                       </div>
@@ -874,7 +879,8 @@ export default function Profile() {
                         <span className="font-bold text-lg text-primary">₹{order.totalAmount?.toFixed(2)}</span>
                       </div>
                     </div>
-                  ))}
+                  );
+                  })}
                 </div>
               )}
             </CardContent>

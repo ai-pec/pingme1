@@ -21,6 +21,7 @@ export interface CartItem {
 }
 
 export interface NFCProfile {
+  username?: string;
   name: string;
   companyName?: string;
   jobTitle?: string;

@@ -31,6 +31,10 @@ service cloud.firestore {
       );
     }
 
+    function hasValidOrderStatus(status) {
+      return status in ['pending', 'confirmed', 'cancelled'];
+    }
+
     match /users/{uid} {
       allow read: if isOwner(uid) || isAdmin();
       allow create: if isOwner(uid);
@@ -45,8 +49,8 @@ service cloud.firestore {
 
     match /prebookings/{orderId} {
       allow read: if isOwnerOrder() || isAdmin();
-      allow create: if isOwnerOrderCreate() || isAdmin();
-      allow update: if isOwnerOrder() || isAdmin();
+      allow create: if (isOwnerOrderCreate() || isAdmin()) && hasValidOrderStatus(request.resource.data.status);
+      allow update: if (isOwnerOrder() || isAdmin()) && hasValidOrderStatus(request.resource.data.status);
       allow delete: if isAdmin();
     }
 

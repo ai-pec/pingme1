@@ -148,6 +148,10 @@ const Navbar = () => {
                       className="w-full h-12 text-base"
                       onClick={() => {
                         setCartOpen(false);
+                        if (!user) {
+                          navigate("/login", { state: { from: { pathname: "/prebook" } } });
+                          return;
+                        }
                         navigate("/prebook");
                       }}
                     >
