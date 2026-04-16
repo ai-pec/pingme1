@@ -118,7 +118,7 @@ const LandingHero = () => {
                     </Button>
                   </Link>
 
-                  <Link to="/prebook?product=pingme-car-card" className="block">
+                  <Link to="/booking?product=pingme-car-card" className="block">
                     <Button size="full" variant="outline" className="text-base font-bold">
                       Pre-book Car Card - ₹499
                     </Button>

@@ -1,5 +1,6 @@
 import {
   collection,
+  deleteDoc,
   doc,
   getDocs,
   orderBy,
@@ -12,7 +13,8 @@ import { db } from "@/lib/firebase";
 import type { PrebookingRecord } from "@/lib/prebookService";
 import type { UserProfile } from "@/types/user";
 
-const PREBOOKINGS_COLLECTION = "prebookings";
+const BOOKING_COLLECTION = "booking";
+const LEGACY_PREBOOKINGS_COLLECTION = "prebookings";
 const USERS_COLLECTION = "users";
 
 const mapPrebooking = (snap: QueryDocumentSnapshot<DocumentData>): PrebookingRecord => {
@@ -30,16 +32,35 @@ const mapUser = (snap: QueryDocumentSnapshot<DocumentData>): UserProfile => {
 };
 
 export async function getAllOrders(): Promise<PrebookingRecord[]> {
-  const ordersQuery = query(
-    collection(db, PREBOOKINGS_COLLECTION),
-    orderBy("createdAt", "desc")
-  );
-  const snapshot = await getDocs(ordersQuery);
-  return snapshot.docs.map(mapPrebooking);
+  const [bookingSnapshot, legacySnapshot] = await Promise.all([
+    getDocs(query(collection(db, BOOKING_COLLECTION), orderBy("createdAt", "desc"))),
+    getDocs(query(collection(db, LEGACY_PREBOOKINGS_COLLECTION), orderBy("createdAt", "desc"))),
+  ]);
+
+  const merged = new Map<string, PrebookingRecord>();
+  bookingSnapshot.docs.forEach((snap) => {
+    const record = mapPrebooking(snap);
+    merged.set(record.id, record);
+  });
+  legacySnapshot.docs.forEach((snap) => {
+    if (!merged.has(snap.id)) {
+      const record = mapPrebooking(snap);
+      merged.set(record.id, record);
+    }
+  });
+
+  return Array.from(merged.values()).sort((a, b) => {
+    const left = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0;
+    const right = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0;
+    return right - left;
+  });
 }
 
 export async function deleteOrder(orderId: string): Promise<void> {
-  await deleteDoc(doc(db, PREBOOKINGS_COLLECTION, orderId));
+  await Promise.allSettled([
+    deleteDoc(doc(db, BOOKING_COLLECTION, orderId)),
+    deleteDoc(doc(db, LEGACY_PREBOOKINGS_COLLECTION, orderId)),
+  ]);
 }
 
 export async function getAllUsers(): Promise<UserProfile[]> {
@@ -49,7 +70,8 @@ export async function getAllUsers(): Promise<UserProfile[]> {
 }
 
 export async function updateOrderStatus(orderId: string, status: PrebookingRecord["status"]): Promise<void> {
-  await updateDoc(doc(db, PREBOOKINGS_COLLECTION, orderId), {
-    status,
-  });
+  await Promise.allSettled([
+    updateDoc(doc(db, BOOKING_COLLECTION, orderId), { status }),
+    updateDoc(doc(db, LEGACY_PREBOOKINGS_COLLECTION, orderId), { status }),
+  ]);
 }

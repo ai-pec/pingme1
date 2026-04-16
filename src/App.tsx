@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
@@ -45,13 +45,14 @@ const App = () => (
               <Route path="/products" element={<Products />} />
               <Route path="/products/:categorySlug" element={<Products />} />
               <Route
-                path="/prebook"
+                path="/booking"
                 element={
                   <ProtectedRoute>
                     <Prebook />
                   </ProtectedRoute>
                 }
               />
+              <Route path="/prebook" element={<Navigate to="/booking" replace />} />
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
 

@@ -1,13 +1,42 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import MainLayout from "@/layouts/MainLayout";
 import { Users, Target, Shield, Heart } from "lucide-react";
 import { getPublicStats } from "@/lib/publicStatsService";
 
+const STATIC_CITIES_COVERED = 3;
+const STATIC_GOOGLE_RATING = 4.0;
+
+const animateNumber = (
+  from: number,
+  to: number,
+  duration: number,
+  onUpdate: (value: number) => void
+) => {
+  const start = performance.now();
+
+  const frame = (now: number) => {
+    const progress = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const value = Math.round(from + (to - from) * eased);
+    onUpdate(value);
+
+    if (progress < 1) {
+      requestAnimationFrame(frame);
+    }
+  };
+
+  requestAnimationFrame(frame);
+};
+
 const About = () => {
   const [happyCustomers, setHappyCustomers] = useState(0);
   const [vehiclesProtected, setVehiclesProtected] = useState(0);
-  const [citiesCovered, setCitiesCovered] = useState(0);
-  const [googleRating, setGoogleRating] = useState(0);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  const aboutStats = useMemo(() => ({
+    citiesCovered: STATIC_CITIES_COVERED,
+    googleRating: STATIC_GOOGLE_RATING,
+  }), []);
 
   useEffect(() => {
     let alive = true;
@@ -15,10 +44,14 @@ const About = () => {
       const stats = await getPublicStats();
       if (!alive) return;
 
-      setHappyCustomers(stats.happyCustomers);
-      setVehiclesProtected(stats.vehiclesProtected);
-      setCitiesCovered(stats.citiesCovered);
-      setGoogleRating(stats.googleRating);
+      animateNumber(0, stats.happyCustomers, 1400, (value) => {
+        if (alive) setHappyCustomers(value);
+      });
+      animateNumber(0, stats.vehiclesProtected, 1400, (value) => {
+        if (alive) setVehiclesProtected(value);
+      });
+
+      setIsLoaded(true);
     };
 
     void loadStats();
@@ -82,7 +115,7 @@ const About = () => {
                 <div>
                   <h3 className="font-bold text-lg mb-2">Community Driven</h3>
                   <p className="text-muted-foreground">
-                    Built with feedback from thousands of vehicle owners across 5+ cities in India.
+                    Built with feedback from thousands of vehicle owners across 3+ cities in India.
                   </p>
                 </div>
               </div>
@@ -112,14 +145,19 @@ const About = () => {
                   <div className="text-sm text-foreground/80">Vehicles Protected</div>
                 </div>
                 <div>
-                  <div className="text-3xl font-bold text-foreground">{citiesCovered}+</div>
+                  <div className="text-3xl font-bold text-foreground">{aboutStats.citiesCovered}+</div>
                   <div className="text-sm text-foreground/80">Cities Covered</div>
                 </div>
                 <div>
-                  <div className="text-3xl font-bold text-foreground">{googleRating.toFixed(1)}★</div>
+                  <div className="text-3xl font-bold text-foreground">{aboutStats.googleRating.toFixed(1)}★</div>
                   <div className="text-sm text-foreground/80">Google Rating</div>
                 </div>
               </div>
+              {!isLoaded && (
+                <p className="mt-4 text-center text-xs text-foreground/70">
+                  Loading live stats...
+                </p>
+              )}
             </div>
           </div>
         </div>

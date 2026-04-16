@@ -23,6 +23,17 @@ if (!admin.apps.length) {
 const db = admin.firestore();
 const corsHandler = cors({ origin: true });
 
+const getCount = async (collectionRef, queryConstraints = []) => {
+  let queryRef = collectionRef;
+  for (const constraint of queryConstraints) {
+    queryRef = queryRef.where(constraint.field, constraint.op, constraint.value);
+  }
+
+  const snapshot = await queryRef.get();
+  return snapshot.size;
+};
+
+
 const getMailTransporter = () => {
   const host = (SMTP_HOST.value() || process.env.SMTP_HOST || "").trim();
   const port = Number((SMTP_PORT.value() || process.env.SMTP_PORT || "587").trim());
@@ -144,6 +155,37 @@ exports.createOrder = onRequest({
   });
 });
 
+exports.getPublicStats = onRequest({
+  region: "asia-south1",
+}, async (req, res) => {
+  corsHandler(req, res, async () => {
+    if (req.method !== "GET") {
+      res.status(405).send("Method Not Allowed");
+      return;
+    }
+
+    try {
+      const [happyCustomers, vehiclesProtected] = await Promise.all([
+        getCount(db.collection("users")),
+        getCount(db.collection("booking"), [
+          { field: "status", op: "==", value: "confirmed" },
+        ]),
+      ]);
+
+      res.status(200).json({
+        happyCustomers,
+        vehiclesProtected,
+        citiesCovered: 0,
+        googleRating: 0,
+        installCount: 0,
+      });
+    } catch (error) {
+      console.error("getPublicStats error", error);
+      res.status(500).send("Failed to load public stats.");
+    }
+  });
+});
+
 exports.verifyPayment = onRequest({
   region: "asia-south1",
   secrets: [RAZORPAY_KEY_SECRET, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM],
@@ -200,13 +242,19 @@ exports.verifyPayment = onRequest({
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       };
 
-      const prebookingRef = await db.collection("prebookings").add(prebookingData);
+      const bookingRef = db.collection("booking").doc();
+      const legacyPrebookingRef = db.collection("prebookings").doc(bookingRef.id);
+
+      await Promise.all([
+        bookingRef.set(prebookingData),
+        legacyPrebookingRef.set(prebookingData, { merge: true }),
+      ]);
 
       try {
         await sendBookingConfirmationEmail({
           email: prebooking?.email,
           fullName: prebooking?.fullName,
-          bookingId: prebookingRef.id,
+          bookingId: bookingRef.id,
           items: prebooking?.items,
           totalAmount: prebooking?.totalAmount,
         });
@@ -216,7 +264,7 @@ exports.verifyPayment = onRequest({
 
       res.status(200).json({
         success: true,
-        prebookingId: prebookingRef.id,
+        prebookingId: bookingRef.id,
       });
     } catch (error) {
       console.error("verifyPayment error", error);

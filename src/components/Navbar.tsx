@@ -149,10 +149,10 @@ const Navbar = () => {
                       onClick={() => {
                         setCartOpen(false);
                         if (!user) {
-                          navigate("/login", { state: { from: { pathname: "/prebook" } } });
+                          navigate("/login", { state: { from: { pathname: "/booking" } } });
                           return;
                         }
-                        navigate("/prebook");
+                        navigate("/booking");
                       }}
                     >
                       Checkout Securely

@@ -47,6 +47,13 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    match /booking/{orderId} {
+      allow read: if isOwnerOrder() || isAdmin();
+      allow create: if (isOwnerOrderCreate() || isAdmin()) && hasValidOrderStatus(request.resource.data.status);
+      allow update: if (isOwnerOrder() || isAdmin()) && hasValidOrderStatus(request.resource.data.status);
+      allow delete: if isAdmin();
+    }
+
     match /prebookings/{orderId} {
       allow read: if isOwnerOrder() || isAdmin();
       allow create: if (isOwnerOrderCreate() || isAdmin()) && hasValidOrderStatus(request.resource.data.status);

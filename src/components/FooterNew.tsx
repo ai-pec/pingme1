@@ -18,28 +18,28 @@ const FooterNew = () => {
           <div className="flex flex-wrap items-center justify-center gap-4 text-sm">
             <Link 
               to="/privacy-policy" 
-              className="text-muted-foreground hover:text-primary-dark transition-colors"
+              className="px-2 py-1 rounded-md text-muted-foreground transition-colors hover:bg-primary/10 hover:text-yellow-400 hover:underline"
             >
               Privacy Policy
             </Link>
             <span className="text-muted-foreground">|</span>
             <Link 
               to="/refund-policy" 
-              className="text-muted-foreground hover:text-primary-dark transition-colors"
+              className="px-2 py-1 rounded-md text-muted-foreground transition-colors hover:bg-primary/10 hover:text-yellow-400 hover:underline"
             >
               Refund Policy
             </Link>
             <span className="text-muted-foreground">|</span>
             <Link 
               to="/pricing-shipment" 
-              className="text-muted-foreground hover:text-primary-dark transition-colors"
+              className="px-2 py-1 rounded-md text-muted-foreground transition-colors hover:bg-primary/10 hover:text-yellow-400 hover:underline"
             >
               Pricing & Shipment
             </Link>
             <span className="text-muted-foreground">|</span>
             <Link 
               to="/terms-conditions" 
-              className="text-muted-foreground hover:text-primary-dark transition-colors"
+              className="px-2 py-1 rounded-md text-muted-foreground transition-colors hover:bg-primary/10 hover:text-yellow-400 hover:underline"
             >
               Terms & Conditions
             </Link>

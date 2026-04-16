@@ -69,7 +69,8 @@ export interface PrebookingData {
   };
 }
 
-const PREBOOKINGS_COLLECTION = 'prebookings';
+const BOOKING_COLLECTION = 'booking';
+const LEGACY_PREBOOKINGS_COLLECTION = 'prebookings';
 
 // Simple text sanitizer to prevent XSS
 const sanitizeText = (text: string): string => {
@@ -170,7 +171,7 @@ export const createPrebooking = async (data: PrebookingData): Promise<string> =>
   );
 
   const docRef = await Promise.race([
-    addDoc(collection(db, PREBOOKINGS_COLLECTION), sanitizedData),
+    addDoc(collection(db, BOOKING_COLLECTION), sanitizedData),
     timeoutPromise,
   ]);
 
@@ -198,23 +199,44 @@ export const getUserPrebookings = async ({ userId, email }: GetUserPrebookingsPa
   try {
     if (!userId && !email) return [];
 
+    const mergeAndSort = (records: PrebookingRecord[]) => {
+      const deduped = new Map<string, PrebookingRecord>();
+      records.forEach((record) => {
+        deduped.set(record.id, record);
+      });
+
+      return Array.from(deduped.values()).sort((a, b) => toMillis(b.createdAt) - toMillis(a.createdAt));
+    };
+
     // Prefer userId query because email can change later in account settings.
     if (userId) {
-      const byUserId = query(collection(db, PREBOOKINGS_COLLECTION), where('userId', '==', userId));
-      const userSnapshot = await getDocs(byUserId);
-      if (!userSnapshot.empty) {
-        return userSnapshot.docs
-          .map(doc => ({ id: doc.id, ...doc.data() } as PrebookingRecord))
-          .sort((a, b) => toMillis(b.createdAt) - toMillis(a.createdAt));
+      const [bookingSnapshot, legacySnapshot] = await Promise.all([
+        getDocs(query(collection(db, BOOKING_COLLECTION), where('userId', '==', userId))),
+        getDocs(query(collection(db, LEGACY_PREBOOKINGS_COLLECTION), where('userId', '==', userId))),
+      ]);
+
+      const records = [
+        ...bookingSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PrebookingRecord)),
+        ...legacySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PrebookingRecord)),
+      ];
+
+      if (records.length > 0) {
+        return mergeAndSort(records);
       }
     }
 
     if (email) {
-      const byEmail = query(collection(db, PREBOOKINGS_COLLECTION), where('email', '==', email));
-      const emailSnapshot = await getDocs(byEmail);
-      return emailSnapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() } as PrebookingRecord))
-        .sort((a, b) => toMillis(b.createdAt) - toMillis(a.createdAt));
+      const [bookingSnapshot, legacySnapshot] = await Promise.all([
+        getDocs(query(collection(db, BOOKING_COLLECTION), where('email', '==', email))),
+        getDocs(query(collection(db, LEGACY_PREBOOKINGS_COLLECTION), where('email', '==', email))),
+      ]);
+
+      const records = [
+        ...bookingSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PrebookingRecord)),
+        ...legacySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PrebookingRecord)),
+      ];
+
+      return mergeAndSort(records);
     }
 
     return [];
@@ -233,8 +255,14 @@ export const updatePrebookingNFCProfile = async (
   }
 
   const sanitizedProfile = sanitizeNFCProfile(nfcProfile);
-  await updateDoc(doc(db, PREBOOKINGS_COLLECTION, orderId), {
-    nfcProfile: sanitizedProfile,
-    updatedAt: serverTimestamp(),
-  });
+  await Promise.allSettled([
+    updateDoc(doc(db, BOOKING_COLLECTION, orderId), {
+      nfcProfile: sanitizedProfile,
+      updatedAt: serverTimestamp(),
+    }),
+    updateDoc(doc(db, LEGACY_PREBOOKINGS_COLLECTION, orderId), {
+      nfcProfile: sanitizedProfile,
+      updatedAt: serverTimestamp(),
+    }),
+  ]);
 };
