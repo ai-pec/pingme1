@@ -1,139 +1,392 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Shield, Zap, Tag, ArrowRight, Check } from "lucide-react";
+import {
+  ArrowRight,
+  CarFront,
+  Check,
+  Fingerprint,
+  Globe2,
+  MapPinned,
+  Nfc,
+  PackageSearch,
+  PawPrint,
+  ScanLine,
+  Shield,
+  ShieldCheck,
+  Sparkles,
+  Tag,
+  Zap,
+} from "lucide-react";
 
-const benefits = [
+import carcardFront from "@/assets/products/product-card.png";
+import backpackSticker from "@/assets/products/backpack_sticker.png";
+import nfcFront from "@/assets/products/nfc_frontcard.png";
+import petSafetyTag from "@/assets/products/Pet Tags.jpeg";
+
+const quickFacts = [
   {
-    icon: Shield,
-    title: "Privacy First",
-    description: "Contact without sharing phone numbers",
+    icon: ShieldCheck,
+    title: "Privacy by design",
+    description: "Personal information stays protected behind masked communication.",
   },
   {
-    icon: Zap,
-    title: "Instant Contact",
-    description: "Quick connection via QR scan",
+    icon: ScanLine,
+    title: "No app required",
+    description: "A simple scan or tap is enough for someone to reach you when it matters.",
   },
   {
-    icon: Tag,
-    title: "Premium Tags",
-    description: "Durable, weatherproof quality",
+    icon: MapPinned,
+    title: "Built for real life",
+    description: "Made for parking lots, lost items, and unpredictable everyday situations.",
+  },
+  {
+    icon: Sparkles,
+    title: "Made in India",
+    description: "Designed and developed locally, with a platform built to scale.",
   },
 ];
 
-const trustIndicators = ["Works on any vehicle", "Lifetime QR activation", "Free shipping"];
+const offerings = [
+  {
+    icon: CarFront,
+    title: "Vehicle Tags",
+    description: "Let others notify you about parking issues, damage, or emergencies without exposing your number.",
+    image: carcardFront,
+    accent: "from-amber-400/30 to-yellow-200/10",
+    points: ["Car and bike use cases", "Secure masked contact", "Instant parking issue alerts"],
+  },
+  {
+    icon: PackageSearch,
+    title: "Lost & Found Tags",
+    description: "Backpacks, laptops, keychains, and everyday essentials can find their way back faster.",
+    image: backpackSticker,
+    accent: "from-slate-400/30 to-zinc-200/10",
+    points: ["For bags, laptops, and accessories", "Easy scan for the finder", "Private return flow"],
+  },
+  {
+    icon: PawPrint,
+    title: "Pet Safety Tags",
+    description: "Help anyone who finds your pet reach you instantly and safely.",
+    image: petSafetyTag,
+    accent: "from-emerald-400/30 to-teal-200/10",
+    points: ["Fast reunion when pets wander", "Visible and durable tag format", "Owner details stay private"],
+  },
+  {
+    icon: Nfc,
+    title: "NFC Smart Cards",
+    description: "Tap-enabled cards for quick, seamless, private information exchange.",
+    image: nfcFront,
+    accent: "from-sky-400/30 to-blue-200/10",
+    points: ["Tap to share", "Modern digital contact experience", "Works alongside QR-enabled profiles"],
+  },
+];
+
+const differentiators = [
+  {
+    icon: Shield,
+    title: "Privacy First",
+    text: "Your phone number is never the public entry point.",
+  },
+  {
+    icon: Zap,
+    title: "Effortless Experience",
+    text: "No downloads or setup for the person reaching you.",
+  },
+  {
+    icon: Fingerprint,
+    title: "Contextual Communication",
+    text: "Predefined alerts keep every interaction clear and purposeful.",
+  },
+  {
+    icon: Globe2,
+    title: "Built for Scale",
+    text: "A platform shaped for everyday use across multiple product lines.",
+  },
+];
 
 const LandingHero = () => {
   return (
-    <main className="min-h-[calc(100vh-80px)] bg-cream overflow-auto flex">
-      <div className="container flex py-6 md:py-8 lg:py-10">
-        <div className="grid lg:grid-cols-2 gap-6 lg:gap-14 items-center w-full">
-          {/* Left Column - Hero Content */}
-          <section className="order-1 lg:order-1 space-y-4 lg:space-y-8">
-            {/* Headline */}
-            <div className="space-y-3 lg:space-y-4">
-              <h1 className="text-3xl md:text-4xl lg:text-[3.5rem] font-extrabold leading-[1.2] tracking-tight text-foreground">
-                Smart QR Tags
-                <span className="block mt-2">
-                  <span className="text-[0.95em]">
-                    for{" "}
-                    <span className="relative inline-block">
-                      <span className="relative z-10">Your Vehicles</span>
-                      <span className="absolute -bottom-1 left-0 w-full h-3 bg-primary/40 -z-0 rounded-sm"></span>
-                    </span>
-                  </span>
-                </span>
-              </h1>
+    <main className="relative overflow-hidden bg-cream">
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute -top-32 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />
+        <div className="absolute top-24 right-[-4rem] h-72 w-72 rounded-full bg-amber-200/40 blur-3xl" />
+        <div className="absolute bottom-0 left-[-5rem] h-80 w-80 rounded-full bg-orange-100/60 blur-3xl" />
+      </div>
 
-              <p className="text-base md:text-lg lg:text-xl text-muted-foreground leading-relaxed max-w-lg">
-                Enable instant contact without sharing phone numbers. Perfect for cars, bikes, laptops, and more.
+      <div className="container relative py-10 md:py-14 lg:py-20 space-y-16 lg:space-y-24">
+        <section className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+          <div className="space-y-8">
+            <div className="space-y-4 max-w-3xl">
+              <p className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-background/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-brown shadow-sm">
+                Privacy-first contact ecosystem
+              </p>
+              <h1 className="text-balance text-4xl font-extrabold tracking-tight text-foreground md:text-5xl lg:text-6xl">
+                Reach people, not their personal data.
+              </h1>
+              <p className="max-w-2xl text-base leading-8 text-muted-foreground md:text-lg lg:text-xl">
+                PingME connects people to vehicles, belongings, and pets through elegantly designed QR and NFC-enabled
+                smart tags. It solves the real-world need for contact without exposing your phone number, identity, or
+                unnecessary access.
               </p>
             </div>
 
-            {/* Trust Indicators */}
-            <div className="hidden md:flex flex-wrap gap-4">
-              {trustIndicators.map((item, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
-                    <Check className="w-3 h-3 text-primary" />
-                  </div>
-                  <span className="text-sm font-medium text-foreground">{item}</span>
-                </div>
-              ))}
-            </div>
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {quickFacts.map((fact) => {
+                const Icon = fact.icon;
 
-            {/* Benefits Grid */}
-            <div className="hidden md:grid sm:grid-cols-3 gap-4 pt-2">
-              {benefits.map((benefit, index) => {
-                const Icon = benefit.icon;
                 return (
                   <div
-                    key={index}
-                    className="group p-4 rounded-xl bg-background/60 border border-border/50 hover:border-primary/30 hover:bg-background transition-all duration-200"
+                    key={fact.title}
+                    className="rounded-2xl border border-border/60 bg-background/80 p-4 shadow-[0_10px_30px_rgba(81,60,9,0.06)] backdrop-blur-sm"
                   >
-                    <div className="w-10 h-10 rounded-lg bg-primary/15 flex items-center justify-center mb-3 group-hover:bg-primary/25 transition-colors">
-                      <Icon className="w-5 h-5 text-primary" />
+                    <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/15">
+                      <Icon className="h-5 w-5 text-primary" />
                     </div>
-                    <h3 className="text-base font-bold text-foreground mb-1">{benefit.title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{benefit.description}</p>
+                    <h3 className="text-sm font-bold text-foreground">{fact.title}</h3>
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">{fact.description}</p>
                   </div>
                 );
               })}
             </div>
-          </section>
 
-          {/* Right Column - CTA Card */}
-          <section className="order-2 lg:order-2">
-            <div className="relative bg-background rounded-2xl lg:rounded-3xl p-6 md:p-8 lg:p-10 shadow-xl border-2 border-primary/20 overflow-hidden">
-              {/* Decorative gradient */}
-              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-              <div className="absolute bottom-0 left-0 w-24 h-24 bg-primary/5 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2"></div>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Link to="/products">
+                <Button size="lg" className="group w-full sm:w-auto">
+                  Explore Products
+                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Button>
+              </Link>
+              <a href="#what-we-offer" className="w-full sm:w-auto">
+                <Button size="lg" variant="outline" className="w-full">
+                  See What PingME Does
+                </Button>
+              </a>
+            </div>
 
-              <div className="relative z-10 space-y-6">
-                {/* Header */}
-                <div className="text-center space-y-2">
-                  <h2 className="text-2xl md:text-3xl font-bold text-foreground">Order Your Tags</h2>
-                  <p className="text-muted-foreground">Premium QR tags starting at just ₹179</p>
+            <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+              {[
+                "No apps",
+                "Masked communication",
+                "QR + NFC enabled",
+                "Designed for vehicles, belongings, and pets",
+              ].map((item) => (
+                <div key={item} className="flex items-center gap-2 rounded-full bg-background/70 px-4 py-2 shadow-sm">
+                  <Check className="h-4 w-4 text-primary" />
+                  <span className="font-medium text-foreground/80">{item}</span>
                 </div>
+              ))}
+            </div>
+          </div>
 
-                {/* Value Props */}
-                <div className="space-y-3 py-4 border-y border-border/50">
-                  {["Durable weatherproof material", "Lifetime QR code activation", "Works on cars, bikes, laptops & more"].map(
-                    (item, index) => (
-                      <div key={index} className="flex items-center gap-3">
-                        <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                          <Check className="w-3.5 h-3.5 text-primary-foreground" />
-                        </div>
-                        <span className="text-sm font-medium text-foreground">{item}</span>
-                      </div>
-                    ),
-                  )}
-                </div>
+          <div className="relative">
+            <div className="absolute -inset-4 rounded-[2rem] bg-gradient-to-br from-primary/15 via-white/20 to-transparent blur-2xl" />
+            <div className="relative grid gap-4 rounded-[2rem] border border-border/60 bg-background/85 p-4 shadow-[0_30px_90px_rgba(81,60,9,0.16)] backdrop-blur-md md:p-6">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <article className="overflow-hidden rounded-3xl border border-border/50 bg-gradient-to-br from-amber-50 to-white p-4 shadow-sm">
+                  <div className="mb-3 flex items-center justify-between text-xs font-semibold uppercase tracking-[0.2em] text-brown">
+                    <span>Vehicle Tags</span>
+                    <CarFront className="h-4 w-4" />
+                  </div>
+                  <div className="flex h-52 w-full items-center justify-center rounded-2xl bg-white p-2">
+                    <img src={carcardFront} alt="PingME car tag" className="h-100 w-100 rounded-xl object-contain" />
+                  </div>
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    Reach the owner about parking, damage, or emergencies without exposing private details.
+                  </p>
+                </article>
 
-                {/* CTA Buttons */}
-                <div className="space-y-4">
-                  <Link to="/products" className="block">
-                    <Button size="full" className="group text-base font-bold">
-                      Browse Products
-                      <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-                    </Button>
-                  </Link>
+                <article className="overflow-hidden rounded-3xl border border-border/50 bg-gradient-to-br from-slate-50 to-white p-4 shadow-sm">
+                  <div className="mb-3 flex items-center justify-between text-xs font-semibold uppercase tracking-[0.2em] text-brown">
+                    <span>Lost & Found</span>
+                    <PackageSearch className="h-4 w-4" />
+                  </div>
+                  <img src={backpackSticker} alt="PingME lost and found tag" className="h-44 w-full rounded-2xl object-cover" />
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    Keep bags, laptops, and everyday items connected to a secure return path.
+                  </p>
+                </article>
 
-                  <Link to="/booking?product=pingme-car-card" className="block">
-                    <Button size="full" variant="outline" className="text-base font-bold">
-                      Pre-book Car Card - ₹499
-                    </Button>
-                  </Link>
-                </div>
+                <article className="overflow-hidden rounded-3xl border border-border/50 bg-gradient-to-br from-emerald-50 to-white p-4 shadow-sm">
+                  <div className="mb-3 flex items-center justify-between text-xs font-semibold uppercase tracking-[0.2em] text-brown">
+                    <span>Pet Safety</span>
+                    <PawPrint className="h-4 w-4" />
+                  </div>
+                  <div className="flex h-52 w-full items-center justify-center rounded-2xl bg-white p-2">
+                    <img src={petSafetyTag} alt="PingME pet safety tag" className="h-full w-full rounded-xl object-contain" />
+                  </div>
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    Faster reunions for pets through a simple scan that keeps owner details private.
+                  </p>
+                </article>
 
-                {/* Trust Badge */}
-                <div className="flex items-center justify-center gap-2 pt-2">
-                  <Shield className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">Secure checkout • Free shipping</span>
+                <article className="overflow-hidden rounded-3xl border border-border/50 bg-gradient-to-br from-sky-50 to-white p-4 shadow-sm">
+                  <div className="mb-3 flex items-center justify-between text-xs font-semibold uppercase tracking-[0.2em] text-brown">
+                    <span>NFC Smart Cards</span>
+                    <Nfc className="h-4 w-4" />
+                  </div>
+                  <img src={nfcFront} alt="PingME NFC smart card" className="h-44 w-full rounded-2xl object-cover" />
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    Tap-enabled cards for modern, seamless, and private information sharing.
+                  </p>
+                </article>
+              </div>
+
+              <div className="rounded-3xl border border-primary/20 bg-primary/10 p-4 md:p-5">
+                <div className="flex flex-wrap items-center gap-3 text-sm font-medium text-foreground">
+                  <ShieldCheck className="h-5 w-5 text-primary" />
+                  <span>One system, multiple use cases:</span>
+                  <span className="rounded-full bg-background px-3 py-1">vehicles</span>
+                  <span className="rounded-full bg-background px-3 py-1">belongings</span>
+                  <span className="rounded-full bg-background px-3 py-1">pets</span>
+                  <span className="rounded-full bg-background px-3 py-1">NFC cards</span>
                 </div>
               </div>
             </div>
-          </section>
-        </div>
+          </div>
+        </section>
+
+        <section id="what-we-offer" className="space-y-8">
+          <div className="max-w-3xl">
+            <p className="section-eyebrow text-left">What We Offer</p>
+            <h2 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">
+              Built for the everyday moments where privacy matters most.
+            </h2>
+            <p className="mt-4 max-w-2xl text-lg leading-8 text-muted-foreground">
+              PingME is designed around real-world scenarios where instant communication is useful, but direct exposure
+              is not. The homepage now explains the full system in one place so the value is clear from the first visit.
+            </p>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            {offerings.map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <article key={item.title} className="overflow-hidden rounded-[1.75rem] border border-border/60 bg-background/90 shadow-[0_18px_50px_rgba(81,60,9,0.08)]">
+                  <div className={`bg-gradient-to-br ${item.accent} p-5 md:p-6`}>
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="space-y-3">
+                        <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-background/80 shadow-sm">
+                          <Icon className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="text-2xl font-bold text-foreground">{item.title}</h3>
+                          <p className="mt-2 max-w-xl text-sm leading-7 text-muted-foreground md:text-base">{item.description}</p>
+                        </div>
+                      </div>
+                      <Tag className="h-5 w-5 text-foreground/40" />
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 p-5 md:grid-cols-[180px_1fr] md:p-6">
+                    <img src={item.image} alt={item.title} className="h-210 w-210 rounded-2xl object-cover" />
+                    <div className="space-y-3">
+                      {item.points.map((point) => (
+                        <div key={point} className="flex items-start gap-3 rounded-2xl bg-muted/40 px-4 py-3">
+                          <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+                          <span className="text-sm leading-6 text-foreground/80">{point}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+          <div className="rounded-[1.75rem] border border-border/60 bg-background/90 p-6 shadow-[0_18px_50px_rgba(81,60,9,0.08)]">
+            <p className="section-eyebrow text-left">Why PingME Is Different</p>
+            <h2 className="text-3xl font-bold tracking-tight text-foreground">Meaningful connection, on your terms.</h2>
+            <p className="mt-4 text-lg leading-8 text-muted-foreground">
+              PingME was built around a simple question: why should accessibility require exposure? The answer is a
+              contact system that keeps communication secure, relevant, and private.
+            </p>
+
+            <div className="mt-6 space-y-4 rounded-3xl bg-primary/10 p-5">
+              <div className="flex items-center gap-3 text-sm font-semibold uppercase tracking-[0.2em] text-brown">
+                <Shield className="h-4 w-4" />
+                No friction, no unnecessary access
+              </div>
+              <p className="text-sm leading-7 text-foreground/80">
+                A user can scan or tap, choose the relevant action, and connect through the secure system without ever
+                seeing personal contact details.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            {differentiators.map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <article key={item.title} className="rounded-[1.5rem] border border-border/60 bg-background/85 p-5 shadow-sm">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15">
+                    <Icon className="h-6 w-6 text-primary" />
+                  </div>
+                  <h3 className="mt-4 text-lg font-bold text-foreground">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-7 text-muted-foreground">{item.text}</p>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-stretch">
+          <div className="rounded-[1.75rem] border border-border/60 bg-background/90 p-6 shadow-[0_18px_50px_rgba(81,60,9,0.08)] md:p-8">
+            <p className="section-eyebrow text-left">Our Mission</p>
+            <h2 className="text-3xl font-bold tracking-tight text-foreground">To make everyday interactions safer, simpler, and private.</h2>
+            <p className="mt-4 text-lg leading-8 text-muted-foreground">
+              PingME exists to help people stay reachable for the moments that matter, without turning a contact point
+              into a privacy risk. That includes vehicles, lost belongings, and pets, along with modern NFC contact
+              sharing.
+            </p>
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              {[
+                "Parking issues",
+                "Lost items",
+                "Found pets",
+              ].map((item) => (
+                <div key={item} className="rounded-2xl border border-border/60 bg-muted/30 px-4 py-3 text-sm font-medium text-foreground">
+                  {item}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-[1.75rem] border border-border/60 bg-gradient-to-br from-primary/15 via-white to-amber-50 p-6 shadow-[0_18px_50px_rgba(81,60,9,0.08)] md:p-8">
+            <p className="section-eyebrow text-left">Our Vision</p>
+            <h2 className="text-3xl font-bold tracking-tight text-foreground">A world where help reaches you without friction.</h2>
+            <p className="mt-4 text-lg leading-8 text-muted-foreground">
+              Lost things return faster, personal information stays protected, and connected objects work as a simple,
+              trustworthy layer between strangers and owners.
+            </p>
+
+            <div className="mt-6 rounded-3xl bg-background/80 p-5 shadow-sm">
+              <div className="flex items-center gap-3 text-sm font-semibold uppercase tracking-[0.2em] text-brown">
+                <Sparkles className="h-4 w-4" />
+                Designed in India, built for scale
+              </div>
+              <p className="mt-3 text-sm leading-7 text-foreground/80">
+                PingME is proudly designed and developed in India, shaped by real user feedback and built to grow across
+                everyday use cases and future categories.
+              </p>
+            </div>
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link to="/products">
+                <Button className="group">
+                  Browse the catalog
+                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Button>
+              </Link>
+              <Link to="/prebook?product=pingme-car-card">
+                <Button variant="outline">Pre-book a car tag</Button>
+              </Link>
+            </div>
+          </div>
+        </section>
       </div>
     </main>
   );
