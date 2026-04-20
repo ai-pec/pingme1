@@ -38,8 +38,8 @@ const RefundPolicy = () => {
 
             <h2 className="text-2xl font-bold mt-8 mb-4">5. Contact Us</h2>
             <p className="text-muted-foreground">
-              For any refund-related queries, please reach out to us at hello@pingme.in or 
-              call us at +91 98765 43210.
+              For any refund-related queries, please reach out to us at contact@pingiff.ai or 
+              call us at +91 7347340007.
             </p>
           </div>
         </div>

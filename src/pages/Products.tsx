@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react";
 import MainLayout from "@/layouts/MainLayout";
 import { Shield, ArrowLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -5,384 +6,20 @@ import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useParams, useNavigate } from "react-router-dom";
-
-// Product images
-import productCard from "@/assets/product-card.png";
-import nfcShinchan from "@/assets/products/nfc_shinchan.png";
-import nfcOnepiece from "@/assets/products/nfc_onepiece.png";
-import nfcPhoenix from "@/assets/products/nfc_phoenix.png";
-import nfcMindset from "@/assets/products/nfc_mindset.png";
-import nfcYoucan from "@/assets/products/nfc_youcan.png";
-import nfcFront from "@/assets/products/nfc_frontcard.png";
-import backpackSticker from "@/assets/products/backpack_sticker.png";
-import backpackSticker1 from "@/assets/products/backpack_sticker1.png";
-import backpackSticker2 from "@/assets/products/backpack_sticker2.png";
-import keytagBlack from "@/assets/products/keytag_black.png";
-import keytagRed from "@/assets/products/keytag_red.png";
-import keytagNavy from "@/assets/products/keytag_navy.png";
-import keytagTeal from "@/assets/products/keytag_teal.png";
-import tagCircle1 from "@/assets/products/tag_circle1.png";
-import tagCircle2 from "@/assets/products/tag_circle2.png";
-import tagOval from "@/assets/products/tag_oval.png";
-import tagSquareBlack from "@/assets/products/tag_square_black.png";
-import tagSquareYellow from "@/assets/products/tag_square_yellow.png";
-import carcardFront from "@/assets/products/product-card.png";
-import keytagpet from "@/assets/products/Pet Tags.jpeg";
-import carcardBack from "@/assets/products/carcard_back.png";
-
-// ─── Data ───────────────────────────────────────────────
-
-interface ProductVariant {
-  id: string;
-  title: string;
-  price: string;
-  originalPrice?: string;
-  image?: string;
-  emoji?: string;
-  popular?: boolean;
-  features: string[];
-}
-
-interface ProductCategory {
-  slug: string;
-  name: string;
-  description: string;
-  icon: string;
-  coverImage: string;
-  gradient: string;
-  products: ProductVariant[];
-}
-
-interface CategoryTutorial {
-  title: string;
-  subtitle: string;
-  steps: string[];
-  tip: string;
-}
-
-const categories: ProductCategory[] = [
-  {
-    slug: "car-tags",
-    name: "Car Tags",
-    description: "Premium QR cards for your car dashboard — get contacted anonymously if parked wrong.",
-    icon: "🚗",
-    coverImage: carcardFront,
-    gradient: "from-amber-500/20 to-yellow-500/10",
-    products: [
-      {
-        id: "car-card-standard",
-        title: "PingME Car Card – Standard",
-        price: "₹499",
-        originalPrice: "₹599",
-        image: carcardFront,
-        popular: true,
-        features: [
-          "Premium quality card with QR code",
-          "Fits perfectly on car's front mirror",
-          "Weatherproof and durable",
-          "Lifetime QR code activation",
-        ],
-      },
-      // {
-      //   id: "car-card-variant-b",
-      //   title: "PingME Car Card – Design B",
-      //   price: "₹499",
-      //   originalPrice: "₹599",
-      //   image: carcardBack,
-      //   features: [
-      //     "Alternate design layout",
-      //     "Same premium QR functionality",
-      //     "Weatherproof and durable",
-      //     "Lifetime QR code activation",
-      //   ],
-      // },
-    ],
-  },
-  {
-    slug: "bike-tags",
-    name: "Bike Tags",
-    description: "Compact, UV-resistant tags that attach easily to your two-wheeler.",
-    icon: "🏍️",
-    coverImage: tagOval,
-    gradient: "from-rose-500/20 to-pink-500/10",
-    products: [
-      {
-        id: "bike-tag-classic",
-        title: "Bike Tag – Circle",
-        price: "₹249",
-        originalPrice: "₹299",
-        image: tagCircle1,
-        popular: true,
-        features: ["Circular compact design", "UV resistant material", "Easy keychain installation", "Lifetime QR code activation"],
-      },
-      {
-        id: "bike-tag-classic",
-        title: "Bike Tag – Circle",
-        price: "₹249",
-        originalPrice: "₹299",
-        image: tagCircle2,
-        popular: true,
-        features: ["Circular compact design", "UV resistant material", "Easy keychain installation", "Lifetime QR code activation"],
-      },
-      {
-        id: "bike-tag-oval",
-        title: "Bike Tag – Oval",
-        price: "₹249",
-        originalPrice: "₹299",
-        image: tagOval,
-        features: ["Elegant oval shape", "UV resistant material", "Easy installation", "Lifetime activation"],
-      },
-    ],
-  },
-  {
-    slug: "pet-tags",
-    name: "Pet Tags",
-    description: "Attach to any pet collar — instant QR scan reveals owner info to finders.",
-    icon: "🐾",
-    coverImage: keytagTeal,
-    gradient: "from-teal-500/20 to-emerald-500/10",
-    products: [
-      {
-        id: "pet-tag-teal",
-        title: "Smart Pet Tag – Teal",
-        price: "₹299",
-        originalPrice: "₹349",
-        image: keytagTeal,
-        popular: true,
-        features: ["Vibrant teal colour", "Attach to any pet collar", "Quick scan for owner info", "Waterproof & lifetime activation"],
-      },
-      {
-        id: "pet-tag-red",
-        title: "Smart Pet Tag – Red",
-        price: "₹299",
-        originalPrice: "₹349",
-        image: keytagRed,
-        features: ["Bold red design", "Attach to any pet collar", "Quick scan for owner info", "Waterproof & lifetime activation"],
-      },
-      {
-        id: "pet-safety-tag",
-        title: "Smart Safety Pet Tag – Yellow",
-        price: "₹299",
-        originalPrice: "₹349",
-        image: keytagpet,
-        features: ["Bold red design", "Attach to any pet collar", "Quick scan for owner info", "Waterproof & lifetime activation"],
-      },
-    ],
-  },
-  {
-    slug: "nfc-cards",
-    name: "NFC Cards",
-    description: "Custom-designed NFC-enabled smart cards — tap to share contact or social profile.",
-    icon: "💳",
-    coverImage: nfcShinchan,
-    gradient: "from-sky-500/20 to-blue-500/10",
-    products: [
-      {
-        id: "nfc-shinchan",
-        title: "NFC Card – Shin-chan",
-        price: "₹399",
-        originalPrice: "₹499",
-        image: nfcShinchan,
-        popular: true,
-        features: ["Fun Shin-chan anime design", "NFC + QR code enabled", "Premium PVC material", "Lifetime activation"],
-      },
-      {
-        id: "nfc-onepiece",
-        title: "NFC Card – One Piece",
-        price: "₹399",
-        originalPrice: "₹499",
-        image: nfcOnepiece,
-        features: ["One Piece Luffy design", "NFC + QR code enabled", "Premium PVC material", "Lifetime activation"],
-      },
-      {
-        id: "nfc-phoenix",
-        title: "NFC Card – Phoenix Dark",
-        price: "₹399",
-        originalPrice: "₹499",
-        image: nfcPhoenix,
-        features: ["Sleek dark phoenix design", "NFC + QR code enabled", "Premium PVC material", "Lifetime activation"],
-      },
-      {
-        id: "nfc-mindset",
-        title: "NFC Card – Mindset",
-        price: "₹399",
-        originalPrice: "₹499",
-        image: nfcMindset,
-        features: ["Motivational chess design", "NFC + QR code enabled", "Premium PVC material", "Lifetime activation"],
-      },
-      {
-        id: "nfc-youcan",
-        title: "NFC Card – You Can",
-        price: "₹399",
-        originalPrice: "₹499",
-        image: nfcYoucan,
-        features: ["Inspirational quote design", "NFC + QR code enabled", "Premium PVC material", "Lifetime activation"],
-      },
-    ],
-  },
-  {
-    slug: "keychain-tags",
-    name: "Keychain Tags",
-    description: "Sturdy metal keychain tags with embedded QR to identify & return lost keys.",
-    icon: "🔑",
-    coverImage: keytagBlack,
-    gradient: "from-slate-500/20 to-zinc-500/10",
-    products: [
-      {
-        id: "keytag-black",
-        title: "Keychain Tag – Black",
-        price: "₹179",
-        originalPrice: "₹199",
-        image: keytagBlack,
-        popular: true,
-        features: ["Classic black design", "Durable metal body", "Water resistant", "Lifetime QR activation"],
-      },
-      {
-        id: "keytag-navy",
-        title: "Keychain Tag – Navy",
-        price: "₹179",
-        originalPrice: "₹199",
-        image: keytagNavy,
-        features: ["Elegant navy colour", "Durable metal body", "Water resistant", "Lifetime QR activation"],
-      },
-      {
-        id: "keytag-red",
-        title: "Keychain Tag – Red",
-        price: "₹179",
-        originalPrice: "₹199",
-        image: keytagRed,
-        features: ["Vibrant red design", "Durable metal body", "Water resistant", "Lifetime QR activation"],
-      },
-      {
-        id: "keytag-teal",
-        title: "Keychain Tag – Teal",
-        price: "₹179",
-        originalPrice: "₹199",
-        image: keytagTeal,
-        features: ["Refreshing teal colour", "Durable metal body", "Water resistant", "Lifetime QR activation"],
-      },
-    ],
-  },
-  {
-    slug: "backpack-stickers",
-    name: "Backpack & Laptop Stickers",
-    description: "Stylish stickers with embedded QR to help return lost bags and laptops.",
-    icon: "🎒",
-    coverImage: backpackSticker,
-    gradient: "from-gray-500/20 to-neutral-500/10",
-    products: [
-      {
-        id: "backpack-sticker-standard",
-        title: "Backpack Sticker – Standard A",
-        price: "₹199",
-        originalPrice: "₹249",
-        image: backpackSticker1,
-        popular: true,
-        features: ["Sleek motivational design", "Easy peel-and-stick", "UV & water resistant", "Lifetime QR activation"],
-      },
-      {
-        id: "backpack-sticker-standard",
-        title: "Backpack Sticker – Standard B",
-        price: "₹199",
-        originalPrice: "₹249",
-        image: backpackSticker2,
-        popular: true,
-        features: ["Sleek motivational design", "Easy peel-and-stick", "UV & water resistant", "Lifetime QR activation"],
-      },
-      {
-        id: "bag-tag-square-black",
-        title: "Bag Tag – Square Black",
-        price: "₹189",
-        originalPrice: "₹249",
-        image: tagSquareBlack,
-        features: ["Minimalist black design", "Sturdy PVC material", "Attaches to any bag", "Lifetime QR activation"],
-      },
-      {
-        id: "bag-tag-square-yellow",
-        title: "Bag Tag – Square Yellow",
-        price: "₹189",
-        originalPrice: "₹249",
-        image: tagSquareYellow,
-        features: ["Bright yellow PingME design", "Sturdy PVC material", "Attaches to any bag", "Lifetime QR activation"],
-      },
-    ],
-  },
-];
-
-const categoryTutorials: Record<string, CategoryTutorial> = {
-  "car-tags": {
-    title: "How to Use Your Car Tag",
-    subtitle: "Set it once and help people reach you when your car needs attention.",
-    steps: [
-      "Attach the card clearly on your dashboard or near the windshield.",
-      "Activate your profile after purchase and add your preferred contact method.",
-      "If someone scans the QR, they can contact you without seeing your personal details.",
-      "Update phone or emergency message anytime from your profile dashboard.",
-    ],
-    tip: "Best placement: front dashboard where the QR is visible from outside.",
-  },
-  "bike-tags": {
-    title: "How to Use Your Bike Tag",
-    subtitle: "A compact smart tag for quick owner contact and lost bike recovery support.",
-    steps: [
-      "Fix the tag to your bike keyring, handle loop, or visible accessory point.",
-      "Activate the QR profile and add your contact and optional emergency note.",
-      "When scanned, the finder gets a secure contact option to reach you quickly.",
-      "Check your profile regularly and keep your details up to date.",
-    ],
-    tip: "Place it where it is easy to notice but difficult to detach accidentally.",
-  },
-  "pet-tags": {
-    title: "How to Use Your Pet Tag",
-    subtitle: "Help anyone who finds your pet contact you in seconds.",
-    steps: [
-      "Attach the tag to your pet collar with the QR side facing outward.",
-      "Activate the profile and add pet name, your contact, and emergency details.",
-      "If your pet is lost, a quick scan lets finders reach you safely.",
-      "Update profile whenever your address or phone number changes.",
-    ],
-    tip: "Use a secure ring and test the scan once after attaching to the collar.",
-  },
-  "nfc-cards": {
-    title: "How to Use Your NFC Card",
-    subtitle: "Tap or scan to instantly share your profile, links, or contact details.",
-    steps: [
-      "Activate your NFC card and set your public profile details.",
-      "To share, ask the other person to tap phone on card or scan the QR.",
-      "For phones with NFC off, QR scan works as the backup method.",
-      "Edit links and contact details any time without changing the card.",
-    ],
-    tip: "Ask users to unlock their phone before tapping for fastest NFC detection.",
-  },
-  "keychain-tags": {
-    title: "How to Use Your Keychain Tag",
-    subtitle: "Keep your keys protected with a scannable owner-contact tag.",
-    steps: [
-      "Attach the tag to your keychain with QR clearly visible.",
-      "Activate the QR profile and add how you prefer to be contacted.",
-      "If keys are lost, the finder scans and contacts you securely.",
-      "Keep your contact details updated to ensure faster returns.",
-    ],
-    tip: "Use a sturdy ring to avoid bending or accidental tag loss.",
-  },
-  "backpack-stickers": {
-    title: "How to Use Backpack & Laptop Stickers",
-    subtitle: "Smart identification for bags and devices with easy scan recovery.",
-    steps: [
-      "Clean the surface and apply sticker on a flat visible area.",
-      "Press firmly for a few seconds for better long-term adhesion.",
-      "Activate your QR profile with contact details and return note.",
-      "If found, scanner can contact you quickly without exposing private data.",
-    ],
-    tip: "Avoid curved or dusty surfaces for best sticking strength.",
-  },
-};
+import {
+  baseCategories,
+  categoryTutorials,
+  type ProductVariant,
+  type ProductCategory,
+} from "@/lib/productCatalog";
+import { subscribeToProducts, type DbProduct } from "@/lib/productService";
 
 // ─── Components ─────────────────────────────────────────
 
 const ProductCardItem = ({ product }: { product: ProductVariant }) => {
   const { addToCart } = useCart();
   const { toast } = useToast();
+  const [imageFailed, setImageFailed] = useState(false);
 
   const handleAddToCart = () => {
     addToCart({
@@ -409,8 +46,13 @@ const ProductCardItem = ({ product }: { product: ProductVariant }) => {
           )}
 
           <div className="aspect-[4/3] bg-secondary/40 rounded-xl mb-5 flex items-center justify-center p-3 overflow-hidden transition-colors group-hover:bg-secondary/70">
-            {product.image ? (
-              <img src={product.image} alt={product.title} className="max-w-full max-h-full object-contain transition-transform duration-300 group-hover:scale-105" />
+            {product.image && !imageFailed ? (
+              <img
+                src={product.image}
+                alt={product.title}
+                className="max-w-full max-h-full object-contain transition-transform duration-300 group-hover:scale-105"
+                onError={() => setImageFailed(true)}
+              />
             ) : (
               <span className="text-6xl transition-transform duration-300 group-hover:scale-110">{product.emoji}</span>
             )}
@@ -433,8 +75,13 @@ const ProductCardItem = ({ product }: { product: ProductVariant }) => {
               Best Seller
             </span>
           )}
-          {product.image ? (
-            <img src={product.image} alt={product.title} className="max-h-[220px] sm:max-h-[235px] object-contain drop-shadow-xl" />
+          {product.image && !imageFailed ? (
+            <img
+              src={product.image}
+              alt={product.title}
+              className="max-h-[220px] sm:max-h-[235px] object-contain drop-shadow-xl"
+              onError={() => setImageFailed(true)}
+            />
           ) : (
             <span className="text-9xl">{product.emoji}</span>
           )}
@@ -482,8 +129,45 @@ const Products = () => {
   const { categorySlug } = useParams<{ categorySlug?: string }>();
   const navigate = useNavigate();
   const selectedCategory = categorySlug || null;
+  const [dbProducts, setDbProducts] = useState<DbProduct[]>([]);
 
-  const activeCategory = categories.find(c => c.slug === selectedCategory);
+  useEffect(() => {
+    const unsubscribe = subscribeToProducts(
+      (latest) => {
+        setDbProducts(latest);
+      },
+      (error) => {
+        console.error("Failed to load products", error);
+      }
+    );
+    return unsubscribe;
+  }, []);
+
+  const categories = useMemo(() => {
+    return baseCategories.map((cat) => ({
+      ...cat,
+      products: dbProducts.filter((p) => p.categorySlug === cat.slug),
+    }));
+  }, [dbProducts]);
+
+  const activeCategory = categories.find((c) => c.slug === selectedCategory);
+
+  const CategoryCoverImage = ({ category }: { category: ProductCategory }) => {
+    const [coverFailed, setCoverFailed] = useState(false);
+
+    if (!category.coverImage || coverFailed) {
+      return <span className="text-6xl" aria-hidden="true">{category.icon}</span>;
+    }
+
+    return (
+      <img
+        src={category.coverImage}
+        alt={category.name}
+        className="max-w-full max-h-full object-contain transition-transform duration-500 group-hover:scale-110"
+        onError={() => setCoverFailed(true)}
+      />
+    );
+  };
 
   return (
     <MainLayout>
@@ -530,11 +214,7 @@ const Products = () => {
                 >
                   {/* Cover Image */}
                   <div className="aspect-[16/10] rounded-xl bg-white/60 dark:bg-white/10 mb-5 flex items-center justify-center p-4 overflow-hidden">
-                    <img
-                      src={cat.coverImage}
-                      alt={cat.name}
-                      className="max-w-full max-h-full object-contain transition-transform duration-500 group-hover:scale-110"
-                    />
+                    <CategoryCoverImage category={cat} />
                   </div>
 
                   {/* Info */}

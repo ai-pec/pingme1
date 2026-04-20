@@ -16,8 +16,7 @@ import {
   EmailAuthProvider,
   type User,
 } from "firebase/auth";
-import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";
-
+import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";import { getStorage } from "firebase/storage";
 // Firebase Config - loaded from environment variables
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -34,6 +33,7 @@ const app = initializeApp(firebaseConfig);
 // Initialize services
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+export const storage = getStorage(app);
 export const googleProvider = new GoogleAuthProvider();
 
 // Export auth functions
