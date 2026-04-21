@@ -19,10 +19,10 @@ import {
 } from "lucide-react";
 import { buildProductImageUrl } from "@/lib/productCatalog";
 
-const carcardFront = buildProductImageUrl("product-card.png");
-const backpackSticker = buildProductImageUrl("backpack_sticker.png");
-const nfcFront = buildProductImageUrl("nfc_frontcard.png");
-const petSafetyTag = buildProductImageUrl("Pet Tags.jpeg");
+const carcardFront = buildProductImageUrl("car-tags/carcard_front.png");
+const backpackSticker = buildProductImageUrl("backpack-stickers/backpack_sticker.png");
+const nfcFront = buildProductImageUrl("nfc-cards/nfc_frontcard.png");
+const petSafetyTag = buildProductImageUrl("pet-tags/Pet Tags.jpeg");
 
 const quickFacts = [
   {

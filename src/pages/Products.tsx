@@ -168,10 +168,26 @@ const Products = () => {
           icon: categoryIconFromProducts(products),
           coverImage: categoryCoverImageFromProducts(products),
           gradient: categoryGradientFromSlug(slug),
-          products: products.sort((left, right) => left.title.localeCompare(right.title)),
+          products: products.sort((left, right) => {
+            // If one is popular and the other isn't, popular comes first
+            if (left.popular !== right.popular) {
+              return left.popular ? -1 : 1;
+            }
+            // If they are both the same popularity, prioritize "car sticker" or "car tag" in title
+            const leftIsCar = /car\s?(sticker|tag)/i.test(left.title);
+            const rightIsCar = /car\s?(sticker|tag)/i.test(right.title);
+            if (leftIsCar && !rightIsCar) return -1;
+            if (!leftIsCar && rightIsCar) return 1;
+            // Otherwise alphabetical
+            return left.title.localeCompare(right.title);
+          }),
         };
       })
-      .sort((left, right) => left.name.localeCompare(right.name));
+      .sort((left, right) => {
+        if (left.slug === "car-tags") return -1;
+        if (right.slug === "car-tags") return 1;
+        return left.name.localeCompare(right.name);
+      });
   }, [dbProducts]);
 
   const activeCategory = categories.find((c) => c.slug === selectedCategory);
