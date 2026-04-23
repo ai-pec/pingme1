@@ -15,6 +15,10 @@ import {
   type User,
 } from "./firebase";
 
+type AuthServiceError = Error & {
+  code?: string;
+};
+
 // Sign up with email and password
 export async function signUpWithEmail(
   email: string,
@@ -45,8 +49,8 @@ export async function signInWithEmail(email: string, password: string) {
 export async function signInWithGoogle() {
   try {
     return await signInWithPopup(auth, googleProvider);
-  } catch (error: any) {
-    const code = error?.code;
+  } catch (error: unknown) {
+    const code = (error as AuthServiceError)?.code;
     if (
       code === "auth/popup-blocked" ||
       code === "auth/operation-not-supported-in-this-environment"

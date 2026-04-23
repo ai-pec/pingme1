@@ -12,6 +12,14 @@ const linkify = (url: string): string => {
   return /^https?:\/\//i.test(url) ? url : `https://${url}`;
 };
 
+const getErrorMessage = (error: unknown, fallback: string): string => {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return fallback;
+};
+
 export default function PublicNFCProfile() {
   const navigate = useNavigate();
   const { username = "" } = useParams();
@@ -32,9 +40,9 @@ export default function PublicNFCProfile() {
         if (!isCancelled) {
           setProfile(result);
         }
-      } catch (err: any) {
+      } catch (error: unknown) {
         if (!isCancelled) {
-          setError(err?.message || "Unable to load profile.");
+          setError(getErrorMessage(error, "Unable to load profile."));
           setProfile(null);
         }
       } finally {

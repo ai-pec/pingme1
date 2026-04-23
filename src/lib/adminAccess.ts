@@ -5,6 +5,10 @@ const ADMIN_ACCESS_DOC = "panel";
 const ADMIN_ACCESS_COLLECTION = "adminAccess";
 const RETRYABLE_CODES = new Set(["unavailable", "deadline-exceeded", "aborted", "resource-exhausted"]);
 
+type FirestoreAccessError = Error & {
+  code?: string;
+};
+
 export async function canAccessAdminPanel(): Promise<boolean> {
   const currentUser = auth.currentUser;
   if (!currentUser) {
@@ -20,8 +24,8 @@ export async function canAccessAdminPanel(): Promise<boolean> {
     try {
       await getDoc(adminAccessRef);
       return true;
-    } catch (error: any) {
-      const code = error?.code;
+    } catch (error: unknown) {
+      const code = (error as FirestoreAccessError)?.code;
 
       if (code === "permission-denied") {
         if (attempt === 0) {

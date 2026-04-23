@@ -6,7 +6,6 @@ import {
   User,
   Phone,
   Mail,
-  Shield,
   CheckCircle,
   AlertCircle,
   MapPin,
@@ -64,6 +63,68 @@ import {
   type PrebookingRecord,
 } from "@/lib/prebookService";
 import { resolveProductImageUrl } from "@/lib/productCatalog";
+import type { DeliveryAddress } from "@/types/user";
+
+type StateOption = {
+  name: string;
+  isoCode: string;
+};
+
+type CityOption = {
+  name: string;
+};
+
+type OrderItemLike = {
+  id?: string;
+  title?: string;
+  price?: string | number;
+  image?: string;
+  imageUrl?: string;
+  productImage?: string;
+  photoURL?: string;
+  photoUrl?: string;
+  photo?: string;
+  images?: string[];
+  emoji?: string;
+  quantity?: number;
+};
+
+const getErrorMessage = (error: unknown, fallback: string): string => {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return fallback;
+};
+
+const resolveOrderItemImage = (item: OrderItemLike): string => {
+  const candidates = [
+    item?.image,
+    item?.imageUrl,
+    item?.productImage,
+    item?.photoURL,
+    item?.photoUrl,
+    item?.photo,
+    Array.isArray(item?.images) ? item.images[0] : undefined,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate !== "string" || !candidate.trim()) {
+      continue;
+    }
+
+    const resolved = resolveProductImageUrl(candidate);
+    if (resolved) {
+      return resolved;
+    }
+
+    if (/^https?:\/\//i.test(candidate) || /^data:/i.test(candidate)) {
+      return candidate.trim();
+    }
+  }
+
+  return "";
+};
 
 export default function Profile() {
   const {
@@ -139,9 +200,9 @@ export default function Profile() {
   });
 
   const watchStateName = addressForm.watch("state");
-  const inStates = State.getStatesOfCountry("IN");
-  const selectedStateObj = inStates.find((s: any) => s.name === watchStateName);
-  const cities = selectedStateObj ? City.getCitiesOfState("IN", selectedStateObj.isoCode) : [];
+  const inStates = State.getStatesOfCountry("IN") as StateOption[];
+  const selectedStateObj = inStates.find((stateOption) => stateOption.name === watchStateName);
+  const cities = selectedStateObj ? (City.getCitiesOfState("IN", selectedStateObj.isoCode) as CityOption[]) : [];
 
   // Update form values when profile loads
   useEffect(() => {
@@ -151,7 +212,7 @@ export default function Profile() {
         mobile: profile.mobile || "",
       });
     }
-  }, [profile]);
+  }, [profile, profileForm]);
 
   // Fetch user orders
   useEffect(() => {
@@ -184,15 +245,15 @@ export default function Profile() {
   const onAddressSubmit = async (data: AddressFormData) => {
     try {
       setAddressLoading(true);
-      const newAddress = { 
-        id: crypto.randomUUID(), 
+      const newAddress: DeliveryAddress = {
+        id: crypto.randomUUID(),
         pincode: data.pincode,
         country: data.country,
         state: data.state,
         city: data.city,
         fullAddress: data.fullAddress,
-        landmark: data.landmark || ""
-      } as any; // Cast as any or DeliveryAddress based on types
+        landmark: data.landmark || "",
+      };
       const currentAddresses = profile?.addresses || [];
       await updateAddresses([...currentAddresses, newAddress]);
       toast.success("Address saved successfully!");
@@ -209,8 +270,8 @@ export default function Profile() {
       setResending(true);
       await resendVerification();
       toast.success("Verification email sent! Please check your inbox.");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to send verification email.");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Failed to send verification email."));
     } finally {
       setResending(false);
     }
@@ -223,8 +284,8 @@ export default function Profile() {
       toast.success("Email changed! Please verify your new email address.");
       setEmailDialogOpen(false);
       emailForm.reset();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to change email.");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Failed to change email."));
     } finally {
       setEmailLoading(false);
     }
@@ -247,7 +308,7 @@ export default function Profile() {
   };
 
   const isNFCOrder = (order: PrebookingRecord): boolean => {
-    return !!order.items?.some((item) => item.id.startsWith("nfc-"));
+    return !!order.items?.some((item) => typeof item.id === "string" && item.id.startsWith("nfc-"));
   };
 
   const openEditNFC = (order: PrebookingRecord) => {
@@ -290,7 +351,7 @@ export default function Profile() {
       toast.success("NFC profile updated successfully!");
       setNfcDialogOpen(false);
       setSelectedNfcOrderId(null);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error("Failed to update NFC profile. Please try again.");
       console.error("NFC profile save error:", error);
     } finally {
@@ -690,9 +751,9 @@ export default function Profile() {
                           <SelectValue placeholder="Select state" />
                         </SelectTrigger>
                         <SelectContent className="max-h-[250px]">
-                          {inStates.map((state: any) => (
-                            <SelectItem key={state.isoCode} value={state.name}>
-                              {state.name}
+                          {inStates.map((stateOption) => (
+                            <SelectItem key={stateOption.isoCode} value={stateOption.name}>
+                              {stateOption.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -720,9 +781,9 @@ export default function Profile() {
                           <SelectValue placeholder="Select city" />
                         </SelectTrigger>
                         <SelectContent className="max-h-[250px]">
-                          {cities.map((city: any) => (
-                            <SelectItem key={city.name} value={city.name}>
-                              {city.name}
+                          {cities.map((cityOption) => (
+                            <SelectItem key={cityOption.name} value={cityOption.name}>
+                              {cityOption.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -846,31 +907,40 @@ export default function Profile() {
                       
                       {/* Items */}
                       <div className="space-y-2 mb-3">
-                        {order.items?.map((item: any, idx: number) => (
-                          <div key={idx} className="flex justify-between items-center gap-3 text-sm">
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div className="w-10 h-10 rounded-md border border-border bg-secondary/40 flex items-center justify-center shrink-0 overflow-hidden">
-                                {resolveProductImageUrl(item.image) ? (
-                                  <img
-                                    src={resolveProductImageUrl(item.image)}
-                                    alt={item.title}
-                                    className="w-full h-full object-contain"
-                                    loading="lazy"
-                                    decoding="async"
-                                  />
-                                ) : item.emoji ? (
-                                  <span className="text-base">{item.emoji}</span>
-                                ) : (
-                                  <Package className="w-4 h-4 text-muted-foreground" />
-                                )}
+                        {order.items?.map((item: OrderItemLike, idx: number) => {
+                          const itemImage = resolveOrderItemImage(item);
+                          const itemTitle = typeof item?.title === "string" && item.title.trim() ? item.title : "Product";
+                          const itemQuantity = Number(item?.quantity) > 0 ? Number(item.quantity) : 1;
+                          const itemPrice = typeof item?.price === "string"
+                            ? item.price
+                            : `₹${Number(item?.price || 0).toFixed(2)}`;
+
+                          return (
+                            <div key={idx} className="flex justify-between items-center gap-3 text-sm">
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className="w-10 h-10 rounded-md border border-border bg-secondary/40 flex items-center justify-center shrink-0 overflow-hidden">
+                                  {itemImage ? (
+                                    <img
+                                      src={itemImage}
+                                      alt={itemTitle}
+                                      className="w-full h-full object-contain"
+                                      loading="lazy"
+                                      decoding="async"
+                                    />
+                                  ) : typeof item?.emoji === "string" && item.emoji.trim() ? (
+                                    <span className="text-base">{item.emoji}</span>
+                                  ) : (
+                                    <Package className="w-4 h-4 text-muted-foreground" />
+                                  )}
+                                </div>
+                                <span className="text-foreground truncate">
+                                  {itemTitle} <span className="text-muted-foreground">× {itemQuantity}</span>
+                                </span>
                               </div>
-                              <span className="text-foreground truncate">
-                                {item.title} <span className="text-muted-foreground">× {item.quantity}</span>
-                              </span>
+                              <span className="font-medium">{itemPrice}</span>
                             </div>
-                            <span className="font-medium">{item.price}</span>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
 
                       {/* Total & Address */}
@@ -910,30 +980,6 @@ export default function Profile() {
                   Your payment methods will appear here after you complete your
                   first purchase. Payment gateway coming soon.
                 </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Account Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
-                Account Information
-              </CardTitle>
-              <CardDescription>Details about your account</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
-                <Shield className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <p className="text-sm font-medium">Sign-in method</p>
-                  <p className="text-sm text-muted-foreground">
-                    {profile.authProvider === "google"
-                      ? "Google Account"
-                      : "Email & Password"}
-                  </p>
-                </div>
               </div>
             </CardContent>
           </Card>

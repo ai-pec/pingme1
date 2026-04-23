@@ -15,6 +15,7 @@ import {
   verifyRazorpayPaymentAndCreatePrebooking,
 } from "@/lib/paymentService";
 import { resolveProductImageUrl } from "@/lib/productCatalog";
+import type { DeliveryAddress } from "@/types/user";
 
 const indianStates = [
   "Chandigarh", "New Delhi", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", 
@@ -78,9 +79,9 @@ const Prebook = () => {
         setNFCProfile(prev => ({ ...prev, phone: profile.mobile }));
       }
     }
-  }, [profile]);
+  }, [profile, fullName, email, phone]);
 
-  const handleApplySavedAddress = (savedAddr: any) => {
+  const handleApplySavedAddress = (savedAddr: DeliveryAddress) => {
     setAddress(savedAddr.fullAddress || "");
     setCity(savedAddr.city || "");
     setState(savedAddr.state || "");

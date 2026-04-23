@@ -15,15 +15,21 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAllOrders, updateOrderStatus } from "@/lib/adminService";
+import { subscribeToOrders, updateOrderStatus } from "@/lib/adminService";
 import { categoryNameFromSlug, normalizeCategorySlug } from "@/lib/productCatalog";
 import { subscribeToProducts, saveProduct, deleteProductDoc, uploadProductImage, DbProduct } from "@/lib/productService";
 import type { PrebookingRecord } from "@/lib/prebookService";
 
-const formatDate = (value: any): string => {
-  if (!value) return "-";
-  if (typeof value?.toDate === "function") return value.toDate().toLocaleString("en-IN");
-  if (value?.seconds) return new Date(value.seconds * 1000).toLocaleString("en-IN");
+const formatDate = (value: unknown): string => {
+  if (!value || typeof value !== "object") return "-";
+
+  const timestampValue = value as {
+    toDate?: () => Date;
+    seconds?: number;
+  };
+
+  if (typeof timestampValue.toDate === "function") return timestampValue.toDate().toLocaleString("en-IN");
+  if (typeof timestampValue.seconds === "number") return new Date(timestampValue.seconds * 1000).toLocaleString("en-IN");
   return "-";
 };
 
@@ -79,19 +85,20 @@ export default function Admin() {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   useEffect(() => {
-    const loadOrders = async () => {
-      try {
-        setLoadingOrders(true);
-        setOrders(await getAllOrders());
-      } catch (error) {
-        console.error("Failed to load orders", error);
-        toast.error("Failed to load orders.");
-      } finally {
+    setLoadingOrders(true);
+    const unsubscribe = subscribeToOrders(
+      (latest) => {
+        setOrders(latest);
         setLoadingOrders(false);
-      }
-    };
+      },
+      (error) => {
+        console.error("Failed to sync orders", error);
+        toast.error("Failed to sync orders from Firebase.");
+        setLoadingOrders(false);
+      },
+    );
 
-    loadOrders();
+    return unsubscribe;
   }, []);
 
   useEffect(() => {

@@ -70,6 +70,16 @@ export interface PrebookingData {
   };
 }
 
+type SanitizedCartItem = {
+  id: string;
+  title: string;
+  price: string;
+  quantity: number;
+  originalPrice?: string;
+  image?: string;
+  emoji?: string;
+};
+
 const BOOKING_COLLECTION = 'booking';
 const LEGACY_PREBOOKINGS_COLLECTION = 'prebookings';
 
@@ -125,7 +135,7 @@ export const createPrebooking = async (data: PrebookingData): Promise<string> =>
   // Sanitize all text inputs and format items
   const sanitizedData = {
     items: data.items.map(item => {
-      const cleanItem: Record<string, any> = {
+      const cleanItem: SanitizedCartItem = {
         id: item.id,
         title: sanitizeText(item.title),
         price: item.price,
@@ -181,7 +191,7 @@ export const createPrebooking = async (data: PrebookingData): Promise<string> =>
 
 export interface PrebookingRecord extends PrebookingData {
   id: string;
-  createdAt: any;
+  createdAt: unknown;
 }
 
 interface GetUserPrebookingsParams {
@@ -189,11 +199,35 @@ interface GetUserPrebookingsParams {
   email?: string;
 }
 
-const toMillis = (createdAt: any): number => {
-  if (!createdAt) return 0;
-  if (typeof createdAt?.toMillis === 'function') return createdAt.toMillis();
-  if (createdAt?.seconds) return createdAt.seconds * 1000;
+const toMillis = (createdAt: unknown): number => {
+  if (!createdAt || typeof createdAt !== 'object') return 0;
+
+  const timestamp = createdAt as {
+    toMillis?: () => number;
+    seconds?: number;
+  };
+
+  if (typeof timestamp.toMillis === 'function') return timestamp.toMillis();
+  if (typeof timestamp.seconds === 'number') return timestamp.seconds * 1000;
   return 0;
+};
+
+const ensureAtLeastOneWriteSucceeded = async (
+  writes: Promise<unknown>[],
+  operation: string,
+): Promise<void> => {
+  const results = await Promise.allSettled(writes);
+
+  if (results.some((result) => result.status === 'fulfilled')) {
+    return;
+  }
+
+  const firstFailure = results.find((result) => result.status === 'rejected') as PromiseRejectedResult | undefined;
+  if (firstFailure?.reason instanceof Error) {
+    throw firstFailure.reason;
+  }
+
+  throw new Error(`Failed to ${operation}.`);
 };
 
 export const getUserPrebookings = async ({ userId, email }: GetUserPrebookingsParams): Promise<PrebookingRecord[]> => {
@@ -256,7 +290,7 @@ export const updatePrebookingNFCProfile = async (
   }
 
   const sanitizedProfile = sanitizeNFCProfile(nfcProfile);
-  await Promise.allSettled([
+  await ensureAtLeastOneWriteSucceeded([
     updateDoc(doc(db, BOOKING_COLLECTION, orderId), {
       nfcProfile: sanitizedProfile,
       updatedAt: serverTimestamp(),
@@ -265,5 +299,5 @@ export const updatePrebookingNFCProfile = async (
       nfcProfile: sanitizedProfile,
       updatedAt: serverTimestamp(),
     }),
-  ]);
+  ], 'update NFC profile');
 };

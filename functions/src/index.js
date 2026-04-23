@@ -33,6 +33,99 @@ const getCount = async (collectionRef, queryConstraints = []) => {
   return snapshot.size;
 };
 
+const normalizeUsername = (value) => String(value || "").trim().toLowerCase();
+
+const asOptionalText = (value) => {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  return trimmed || undefined;
+};
+
+const toMillis = (value) => {
+  if (!value) {
+    return 0;
+  }
+
+  if (typeof value.toMillis === "function") {
+    return value.toMillis();
+  }
+
+  if (typeof value.seconds === "number") {
+    return value.seconds * 1000;
+  }
+
+  return 0;
+};
+
+const mapProjects = (projectsValue) => {
+  if (!Array.isArray(projectsValue)) {
+    return undefined;
+  }
+
+  const projects = projectsValue
+    .filter((project) => project && typeof project === "object")
+    .map((project) => {
+      const name = asOptionalText(project.name);
+      if (!name) {
+        return null;
+      }
+
+      return {
+        name,
+        description: asOptionalText(project.description),
+        link: asOptionalText(project.link),
+        photo: asOptionalText(project.photo),
+      };
+    })
+    .filter(Boolean);
+
+  return projects.length > 0 ? projects : undefined;
+};
+
+const mapDocToPublicProfileCandidate = (docSnap) => {
+  const data = docSnap.data() || {};
+  const nfcProfile = data.nfcProfile && typeof data.nfcProfile === "object" ? data.nfcProfile : null;
+  if (!nfcProfile) {
+    return null;
+  }
+
+  const username = normalizeUsername(nfcProfile.username);
+  if (!username) {
+    return null;
+  }
+
+  const profile = {
+    orderId: docSnap.id,
+    username,
+    name: asOptionalText(nfcProfile.name) || asOptionalText(data.fullName) || username,
+    companyName: asOptionalText(nfcProfile.companyName),
+    jobTitle: asOptionalText(nfcProfile.jobTitle),
+    email: asOptionalText(nfcProfile.email) || asOptionalText(data.email),
+    phone: asOptionalText(nfcProfile.phone) || asOptionalText(data.phone),
+    bio: asOptionalText(nfcProfile.bio),
+    businessTags: asOptionalText(nfcProfile.businessTags),
+    website: asOptionalText(nfcProfile.website),
+    address: asOptionalText(nfcProfile.address),
+    linkedin: asOptionalText(nfcProfile.linkedin),
+    twitter: asOptionalText(nfcProfile.twitter),
+    instagram: asOptionalText(nfcProfile.instagram),
+    youtube: asOptionalText(nfcProfile.youtube),
+    facebook: asOptionalText(nfcProfile.facebook),
+    profilePhoto: asOptionalText(nfcProfile.profilePhoto),
+    projects: mapProjects(nfcProfile.projects),
+  };
+
+  return {
+    orderId: docSnap.id,
+    status: asOptionalText(data.status) || "pending",
+    createdAtMillis: toMillis(data.createdAt),
+    profile,
+  };
+};
+
 
 const getMailTransporter = () => {
   const host = (SMTP_HOST.value() || process.env.SMTP_HOST || "").trim();
@@ -165,11 +258,12 @@ exports.getPublicStats = onRequest({
     }
 
     try {
-      const [happyCustomers, vehiclesProtected] = await Promise.all([
+      const [happyCustomers, vehiclesProtected, installCount] = await Promise.all([
         getCount(db.collection("users")),
         getCount(db.collection("booking"), [
           { field: "status", op: "==", value: "confirmed" },
         ]),
+        getCount(db.collection("installs")),
       ]);
 
       res.status(200).json({
@@ -177,11 +271,96 @@ exports.getPublicStats = onRequest({
         vehiclesProtected,
         citiesCovered: 0,
         googleRating: 0,
-        installCount: 0,
+        installCount,
       });
     } catch (error) {
       console.error("getPublicStats error", error);
       res.status(500).send("Failed to load public stats.");
+    }
+  });
+});
+
+exports.trackInstall = onRequest({
+  region: "asia-south1",
+}, (req, res) => {
+  corsHandler(req, res, async () => {
+    if (req.method !== "POST") {
+      res.status(405).send("Method Not Allowed");
+      return;
+    }
+
+    try {
+      const { installedAt, userAgent } = req.body || {};
+
+      await db.collection("installs").add({
+        installedAt: asOptionalText(installedAt) || new Date().toISOString(),
+        userAgent: asOptionalText(userAgent) || "unknown",
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      res.status(200).json({ success: true });
+    } catch (error) {
+      console.error("trackInstall error", error);
+      res.status(500).send("Failed to track install.");
+    }
+  });
+});
+
+exports.getPublicNfcProfile = onRequest({
+  region: "asia-south1",
+}, (req, res) => {
+  corsHandler(req, res, async () => {
+    if (req.method !== "GET") {
+      res.status(405).send("Method Not Allowed");
+      return;
+    }
+
+    const username = normalizeUsername(req.query?.username);
+    if (!username) {
+      res.status(400).send("Username is required.");
+      return;
+    }
+
+    try {
+      const [bookingSnapshot, legacySnapshot] = await Promise.all([
+        db.collection("booking").where("nfcProfile.username", "==", username).get(),
+        db.collection("prebookings").where("nfcProfile.username", "==", username).get(),
+      ]);
+
+      const candidatesByOrderId = new Map();
+
+      const upsertCandidate = (docSnap) => {
+        const candidate = mapDocToPublicProfileCandidate(docSnap);
+        if (!candidate) {
+          return;
+        }
+
+        const existing = candidatesByOrderId.get(candidate.orderId);
+        if (!existing || candidate.createdAtMillis >= existing.createdAtMillis) {
+          candidatesByOrderId.set(candidate.orderId, candidate);
+        }
+      };
+
+      bookingSnapshot.forEach(upsertCandidate);
+      legacySnapshot.forEach(upsertCandidate);
+
+      const allCandidates = Array.from(candidatesByOrderId.values());
+      const confirmedCandidates = allCandidates.filter((candidate) => candidate.status === "confirmed");
+      const finalCandidates = confirmedCandidates.length > 0 ? confirmedCandidates : allCandidates;
+
+      if (finalCandidates.length === 0) {
+        res.status(404).send("Profile not found.");
+        return;
+      }
+
+      finalCandidates.sort((left, right) => right.createdAtMillis - left.createdAtMillis);
+
+      res.status(200).json({
+        profile: finalCandidates[0].profile,
+      });
+    } catch (error) {
+      console.error("getPublicNfcProfile error", error);
+      res.status(500).send("Failed to load public NFC profile.");
     }
   });
 });

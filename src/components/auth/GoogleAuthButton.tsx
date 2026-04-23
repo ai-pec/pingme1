@@ -10,6 +10,11 @@ interface GoogleAuthButtonProps {
   intent?: "signin" | "signup";
 }
 
+type GoogleAuthError = Error & {
+  code?: string;
+  email?: string;
+};
+
 export default function GoogleAuthButton({ onSuccess, intent = "signin" }: GoogleAuthButtonProps) {
   const { signInGoogle } = useAuth();
   const navigate = useNavigate();
@@ -22,7 +27,8 @@ export default function GoogleAuthButton({ onSuccess, intent = "signin" }: Googl
       setLoading(true);
       await signInGoogle(intent === "signin");
       onSuccess?.();
-    } catch (err: any) {
+    } catch (error: unknown) {
+      const err = error as GoogleAuthError;
       if (intent === "signin" && err?.code === "auth/google-account-not-registered") {
         toast({
           title: "Signup required",

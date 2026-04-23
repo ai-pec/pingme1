@@ -27,6 +27,15 @@ import {
 } from "@/lib/userService";
 import type { UserProfile, DeliveryAddress } from "@/types/user";
 
+const extractErrorCode = (error: unknown): string => {
+  if (!error || typeof error !== "object") {
+    return "";
+  }
+
+  const maybeCode = (error as { code?: unknown }).code;
+  return typeof maybeCode === "string" ? maybeCode : "";
+};
+
 interface AuthContextType {
   user: User | null;
   profile: UserProfile | null;
@@ -107,8 +116,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         mobile,
         authProvider: "email",
       });
-    } catch (err: any) {
-      const message = getAuthErrorMessage(err.code);
+    } catch (err: unknown) {
+      const message = getAuthErrorMessage(extractErrorCode(err));
       setError(message);
       throw new Error(message);
     }
@@ -118,8 +127,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setError(null);
       await signInWithEmail(email, password);
-    } catch (err: any) {
-      const message = getAuthErrorMessage(err.code);
+    } catch (err: unknown) {
+      const message = getAuthErrorMessage(extractErrorCode(err));
       setError(message);
       throw new Error(message);
     }
@@ -129,6 +138,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setError(null);
       const userCredential = await signInWithGoogle();
+      if (!userCredential?.user) {
+        return;
+      }
       const firebaseUser = userCredential.user;
 
       // Check if profile exists
@@ -143,11 +155,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           authProvider: "google",
         });
       }
-    } catch (err: any) {
-      const message = getAuthErrorMessage(err.code);
+    } catch (err: unknown) {
+      const code = extractErrorCode(err);
+      const message = getAuthErrorMessage(code);
       setError(message);
       const authError = new Error(message) as Error & { code?: string };
-      authError.code = err?.code;
+      authError.code = code;
       throw authError;
     }
   };
@@ -156,8 +169,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setError(null);
       await logOut();
-    } catch (err: any) {
-      const message = getAuthErrorMessage(err.code);
+    } catch (err: unknown) {
+      const message = getAuthErrorMessage(extractErrorCode(err));
       setError(message);
       throw new Error(message);
     }
@@ -167,8 +180,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setError(null);
       await sendPasswordReset(email);
-    } catch (err: any) {
-      const message = getAuthErrorMessage(err.code);
+    } catch (err: unknown) {
+      const message = getAuthErrorMessage(extractErrorCode(err));
       setError(message);
       throw new Error(message);
     }
@@ -180,8 +193,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (user) {
         await resendVerificationEmail(user);
       }
-    } catch (err: any) {
-      const message = getAuthErrorMessage(err.code);
+    } catch (err: unknown) {
+      const message = getAuthErrorMessage(extractErrorCode(err));
       setError(message);
       throw new Error(message);
     }
@@ -196,7 +209,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await updateUserProfile(user.uid, data);
         setProfile((prev) => (prev ? { ...prev, ...data } : null));
       }
-    } catch (err: any) {
+    } catch (_err: unknown) {
       const message = "Failed to update profile. Please try again.";
       setError(message);
       throw new Error(message);
@@ -210,7 +223,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await updateUserAddresses(user.uid, addresses);
         setProfile((prev) => (prev ? { ...prev, addresses } : null));
       }
-    } catch (err: any) {
+    } catch (_err: unknown) {
       const message = "Failed to update addresses. Please try again.";
       setError(message);
       throw new Error(message);
@@ -228,8 +241,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Update local state
         setProfile((prev) => (prev ? { ...prev, email: newEmail, emailVerified: false } : null));
       }
-    } catch (err: any) {
-      const message = getAuthErrorMessage(err.code);
+    } catch (err: unknown) {
+      const message = getAuthErrorMessage(extractErrorCode(err));
       setError(message);
       throw new Error(message);
     }
