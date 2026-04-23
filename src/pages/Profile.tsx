@@ -356,8 +356,12 @@ export default function Profile() {
       toast.success("NFC profile updated successfully!");
       setNfcDialogOpen(false);
       setSelectedNfcOrderId(null);
-    } catch (error: unknown) {
-      toast.error("Failed to update NFC profile. Please try again.");
+    } catch (error: any) {
+      const message =
+        typeof error?.message === "string" && error.message.trim().length > 0
+          ? error.message
+          : "Failed to update NFC profile. Please try again.";
+      toast.error(message);
       console.error("NFC profile save error:", error);
     } finally {
       setNfcEditLoading(false);

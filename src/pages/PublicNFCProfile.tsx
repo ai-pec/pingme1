@@ -1,11 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { Loader2, Globe, Mail, Phone, MapPin, Building2, Briefcase, ArrowLeft } from "lucide-react";
-import MainLayout from "@/layouts/MainLayout";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { useParams } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 import { fetchPublicNfcProfile, normalizeNfcUsername, type PublicNfcProfile } from "@/lib/publicNfcService";
+import "./PublicNFCProfile.css";
 
 const linkify = (url: string): string => {
   if (!url) return "";
@@ -21,7 +18,6 @@ const getErrorMessage = (error: unknown, fallback: string): string => {
 };
 
 export default function PublicNFCProfile() {
-  const navigate = useNavigate();
   const { username = "" } = useParams();
   const normalizedUsername = useMemo(() => normalizeNfcUsername(username), [username]);
 
@@ -65,169 +61,185 @@ export default function PublicNFCProfile() {
     };
   }, [normalizedUsername]);
 
+  const tagList = useMemo(
+    () =>
+      (profile?.businessTags || "")
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean),
+    [profile?.businessTags]
+  );
+
+  const subtitle = [profile?.jobTitle, profile?.companyName].filter(Boolean).join(" at ");
+
+  const socialRows = [
+    { label: "LinkedIn", href: profile?.linkedin },
+    { label: "X / Twitter", href: profile?.twitter },
+    { label: "Instagram", href: profile?.instagram },
+    { label: "YouTube", href: profile?.youtube },
+    { label: "Facebook", href: profile?.facebook },
+  ].filter((item) => !!item.href);
+
+  const hasContent = !!profile && (
+    !!profile.bio ||
+    tagList.length > 0 ||
+    !!profile.email ||
+    !!profile.phone ||
+    !!profile.website ||
+    !!profile.address ||
+    socialRows.length > 0 ||
+    (profile.projects?.length || 0) > 0
+  );
+
   return (
-    <MainLayout>
-      <div className="container max-w-4xl py-8">
-        <Button variant="ghost" onClick={() => navigate("/")} className="mb-4">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Home
-        </Button>
+    <div className="nfc-public-page">
+      <div className="nfc-bg-orb nfc-orb-1" aria-hidden="true" />
+      <div className="nfc-bg-orb nfc-orb-2" aria-hidden="true" />
 
-        {loading && (
-          <div className="min-h-[40vh] flex items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        )}
-
-        {!loading && error && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Profile not available</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">{error}</p>
-            </CardContent>
-          </Card>
-        )}
-
-        {!loading && !error && profile && (
-          <div className="space-y-6">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                  <div className="flex items-center gap-4">
-                    {profile.profilePhoto ? (
-                      <img
-                        src={profile.profilePhoto}
-                        alt={profile.name || profile.username}
-                        className="h-20 w-20 rounded-full object-cover border"
-                      />
-                    ) : (
-                      <div className="h-20 w-20 rounded-full border bg-muted flex items-center justify-center text-2xl font-semibold">
-                        {(profile.name || profile.username).charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                    <div>
-                      <h1 className="text-2xl font-bold">{profile.name || profile.username}</h1>
-                      <p className="text-sm text-muted-foreground">@{profile.username}</p>
-                      {(profile.companyName || profile.jobTitle) && (
-                        <p className="text-sm mt-1 text-muted-foreground">
-                          {[profile.jobTitle, profile.companyName].filter(Boolean).join(" at ")}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <Badge variant="secondary">PingME NFC Profile</Badge>
+      <main className="nfc-app-shell">
+        <section className="nfc-card">
+          <header className="nfc-card-header">
+            <div className="nfc-header-content">
+              {profile?.profilePhoto ? (
+                <div className="nfc-profile-photo-container">
+                  <img
+                    src={profile.profilePhoto}
+                    alt={profile.name || profile.username}
+                    className="nfc-profile-photo"
+                  />
                 </div>
-              </CardContent>
-            </Card>
+              ) : null}
 
-            {profile.bio && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>About</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground whitespace-pre-wrap">{profile.bio}</p>
-                </CardContent>
-              </Card>
-            )}
+              <div>
+                <p className="nfc-eyebrow">NFC Business Profile</p>
+                <h1>{profile?.name || (loading ? "Loading..." : normalizedUsername || "NFC Profile")}</h1>
+                <p className="nfc-sub-title">{subtitle || "Business profile"}</p>
+                <div className="nfc-header-badges" aria-hidden="true">
+                  <span>Live profile</span>
+                  <span>PlzPingMe NFC</span>
+                  {profile?.username ? <span>Card: {profile.username}</span> : null}
+                </div>
+              </div>
+            </div>
+          </header>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Contact</CardTitle>
-              </CardHeader>
-              <CardContent className="grid gap-3">
-                {profile.email && (
-                  <a className="flex items-center gap-2 text-primary hover:underline" href={`mailto:${profile.email}`}>
-                    <Mail className="h-4 w-4" /> {profile.email}
-                  </a>
-                )}
-                {profile.phone && (
-                  <a className="flex items-center gap-2 text-primary hover:underline" href={`tel:${profile.phone}`}>
-                    <Phone className="h-4 w-4" /> {profile.phone}
-                  </a>
-                )}
-                {profile.website && (
-                  <a
-                    className="flex items-center gap-2 text-primary hover:underline"
-                    href={linkify(profile.website)}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    <Globe className="h-4 w-4" /> {profile.website}
-                  </a>
-                )}
-                {profile.address && (
-                  <div className="flex items-start gap-2 text-muted-foreground">
-                    <MapPin className="h-4 w-4 mt-1" />
-                    <span>{profile.address}</span>
-                  </div>
-                )}
-                {profile.companyName && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Building2 className="h-4 w-4" />
-                    <span>{profile.companyName}</span>
-                  </div>
-                )}
-                {profile.jobTitle && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Briefcase className="h-4 w-4" />
-                    <span>{profile.jobTitle}</span>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+          {loading && (
+            <div className="nfc-loader-wrap">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+          )}
 
-            {profile.businessTags && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Business Tags</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-wrap gap-2">
-                  {profile.businessTags
-                    .split(",")
-                    .map((tag) => tag.trim())
-                    .filter(Boolean)
-                    .map((tag) => (
-                      <Badge key={tag} variant="outline">
-                        {tag}
-                      </Badge>
-                    ))}
-                </CardContent>
-              </Card>
-            )}
+          {!loading && error && (
+            <section className="nfc-empty-state">
+              <h2>Profile not available</h2>
+              <p>{error}</p>
+            </section>
+          )}
 
-            {profile.projects && profile.projects.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Projects</CardTitle>
-                </CardHeader>
-                <CardContent className="grid gap-4">
-                  {profile.projects.map((project, index) => (
-                    <div key={`${project.name}-${index}`} className="rounded-lg border p-4 space-y-2">
-                      <h3 className="font-semibold">{project.name}</h3>
-                      {project.description && (
-                        <p className="text-sm text-muted-foreground">{project.description}</p>
-                      )}
-                      {project.link && (
-                        <a
-                          className="text-sm text-primary hover:underline"
-                          href={linkify(project.link)}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          Visit project
-                        </a>
-                      )}
+          {!loading && !error && profile && !hasContent && (
+            <section className="nfc-empty-state">
+              <h2>This profile is currently empty</h2>
+              <p>The owner has not added details yet. Please check back soon.</p>
+            </section>
+          )}
+
+          {!loading && !error && profile && hasContent && (
+            <div className="nfc-profile-content">
+              {(profile.bio || tagList.length > 0) && (
+                <section className="nfc-profile-section">
+                  <h3>Basic Information</h3>
+                  {profile.bio ? <p>{profile.bio}</p> : null}
+                  {tagList.length > 0 && (
+                    <div className="nfc-chip-row">
+                      {tagList.map((tag) => (
+                        <span className="nfc-chip" key={tag}>
+                          {tag}
+                        </span>
+                      ))}
                     </div>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        )}
-      </div>
-    </MainLayout>
+                  )}
+                </section>
+              )}
+
+              {(profile.email || profile.phone || profile.website || profile.address) && (
+                <section className="nfc-profile-section">
+                  <h3>Contact Information</h3>
+                  <ul className="nfc-detail-list">
+                    {profile.email && (
+                      <li>
+                        <span>Email</span>
+                        <a href={`mailto:${profile.email}`}>{profile.email}</a>
+                      </li>
+                    )}
+                    {profile.phone && (
+                      <li>
+                        <span>Phone</span>
+                        <a href={`tel:${profile.phone}`}>{profile.phone}</a>
+                      </li>
+                    )}
+                    {profile.website && (
+                      <li>
+                        <span>Website</span>
+                        <a href={linkify(profile.website)} target="_blank" rel="noreferrer">
+                          {profile.website}
+                        </a>
+                      </li>
+                    )}
+                    {profile.address && (
+                      <li>
+                        <span>Address</span>
+                        <p>{profile.address}</p>
+                      </li>
+                    )}
+                  </ul>
+                </section>
+              )}
+
+              {socialRows.length > 0 && (
+                <section className="nfc-profile-section">
+                  <h3>Social Media</h3>
+                  <ul className="nfc-detail-list">
+                    {socialRows.map((social) => (
+                      <li key={social.label}>
+                        <span>{social.label}</span>
+                        <a href={linkify(social.href || "")} target="_blank" rel="noreferrer">
+                          {social.href}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
+              {profile.projects && profile.projects.length > 0 && (
+                <section className="nfc-profile-section nfc-projects-section">
+                  <h3>Projects</h3>
+                  <div className="nfc-projects-grid">
+                    {profile.projects.map((project, index) => (
+                      <article key={`${project.name}-${index}`} className="nfc-project-card">
+                        {project.photo ? (
+                          <img
+                            src={project.photo}
+                            alt={project.name}
+                            className="nfc-project-photo"
+                          />
+                        ) : null}
+                        <h4>{project.name}</h4>
+                        {project.description ? <p>{project.description}</p> : null}
+                        {project.link ? (
+                          <a href={linkify(project.link)} target="_blank" rel="noreferrer">
+                            Visit project
+                          </a>
+                        ) : null}
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              )}
+            </div>
+          )}
+        </section>
+      </main>
+    </div>
   );
 }

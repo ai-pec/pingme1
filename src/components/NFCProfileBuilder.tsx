@@ -4,6 +4,65 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Info } from "lucide-react";
 
+const MAX_IMAGE_DATA_URL_LENGTH = 850000;
+const MAX_IMAGE_DIMENSION = 1200;
+
+const readImageFileAsDataUrl = async (file: File): Promise<string> => {
+  if (!file.type.startsWith("image/")) {
+    throw new Error("Please upload a valid image file.");
+  }
+
+  const imageBitmap = await createImageBitmap(file);
+  let width = imageBitmap.width;
+  let height = imageBitmap.height;
+
+  if (Math.max(width, height) > MAX_IMAGE_DIMENSION) {
+    const scale = MAX_IMAGE_DIMENSION / Math.max(width, height);
+    width = Math.round(width * scale);
+    height = Math.round(height * scale);
+  }
+
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    throw new Error("Could not process image.");
+  }
+
+  canvas.width = width;
+  canvas.height = height;
+  ctx.drawImage(imageBitmap, 0, 0, width, height);
+
+  let quality = 0.86;
+  let dataUrl = canvas.toDataURL("image/jpeg", quality);
+
+  while (dataUrl.length > MAX_IMAGE_DATA_URL_LENGTH && quality > 0.45) {
+    quality -= 0.08;
+    dataUrl = canvas.toDataURL("image/jpeg", quality);
+  }
+
+  if (dataUrl.length > MAX_IMAGE_DATA_URL_LENGTH) {
+    let currentWidth = width;
+    let currentHeight = height;
+
+    while (dataUrl.length > MAX_IMAGE_DATA_URL_LENGTH && currentWidth > 420 && currentHeight > 420) {
+      currentWidth = Math.round(currentWidth * 0.85);
+      currentHeight = Math.round(currentHeight * 0.85);
+      canvas.width = currentWidth;
+      canvas.height = currentHeight;
+      ctx.drawImage(imageBitmap, 0, 0, currentWidth, currentHeight);
+      dataUrl = canvas.toDataURL("image/jpeg", 0.72);
+    }
+  }
+
+  imageBitmap.close();
+
+  if (dataUrl.length > MAX_IMAGE_DATA_URL_LENGTH) {
+    throw new Error("Image is too large. Please use a smaller photo.");
+  }
+
+  return dataUrl;
+};
+
 export interface NFCProjectData {
   name: string;
   description?: string;
@@ -65,15 +124,15 @@ export default function NFCProfileBuilder({
     });
   };
 
-  const handlePhotoUpload = (field: "profilePhoto", file?: File | null) => {
+  const handlePhotoUpload = async (field: "profilePhoto", file?: File | null) => {
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") {
-        handleInputChange(field, reader.result);
-      }
-    };
-    reader.readAsDataURL(file);
+    try {
+      const compressedDataUrl = await readImageFileAsDataUrl(file);
+      handleInputChange(field, compressedDataUrl);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Image upload failed.";
+      alert(message);
+    }
   };
 
   const handleProjectChange = (index: number, field: keyof NFCProjectData, value: string) => {
@@ -88,15 +147,15 @@ export default function NFCProfileBuilder({
     });
   };
 
-  const handleProjectPhotoUpload = (index: number, file?: File | null) => {
+  const handleProjectPhotoUpload = async (index: number, file?: File | null) => {
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") {
-        handleProjectChange(index, "photo", reader.result);
-      }
-    };
-    reader.readAsDataURL(file);
+    try {
+      const compressedDataUrl = await readImageFileAsDataUrl(file);
+      handleProjectChange(index, "photo", compressedDataUrl);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Image upload failed.";
+      alert(message);
+    }
   };
 
   const addProject = () => {

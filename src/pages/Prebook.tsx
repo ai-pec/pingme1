@@ -180,6 +180,7 @@ const Prebook = () => {
           toast({
             title: "NFC draft sync delayed",
             description: "Your checkout will continue. We'll sync your NFC profile after payment confirmation.",
+            variant: "destructive",
           });
         }
       }

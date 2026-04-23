@@ -15,9 +15,6 @@ const SMTP_PORT = defineSecret("SMTP_PORT");
 const SMTP_USER = defineSecret("SMTP_USER");
 const SMTP_PASS = defineSecret("SMTP_PASS");
 const SMTP_FROM = defineSecret("SMTP_FROM");
-const NFC_CARD_PROJECT_ID = defineSecret("NFC_CARD_PROJECT_ID");
-const NFC_CARD_DATABASE_URL = defineSecret("NFC_CARD_DATABASE_URL");
-const NFC_CARD_COLLECTION = defineSecret("NFC_CARD_COLLECTION");
 
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -25,7 +22,7 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 const corsHandler = cors({ origin: true });
-let nfcCardDb = null;
+const NFC_PROFILES_COLLECTION = "nfcProfiles";
 
 const getCount = async (collectionRef, queryConstraints = []) => {
   let queryRef = collectionRef;
@@ -156,37 +153,6 @@ const sanitizeText = (value) => {
   return value.trim();
 };
 
-const getNfcCardCollectionName = () => {
-  const fromSecret = (NFC_CARD_COLLECTION.value() || process.env.NFC_CARD_COLLECTION || "").trim();
-  return fromSecret || "publicNfcProfiles";
-};
-
-const getNfcCardFirestore = () => {
-  if (nfcCardDb) {
-    return nfcCardDb;
-  }
-
-  const projectId = (NFC_CARD_PROJECT_ID.value() || process.env.NFC_CARD_PROJECT_ID || "").trim();
-  const databaseURL = (NFC_CARD_DATABASE_URL.value() || process.env.NFC_CARD_DATABASE_URL || "").trim();
-
-  if (!projectId) {
-    throw new Error("NFC Card project id is not configured.");
-  }
-
-  const appName = "nfc-card-project";
-  const existing = admin.apps.find((app) => app.name === appName);
-  const app = existing || admin.initializeApp(
-    {
-      projectId,
-      ...(databaseURL ? { databaseURL } : {}),
-    },
-    appName
-  );
-
-  nfcCardDb = app.firestore();
-  return nfcCardDb;
-};
-
 const buildPublicNfcProfilePayload = ({ profileId, profile }) => {
   const normalizedUsername = normalizeNfcUsername(profile?.username || "");
   const fallbackUsername = normalizeNfcUsername(`profile-${String(profileId || "").slice(0, 8)}`);
@@ -225,7 +191,7 @@ const buildPublicNfcProfilePayload = ({ profileId, profile }) => {
   };
 };
 
-const syncProfileToNfcCardProject = async ({ profileId, profile, source = "unknown" }) => {
+const syncProfileToNfcProfilesCollection = async ({ profileId, profile, source = "unknown" }) => {
   if (!profileId || !profile) {
     return { synced: false, reason: "Missing profileId or profile" };
   }
@@ -235,9 +201,7 @@ const syncProfileToNfcCardProject = async ({ profileId, profile, source = "unkno
     return { synced: false, reason: "Profile name is required" };
   }
 
-  const targetDb = getNfcCardFirestore();
-  const targetCollection = getNfcCardCollectionName();
-  const targetRef = targetDb.collection(targetCollection).doc(String(profileId));
+  const targetRef = db.collection(NFC_PROFILES_COLLECTION).doc(String(profileId));
 
   await targetRef.set(
     {
@@ -481,9 +445,6 @@ exports.verifyPayment = onRequest({
     SMTP_USER,
     SMTP_PASS,
     SMTP_FROM,
-    NFC_CARD_PROJECT_ID,
-    NFC_CARD_DATABASE_URL,
-    NFC_CARD_COLLECTION,
   ],
 }, (req, res) => {
   corsHandler(req, res, async () => {
@@ -548,7 +509,7 @@ exports.verifyPayment = onRequest({
 
       if (prebooking?.nfcProfile) {
         try {
-          await syncProfileToNfcCardProject({
+          await syncProfileToNfcProfilesCollection({
             profileId: orderId,
             profile: prebooking.nfcProfile,
             source: "verifyPayment",
@@ -583,11 +544,6 @@ exports.verifyPayment = onRequest({
 
 exports.syncNfcProfileDraft = onRequest({
   region: "asia-south1",
-  secrets: [
-    NFC_CARD_PROJECT_ID,
-    NFC_CARD_DATABASE_URL,
-    NFC_CARD_COLLECTION,
-  ],
 }, (req, res) => {
   corsHandler(req, res, async () => {
     if (req.method !== "POST") {
@@ -603,7 +559,7 @@ exports.syncNfcProfileDraft = onRequest({
         return;
       }
 
-      const result = await syncProfileToNfcCardProject({
+      const result = await syncProfileToNfcProfilesCollection({
         profileId,
         profile: nfcProfile,
         source: "prePaymentDraft",
@@ -627,11 +583,6 @@ exports.syncNfcProfileDraft = onRequest({
 
 exports.getPublicNfcProfile = onRequest({
   region: "asia-south1",
-  secrets: [
-    NFC_CARD_PROJECT_ID,
-    NFC_CARD_DATABASE_URL,
-    NFC_CARD_COLLECTION,
-  ],
 }, (req, res) => {
   corsHandler(req, res, async () => {
     if (req.method !== "GET") {
@@ -646,10 +597,8 @@ exports.getPublicNfcProfile = onRequest({
         return;
       }
 
-      const targetDb = getNfcCardFirestore();
-      const targetCollection = getNfcCardCollectionName();
-      const snapshot = await targetDb
-        .collection(targetCollection)
+      const snapshot = await db
+        .collection(NFC_PROFILES_COLLECTION)
         .where("username", "==", username)
         .limit(1)
         .get();
@@ -671,11 +620,6 @@ exports.getPublicNfcProfile = onRequest({
 exports.syncBookingNfcProfileToNfcCard = onDocumentUpdated({
   document: "booking/{bookingId}",
   region: "asia-south1",
-  secrets: [
-    NFC_CARD_PROJECT_ID,
-    NFC_CARD_DATABASE_URL,
-    NFC_CARD_COLLECTION,
-  ],
 }, async (event) => {
   const after = event.data?.after?.data();
   if (!after?.nfcProfile) return;
@@ -684,7 +628,7 @@ exports.syncBookingNfcProfileToNfcCard = onDocumentUpdated({
   if (!profileId) return;
 
   try {
-    await syncProfileToNfcCardProject({
+    await syncProfileToNfcProfilesCollection({
       profileId,
       profile: after.nfcProfile,
       source: "bookingUpdateTrigger",
@@ -697,11 +641,6 @@ exports.syncBookingNfcProfileToNfcCard = onDocumentUpdated({
 exports.syncLegacyPrebookingNfcProfileToNfcCard = onDocumentUpdated({
   document: "prebookings/{prebookingId}",
   region: "asia-south1",
-  secrets: [
-    NFC_CARD_PROJECT_ID,
-    NFC_CARD_DATABASE_URL,
-    NFC_CARD_COLLECTION,
-  ],
 }, async (event) => {
   const after = event.data?.after?.data();
   if (!after?.nfcProfile) return;
@@ -710,7 +649,7 @@ exports.syncLegacyPrebookingNfcProfileToNfcCard = onDocumentUpdated({
   if (!profileId) return;
 
   try {
-    await syncProfileToNfcCardProject({
+    await syncProfileToNfcProfilesCollection({
       profileId,
       profile: after.nfcProfile,
       source: "legacyPrebookingUpdateTrigger",
