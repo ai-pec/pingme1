@@ -147,6 +147,21 @@ const Prebook = () => {
         status: "confirmed" as const,
         userId: user?.uid,
       };
+      const nfcDraftOrderData = showProfileBuilding
+        ? {
+            items,
+            totalAmount: cartTotal,
+            fullName: deliveryFullName,
+            email: deliveryEmail,
+            phone: deliveryPhone,
+            address: address.trim(),
+            city: city.trim(),
+            state,
+            pincode: pincode.trim(),
+            status: "pending" as const,
+            userId: user?.uid,
+          }
+        : undefined;
 
       const order = await createRazorpayOrder({
         amount: Math.round(cartTotal * 100),
@@ -158,7 +173,15 @@ const Prebook = () => {
       });
 
       if (showProfileBuilding) {
-        await syncNfcProfileToPublicDomain(order.orderId, nfcProfile);
+        try {
+          await syncNfcProfileToPublicDomain(order.orderId, nfcProfile, nfcDraftOrderData);
+        } catch (syncError: unknown) {
+          console.error("Pre-payment NFC draft sync failed", syncError);
+          toast({
+            title: "NFC draft sync delayed",
+            description: "Your checkout will continue. We'll sync your NFC profile after payment confirmation.",
+          });
+        }
       }
 
       await openRazorpayCheckout({

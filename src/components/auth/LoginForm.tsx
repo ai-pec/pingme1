@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type MouseEvent } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link } from "react-router-dom";
@@ -18,6 +18,11 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
   const { signIn, error, clearError } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  const preventToggleMouseDown = (event: MouseEvent<HTMLButtonElement>) => {
+    // Keep focus on input while toggling visibility to avoid odd blur/validation behavior.
+    event.preventDefault();
+  };
 
   const {
     register,
@@ -94,8 +99,10 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
             />
             <button
               type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              onMouseDown={preventToggleMouseDown}
+              onClick={() => setShowPassword((previous) => !previous)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-md p-1.5 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               {showPassword ? (
                 <EyeOff className="h-4 w-4" />

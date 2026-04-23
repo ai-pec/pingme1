@@ -70,6 +70,21 @@ export interface PrebookingData {
   };
 }
 
+export interface SyncNfcOrderData {
+  userId?: string;
+  items?: CartItem[];
+  totalAmount?: number;
+  fullName?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  status?: PrebookingData["status"];
+  payment?: PrebookingData["payment"];
+}
+
 type SanitizedCartItem = {
   id: string;
   title: string;
@@ -312,7 +327,8 @@ export const updatePrebookingNFCProfile = async (
 
 export const syncNfcProfileToPublicDomain = async (
   profileId: string,
-  nfcProfile: NFCProfile
+  nfcProfile: NFCProfile,
+  orderData?: SyncNfcOrderData
 ): Promise<void> => {
   const baseUrl = getPaymentApiBaseUrl();
   if (!baseUrl) {
@@ -327,6 +343,7 @@ export const syncNfcProfileToPublicDomain = async (
     body: JSON.stringify({
       profileId,
       nfcProfile,
+      ...(orderData ? { orderData } : {}),
     }),
   });
 
