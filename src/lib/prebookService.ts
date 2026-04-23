@@ -73,6 +73,11 @@ export interface PrebookingData {
 const BOOKING_COLLECTION = 'booking';
 const LEGACY_PREBOOKINGS_COLLECTION = 'prebookings';
 
+const getPaymentApiBaseUrl = () => {
+  const base = import.meta.env.VITE_PAYMENT_API_BASE_URL;
+  return typeof base === 'string' ? base.replace(/\/$/, '') : '';
+};
+
 // Simple text sanitizer to prevent XSS
 const sanitizeText = (text: string): string => {
   return text
@@ -249,7 +254,8 @@ export const getUserPrebookings = async ({ userId, email }: GetUserPrebookingsPa
 
 export const updatePrebookingNFCProfile = async (
   orderId: string,
-  nfcProfile: NFCProfile
+  nfcProfile: NFCProfile,
+  profileId?: string
 ): Promise<void> => {
   if (!orderId) {
     throw new Error('Order ID is required');
@@ -266,4 +272,32 @@ export const updatePrebookingNFCProfile = async (
       updatedAt: serverTimestamp(),
     }),
   ]);
+
+  await syncNfcProfileToPublicDomain(profileId || orderId, sanitizedProfile);
+};
+
+export const syncNfcProfileToPublicDomain = async (
+  profileId: string,
+  nfcProfile: NFCProfile
+): Promise<void> => {
+  const baseUrl = getPaymentApiBaseUrl();
+  if (!baseUrl) {
+    throw new Error('Payment API is not configured. Add VITE_PAYMENT_API_BASE_URL to your env.');
+  }
+
+  const response = await fetch(`${baseUrl}/syncNfcProfileDraft`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      profileId,
+      nfcProfile,
+    }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(text || 'Failed to sync NFC profile to public domain.');
+  }
 };

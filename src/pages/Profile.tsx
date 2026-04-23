@@ -279,7 +279,12 @@ export default function Profile() {
 
     try {
       setNfcEditLoading(true);
-      await updatePrebookingNFCProfile(selectedNfcOrderId, nfcProfileDraft);
+      const selectedOrder = orders.find((order) => order.id === selectedNfcOrderId);
+      await updatePrebookingNFCProfile(
+        selectedNfcOrderId,
+        nfcProfileDraft,
+        selectedOrder?.payment?.orderId
+      );
       setOrders((prev) =>
         prev.map((order) =>
           order.id === selectedNfcOrderId

@@ -92,6 +92,11 @@ firebase functions:secrets:set SMTP_PORT
 firebase functions:secrets:set SMTP_USER
 firebase functions:secrets:set SMTP_PASS
 firebase functions:secrets:set SMTP_FROM
+
+# NFC Card cross-project sync (target project hosting pleaseping.me data)
+firebase functions:secrets:set NFC_CARD_PROJECT_ID
+firebase functions:secrets:set NFC_CARD_DATABASE_URL
+firebase functions:secrets:set NFC_CARD_COLLECTION
 ```
 
 For local emulator only, you can keep using `functions/.env`:
@@ -118,6 +123,12 @@ TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
 
 # Optional: use an approved WhatsApp template via Twilio Content API
 TWILIO_WHATSAPP_CONTENT_SID=HXxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# NFC Card cross-project sync
+NFC_CARD_PROJECT_ID=nfc-card-project-id
+# Optional
+NFC_CARD_DATABASE_URL=https://nfc-card-project-id.firebaseio.com
+NFC_CARD_COLLECTION=publicNfcProfiles
 ```
 
 Important:
@@ -125,6 +136,26 @@ Important:
 - Never expose `RAZORPAY_KEY_SECRET` in frontend env.
 - If a secret was added to frontend by mistake, rotate it in Razorpay dashboard immediately.
 - Keep SMTP and Twilio secrets only in backend env/secrets.
+- Grant this project's Cloud Functions runtime service account Firestore write access on the NFC Card project.
+
+### IAM required for cross-project sync
+
+In target project `nfc-card-31edd`, grant role `Cloud Datastore User` (or `Firestore User`) to the source runtime service account(s):
+
+1. `pingmereg@appspot.gserviceaccount.com`
+2. `<PINGMEREG_PROJECT_NUMBER>-compute@developer.gserviceaccount.com`
+
+This lets Functions use default credentials for cross-project writes without storing private keys.
+
+### NFC profile sync behavior
+
+For NFC orders, the profile now syncs to the separate NFC Card Firebase project in these moments:
+
+1. Pre-payment draft sync (right before Razorpay checkout opens).
+2. Payment verification sync (confirmed payload).
+3. Profile edits sync (from account profile order editor + Firestore update triggers).
+
+The sync key is the Razorpay `orderId` when available, which keeps pre-payment and post-payment updates mapped to the same public profile record.
 
 ### Order confirmation notifications
 

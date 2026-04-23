@@ -9,6 +9,7 @@ import { Loader2, CheckCircle, ShoppingBag, MapPin } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import NFCProfileBuilder, { NFCProfileData } from "@/components/NFCProfileBuilder";
+import { syncNfcProfileToPublicDomain } from "@/lib/prebookService";
 import {
   createRazorpayOrder,
   openRazorpayCheckout,
@@ -154,6 +155,10 @@ const Prebook = () => {
           userId: user?.uid || "guest",
         },
       });
+
+      if (showProfileBuilding) {
+        await syncNfcProfileToPublicDomain(order.orderId, nfcProfile);
+      }
 
       await openRazorpayCheckout({
         orderId: order.orderId,
