@@ -118,10 +118,13 @@ export default function NFCProfileBuilder({
   variant = "checkout",
 }: NFCProfileBuilderProps) {
   const handleInputChange = (field: keyof NFCProfileData, value: string) => {
-    onProfileChange({
-      ...profileData,
-      [field]: value,
-    });
+    const newProfileData = { ...profileData, [field]: value };
+    
+    if (field === "name" && !profileData.username) {
+      newProfileData.username = value.split(" ")[0].toLowerCase();
+    }
+
+    onProfileChange(newProfileData);
   };
 
   const handlePhotoUpload = async (field: "profilePhoto", file?: File | null) => {
@@ -175,7 +178,7 @@ export default function NFCProfileBuilder({
     });
   };
 
-  const isCheckoutValid = profileData.name.trim() && profileData.email.trim() && profileData.phone.trim();
+  const isCheckoutValid = profileData.username?.trim() && profileData.name.trim() && profileData.email.trim() && profileData.phone.trim();
   const isEditValid =
     profileData.username?.trim() &&
     profileData.name.trim() &&
@@ -446,6 +449,18 @@ export default function NFCProfileBuilder({
               </h3>
 
               <div className="space-y-4">
+                <div>
+                  <Label htmlFor="profile-username">Username *</Label>
+                  <Input
+                    id="profile-username"
+                    placeholder="default"
+                    value={profileData.username || ""}
+                    onChange={(e) => handleInputChange("username", e.target.value)}
+                    className="mt-1"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Keep this consistent with your card profile data.</p>
+                </div>
+
                 <div>
                   <Label htmlFor="profile-name">Full Name *</Label>
                   <Input

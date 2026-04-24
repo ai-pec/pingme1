@@ -16,6 +16,7 @@ import {
   verifyRazorpayPaymentAndCreatePrebooking,
 } from "@/lib/paymentService";
 import { resolveProductImageUrl } from "@/lib/productCatalog";
+import { checkUsernameUniqueness } from "@/lib/publicNfcService";
 import type { DeliveryAddress } from "@/types/user";
 
 const indianStates = [
@@ -69,7 +70,11 @@ const Prebook = () => {
     if (profile) {
       if (profile.displayName && !fullName) {
         setFullName(profile.displayName);
-        setNFCProfile(prev => ({ ...prev, name: profile.displayName }));
+        setNFCProfile(prev => ({ 
+          ...prev, 
+          name: profile.displayName,
+          username: prev.username || profile.displayName.split(" ")[0].toLowerCase()
+        }));
       }
       if (profile.email && !email) {
         setEmail(profile.email);
@@ -119,6 +124,7 @@ const Prebook = () => {
       setNFCProfile(prev => ({
         ...prev,
         name: fullName.trim(),
+        username: prev.username || fullName.trim().split(" ")[0].toLowerCase(),
         email: email.trim(),
         phone: phone.trim(),
       }));
@@ -132,6 +138,22 @@ const Prebook = () => {
   // Handle payment processing
   const handlePayment = async (deliveryFullName: string, deliveryEmail: string, deliveryPhone: string) => {
     setSubmitting(true);
+    
+    if (showProfileBuilding && nfcProfile.username) {
+      try {
+        const isTaken = await checkUsernameUniqueness(nfcProfile.username);
+        if (isTaken) {
+          toast({ title: "Username taken", description: "This username is already taken. Please choose a different username.", variant: "destructive" });
+          setSubmitting(false);
+          return;
+        }
+      } catch (error: unknown) {
+        toast({ title: "Verification failed", description: "Could not verify username. Please try again.", variant: "destructive" });
+        setSubmitting(false);
+        return;
+      }
+    }
+
     try {
       const prebookingPayload = {
         items,

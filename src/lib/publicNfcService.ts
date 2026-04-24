@@ -66,3 +66,19 @@ export const fetchPublicNfcProfile = async (username: string): Promise<PublicNfc
 
   return payload.profile;
 };
+
+export const checkUsernameUniqueness = async (username: string, currentOrderId?: string): Promise<boolean> => {
+  if (!username) return false;
+  try {
+    const profile = await fetchPublicNfcProfile(username);
+    if (currentOrderId && profile.orderId === currentOrderId) {
+      return false; // It's their own profile, so it's not taken by someone else
+    }
+    return true; // Taken by someone else
+  } catch (err: any) {
+    if (err.message === "Profile not found.") {
+      return false; // Available, not taken
+    }
+    throw err; // Other error
+  }
+};
