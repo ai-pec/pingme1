@@ -609,6 +609,12 @@ exports.syncNfcProfileDraft = onRequest({
       return;
     }
 
+    const decodedToken = await authenticate(req);
+    if (!decodedToken) {
+      res.status(401).send("Unauthorized");
+      return;
+    }
+
     try {
       const { profileId, nfcProfile } = req.body || {};
 

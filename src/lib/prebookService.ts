@@ -8,7 +8,7 @@ import {
   doc,
   updateDoc,
 } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase';
 import { resolveProductImageUrl } from '@/lib/productCatalog';
 
 export interface CartItem {
@@ -335,10 +335,18 @@ export const syncNfcProfileToPublicDomain = async (
     throw new Error('Payment API is not configured. Add VITE_PAYMENT_API_BASE_URL to your env.');
   }
 
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    throw new Error('You must be logged in to sync your profile.');
+  }
+
+  const idToken = await currentUser.getIdToken();
+
   const response = await fetch(`${baseUrl}/syncNfcProfileDraft`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${idToken}`,
     },
     body: JSON.stringify({
       profileId,
