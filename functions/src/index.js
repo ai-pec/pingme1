@@ -429,65 +429,6 @@ exports.trackInstall = onRequest({
   });
 });
 
-exports.getPublicNfcProfile = onRequest({
-  region: "asia-south1",
-}, (req, res) => {
-  corsHandler(req, res, async () => {
-    if (req.method !== "GET") {
-      res.status(405).send("Method Not Allowed");
-      return;
-    }
-
-    const username = normalizeUsername(req.query?.username);
-    if (!username) {
-      res.status(400).send("Username is required.");
-      return;
-    }
-
-    try {
-      const [bookingSnapshot, legacySnapshot] = await Promise.all([
-        db.collection("booking").where("nfcProfile.username", "==", username).get(),
-        db.collection("prebookings").where("nfcProfile.username", "==", username).get(),
-      ]);
-
-      const candidatesByOrderId = new Map();
-
-      const upsertCandidate = (docSnap) => {
-        const candidate = mapDocToPublicProfileCandidate(docSnap);
-        if (!candidate) {
-          return;
-        }
-
-        const existing = candidatesByOrderId.get(candidate.orderId);
-        if (!existing || candidate.createdAtMillis >= existing.createdAtMillis) {
-          candidatesByOrderId.set(candidate.orderId, candidate);
-        }
-      };
-
-      bookingSnapshot.forEach(upsertCandidate);
-      legacySnapshot.forEach(upsertCandidate);
-
-      const allCandidates = Array.from(candidatesByOrderId.values());
-      const confirmedCandidates = allCandidates.filter((candidate) => candidate.status === "confirmed");
-      const finalCandidates = confirmedCandidates.length > 0 ? confirmedCandidates : allCandidates;
-
-      if (finalCandidates.length === 0) {
-        res.status(404).send("Profile not found.");
-        return;
-      }
-
-      finalCandidates.sort((left, right) => right.createdAtMillis - left.createdAtMillis);
-
-      res.status(200).json({
-        profile: finalCandidates[0].profile,
-      });
-    } catch (error) {
-      console.error("getPublicNfcProfile error", error);
-      res.status(500).send("Failed to load public NFC profile.");
-    }
-  });
-});
-
 exports.verifyPayment = onRequest({
   region: "asia-south1",
   secrets: [
