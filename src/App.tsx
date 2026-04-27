@@ -58,8 +58,7 @@ const App = () => (
               <Route path="/about" element={<About />} />
               <Route path="/partners" element={<Partners />} />
               <Route path="/contact" element={<Contact />} />
-              <Route path="/nfc:username" element={<PublicNFCProfile />} />
-              <Route path="/nfc/:username" element={<PublicNFCProfile />} />
+              <Route path="/:username" element={<PublicNFCProfile />} />
               <Route path="/report" element={<Navigate to="/contact" replace />} />
 
               {/* Auth Routes */}

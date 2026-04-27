@@ -56,13 +56,4 @@ export {
   type User,
 };
 
-// Enable offline persistence for Firestore
-enableIndexedDbPersistence(db).catch((err) => {
-  if (err.code === "failed-precondition") {
-    console.warn("Firestore persistence failed: Multiple tabs open");
-  } else if (err.code === "unimplemented") {
-    console.warn("Firestore persistence not supported");
-  }
-});
-
 export default app;

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { fetchPublicNfcProfile, normalizeNfcUsername, type PublicNfcProfile } from "@/lib/publicNfcService";
 import "./PublicNFCProfile.css";
@@ -18,7 +18,9 @@ const getErrorMessage = (error: unknown, fallback: string): string => {
 };
 
 export default function PublicNFCProfile() {
-  const { username = "" } = useParams();
+  const location = useLocation();
+  const usernameWithHash = location.pathname.slice(1); // Remove leading slash
+  const username = usernameWithHash.replace("#", ""); // Remove hash
   const normalizedUsername = useMemo(() => normalizeNfcUsername(username), [username]);
 
   const [loading, setLoading] = useState(true);
