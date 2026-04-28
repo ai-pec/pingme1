@@ -78,16 +78,25 @@ export const saveProduct = async (product: Omit<DbProduct, "updatedAt">) => {
 
   const normalizedCategorySlug = normalizeCategorySlug(product.categorySlug) || "uncategorized";
   const normalizedImage = resolveProductImageUrl(product.image);
-
-  const productRef = doc(db, "products", product.id);
-  await setDoc(productRef, {
-    ...product,
+  const normalizedEmoji = typeof product.emoji === "string" && product.emoji.trim() ? product.emoji.trim() : "";
+  const cleanedProduct: Record<string, unknown> = {
+    id: product.id,
     categorySlug: normalizedCategorySlug,
-    image: normalizedImage || "",
+    title: product.title,
+    price: product.price,
+    popular: Boolean(product.popular),
     features: normalizeFeatures(product.features),
     updatedAt: serverTimestamp(),
-    createdAt: product.createdAt || serverTimestamp(),
-  }, { merge: true });
+    ...(normalizedImage ? { image: normalizedImage } : {}),
+    ...(normalizedEmoji ? { emoji: normalizedEmoji } : {}),
+    ...(typeof product.originalPrice === "string" && product.originalPrice.trim()
+      ? { originalPrice: product.originalPrice.trim() }
+      : {}),
+    ...(product.createdAt ? { createdAt: product.createdAt } : {}),
+  };
+
+  const productRef = doc(db, "products", product.id);
+  await setDoc(productRef, cleanedProduct, { merge: true });
 };
 
 export const deleteProductDoc = async (id: string) => {
