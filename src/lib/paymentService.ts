@@ -6,6 +6,7 @@ interface CreateOrderResponse {
   amount: number;
   currency: string;
   receipt: string;
+  keyId?: string;
 }
 
 interface VerifyPaymentResponse {
@@ -140,6 +141,7 @@ export const verifyRazorpayPaymentAndCreatePrebooking = async (input: {
 };
 
 export const openRazorpayCheckout = async (input: {
+  keyId?: string;
   orderId: string;
   amount: number;
   currency: string;
@@ -149,7 +151,7 @@ export const openRazorpayCheckout = async (input: {
   onSuccess: (response: RazorpayHandlerResponse) => Promise<void>;
   onDismiss?: () => void;
 }): Promise<void> => {
-  const keyId = import.meta.env.VITE_RAZORPAY_KEY_ID;
+  const keyId = input.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID;
   if (!keyId) {
     throw new Error("VITE_RAZORPAY_KEY_ID is missing.");
   }

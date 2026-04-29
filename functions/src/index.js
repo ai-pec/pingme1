@@ -357,6 +357,7 @@ exports.createOrder = onRequest({
         amount: order.amount,
         currency: order.currency,
         receipt: order.receipt,
+        keyId: (RAZORPAY_KEY_ID.value() || process.env.RAZORPAY_KEY_ID || "").trim(),
       });
     } catch (error) {
       console.error("createOrder error", error);

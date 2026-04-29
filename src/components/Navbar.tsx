@@ -191,6 +191,7 @@ const Navbar = () => {
                 </span>
               )}
             </button>
+            {!loading && user && <UserAvatar />}
             <button
               className="p-2 hover:bg-muted rounded-lg transition-colors"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -236,13 +237,33 @@ const Navbar = () => {
                   </Link>
                 )}
                 {!loading && user && (
-                  <Link
-                    to="/profile"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block py-2.5 rounded-lg border border-foreground text-foreground font-semibold text-center"
-                  >
-                    My Profile
-                  </Link>
+                  <div className="space-y-2">
+                    <Link
+                      to="/profile"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block py-2.5 rounded-lg border border-foreground text-foreground font-semibold text-center"
+                    >
+                      My Profile
+                    </Link>
+                    <Link
+                      to="/admin"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block py-2.5 rounded-lg border border-foreground text-foreground font-semibold text-center"
+                    >
+                      Admin Panel
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setMobileMenuOpen(false);
+                        await logout();
+                        navigate("/");
+                      }}
+                      className="block w-full py-2.5 rounded-lg border border-destructive text-destructive font-semibold text-center"
+                    >
+                      Logout
+                    </button>
+                  </div>
                 )}
               </div>
             </nav>

@@ -208,6 +208,7 @@ const Prebook = () => {
       }
 
       await openRazorpayCheckout({
+        keyId: order.keyId,
         orderId: order.orderId,
         amount: order.amount,
         currency: order.currency,

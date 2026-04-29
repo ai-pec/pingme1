@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
@@ -89,6 +89,7 @@ const getBestSellingImage = (products: DbProduct[], categorySlug: string, fallba
 
 const getOfferings = (products: DbProduct[], hasProductSnapshot: boolean) => [
   {
+    categorySlug: "car-tags",
     icon: CarFront,
     title: "Vehicle Tags",
     description: "Let others notify you about parking issues, damage, or emergencies without exposing your number.",
@@ -98,6 +99,7 @@ const getOfferings = (products: DbProduct[], hasProductSnapshot: boolean) => [
     points: ["Car and bike use cases", "Secure masked contact", "Instant parking issue alerts"],
   },
   {
+    categorySlug: "backpack-stickers",
     icon: PackageSearch,
     title: "Lost & Found Tags",
     description: "Backpacks, laptops, keychains, and everyday essentials can find their way back faster.",
@@ -107,6 +109,7 @@ const getOfferings = (products: DbProduct[], hasProductSnapshot: boolean) => [
     points: ["For bags, laptops, and accessories", "Easy scan for the finder", "Private return flow"],
   },
   {
+    categorySlug: "pet-tags",
     icon: PawPrint,
     title: "Pet Safety Tags",
     description: "Help anyone who finds your pet reach you instantly and safely.",
@@ -116,6 +119,7 @@ const getOfferings = (products: DbProduct[], hasProductSnapshot: boolean) => [
     points: ["Fast reunion when pets wander", "Visible and durable tag format", "Owner details stay private"],
   },
   {
+    categorySlug: "nfc-cards",
     icon: Nfc,
     title: "NFC Smart Cards",
     description: "Tap-enabled cards for quick, seamless, private information exchange.",
@@ -150,6 +154,7 @@ const differentiators = [
 ];
 
 const LandingHero = () => {
+  const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [products, setProducts] = useState<DbProduct[]>([]);
   const [hasProductSnapshot, setHasProductSnapshot] = useState(false);
@@ -408,7 +413,7 @@ const LandingHero = () => {
               const Icon = item.icon;
 
               return (
-                <article key={item.title} className="overflow-hidden rounded-[1.75rem] border border-border/60 bg-background/90 shadow-[0_18px_50px_rgba(81,60,9,0.08)]">
+                <article key={item.title} className="overflow-hidden rounded-[1.75rem] border border-border/60 bg-background/90 shadow-[0_18px_50px_rgba(81,60,9,0.08)] cursor-pointer transition-all hover:shadow-[0_25px_60px_rgba(81,60,9,0.15)] hover:border-primary/40 hover:scale-[1.02]" onClick={() => navigate(`/products/${item.categorySlug}`)}>
                   <div className={`bg-gradient-to-br ${item.accent} p-5 md:p-6`}>
                     <div className="flex items-start justify-between gap-4">
                       <div className="space-y-3">

@@ -907,26 +907,41 @@ export default function Profile() {
                             <Button
                               type="button"
                               variant="outline"
-                              size="sm"
+                              size="icon"
+                              className="h-9 w-9 shrink-0 md:h-9 md:w-auto md:px-3 md:gap-2"
                               onClick={() => openEditNFC(order)}
+                              aria-label="Edit NFC profile"
                             >
-                              <Edit2 className="mr-2 h-3.5 w-3.5" />
-                              Edit NFC
+                              <Edit2 className="h-3.5 w-3.5" />
+                              <span className="hidden md:inline">Edit NFC</span>
                             </Button>
                           )}
                           <Badge
                             variant="secondary"
-                            className={`text-xs ${
+                            className={`inline-flex h-8 min-w-8 items-center justify-center gap-1 rounded-full px-2 text-xs ${
                               displayStatus === 'confirmed'
-                                ? 'bg-green-100 text-green-700'
+                                ? 'bg-green-100 text-green-700 md:min-w-0 md:px-2.5'
                                 : displayStatus === 'cancelled'
-                                ? 'bg-red-100 text-red-700'
-                                : 'bg-amber-100 text-amber-700'
+                                ? 'bg-red-100 text-red-700 md:min-w-0 md:px-2.5'
+                                : 'bg-amber-100 text-amber-700 md:min-w-0 md:px-2.5'
                             }`}
                           >
-                            {displayStatus === 'confirmed' && <CheckCircle className="mr-1 h-3 w-3" />}
-                            {displayStatus === 'pending' && <Clock className="mr-1 h-3 w-3" />}
-                            {displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1)}
+                            {displayStatus === 'confirmed' && (
+                              <>
+                                <CheckCircle className="h-3 w-3" />
+                                <span className="hidden md:inline">Confirmed</span>
+                                <span className="sr-only md:hidden">Confirmed</span>
+                              </>
+                            )}
+                            {displayStatus === 'pending' && (
+                              <>
+                                <Clock className="h-3 w-3" />
+                                <span>{displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1)}</span>
+                              </>
+                            )}
+                            {displayStatus === 'cancelled' && (
+                              <span>{displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1)}</span>
+                            )}
                           </Badge>
                         </div>
                       </div>
