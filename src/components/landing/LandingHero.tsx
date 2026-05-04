@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 
 import carcardFront from "@/assets/product-card.png";
-import backpackSticker from "@/assets/pingwebsite-2.png";
+import backpackSticker from "@/assets/pingwebsite-2.webp";
 import nfcFront from "@/assets/pingprocard_logo.jpeg";
 import petSafetyTag from "@/assets/pingprocard.jpeg";
 import heroDemoVideoMp4 from "@/assets/IMG_9847.mp4";
