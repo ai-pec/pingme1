@@ -57,7 +57,7 @@ import {
 import MainLayout from "@/layouts/MainLayout";
 import { toast } from "sonner";
 import NFCProfileBuilder, { type NFCProfileData } from "@/components/NFCProfileBuilder";
-import { checkUsernameUniqueness } from "@/lib/publicNfcService";
+import { checkUsernameUniqueness, generateUsernameSuggestions } from "@/lib/publicNfcService";
 import {
   getUserPrebookings,
   updatePrebookingNFCProfile,
@@ -344,11 +344,13 @@ export default function Profile() {
       try {
         const isTaken = await checkUsernameUniqueness(nfcProfileDraft.username, selectedNfcOrderId);
         if (isTaken) {
-          toast.error("This username is already taken. Please choose a different username.");
+          const suggestions = await generateUsernameSuggestions(nfcProfileDraft.name || nfcProfileDraft.username);
+          toast.error(`This username is already taken. Try: ${suggestions.join(", ")}`);
           setNfcEditLoading(false);
           return;
         }
       } catch (error) {
+        console.error("Username verification error:", error);
         toast.error("Could not verify username uniqueness. Please try again.");
         setNfcEditLoading(false);
         return;

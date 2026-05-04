@@ -82,3 +82,35 @@ export const checkUsernameUniqueness = async (username: string, currentOrderId?:
     throw err; // Other error
   }
 };
+
+export const generateUsernameSuggestions = async (baseName: string): Promise<string[]> => {
+  const normalizedBase = normalizeNfcUsername(baseName).replace(/[^a-z0-9]/g, "");
+  const base = normalizedBase || "user";
+  const suggestions: string[] = [];
+  const suffixes = ["", "123", "_nfc", "official", "1", "24", "99", "_biz"];
+  
+  for (const suffix of suffixes) {
+    if (suggestions.length >= 3) break;
+    const candidate = `${base}${suffix}`;
+    try {
+      const isTaken = await checkUsernameUniqueness(candidate);
+      if (!isTaken && !suggestions.includes(candidate)) {
+        suggestions.push(candidate);
+      }
+    } catch (e) {
+      // Ignore API errors during suggestion generation
+      console.warn("Error checking candidate:", candidate, e);
+    }
+  }
+  
+  // Fallbacks if API is failing or everything is taken
+  let counter = 1000;
+  while (suggestions.length < 3) {
+    const candidate = `${base}${counter++}`;
+    if (!suggestions.includes(candidate)) {
+      suggestions.push(candidate);
+    }
+  }
+  
+  return suggestions;
+};

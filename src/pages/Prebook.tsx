@@ -16,7 +16,7 @@ import {
   verifyRazorpayPaymentAndCreatePrebooking,
 } from "@/lib/paymentService";
 import { resolveProductImageUrl } from "@/lib/productCatalog";
-import { checkUsernameUniqueness } from "@/lib/publicNfcService";
+import { checkUsernameUniqueness, generateUsernameSuggestions } from "@/lib/publicNfcService";
 import type { DeliveryAddress } from "@/types/user";
 
 const indianStates = [
@@ -143,11 +143,17 @@ const Prebook = () => {
       try {
         const isTaken = await checkUsernameUniqueness(nfcProfile.username);
         if (isTaken) {
-          toast({ title: "Username taken", description: "This username is already taken. Please choose a different username.", variant: "destructive" });
+          const suggestions = await generateUsernameSuggestions(nfcProfile.name || nfcProfile.username);
+          toast({ 
+            title: "Username taken", 
+            description: `This username is already taken. Try: ${suggestions.join(", ")}`, 
+            variant: "destructive" 
+          });
           setSubmitting(false);
           return;
         }
       } catch (error: unknown) {
+        console.error("Username verification error:", error);
         toast({ title: "Verification failed", description: "Could not verify username. Please try again.", variant: "destructive" });
         setSubmitting(false);
         return;

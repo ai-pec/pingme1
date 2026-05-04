@@ -58,7 +58,6 @@ const App = () => (
               <Route path="/about" element={<About />} />
               <Route path="/partners" element={<Partners />} />
               <Route path="/contact" element={<Contact />} />
-              <Route path="/nfc/:username" element={<PublicNFCProfile />} />
               <Route path="/report" element={<Navigate to="/contact" replace />} />
 
               {/* Auth Routes */}
@@ -93,6 +92,8 @@ const App = () => (
               <Route path="/pricing-shipment" element={<PricingShipment />} />
               <Route path="/terms-conditions" element={<TermsConditions />} />
 
+              <Route path="/:username" element={<PublicNFCProfile />} />
+              <Route path="/:username#" element={<PublicNFCProfile />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
