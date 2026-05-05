@@ -30,12 +30,36 @@ const ALLOWED_ORIGINS = [
   "http://localhost:8081",
 ];
 
+const isPrivateNetworkIP = (origin) => {
+  if (!origin) return false;
+  try {
+    const url = new URL(origin);
+    const hostname = url.hostname;
+    // Allow localhost and 127.0.0.1
+    if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]") {
+      return true;
+    }
+    // Allow private network IPs: 192.168.*, 10.*, 172.16-31.*
+    if (/^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)\d+\.\d+/.test(hostname)) {
+      return true;
+    }
+    return false;
+  } catch (e) {
+    return false;
+  }
+};
+
 const corsHandler = cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps or curl)
     if (!origin) return callback(null, true);
 
-    if (ALLOWED_ORIGINS.indexOf(origin) !== -1 || origin.endsWith(".web.app") || origin.endsWith(".firebaseapp.com")) {
+    if (
+      ALLOWED_ORIGINS.indexOf(origin) !== -1 || 
+      origin.endsWith(".web.app") || 
+      origin.endsWith(".firebaseapp.com") ||
+      isPrivateNetworkIP(origin)
+    ) {
       callback(null, true);
     } else {
       callback(new Error("Not allowed by CORS"));
