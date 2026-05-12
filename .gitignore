@@ -3,6 +3,7 @@ node_modules/
 
 # Vite
 vite.config.*.timestamp-*
+.vite/
 
 # Build outputs
 dist/

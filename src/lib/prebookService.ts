@@ -250,6 +250,47 @@ const ensureAtLeastOneWriteSucceeded = async (
   throw new Error(`Failed to ${operation}.`);
 };
 
+const normalizeItemImage = (item: any): string | undefined => {
+  const candidates = [
+    item?.image,
+    item?.imageUrl,
+    item?.productImage,
+    item?.photoURL,
+    item?.photoUrl,
+    item?.photo,
+    Array.isArray(item?.images) ? item.images[0] : undefined,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim()) {
+      const resolved = resolveProductImageUrl(candidate.trim());
+      if (resolved) return resolved;
+      if (/^https?:\/\//i.test(candidate.trim()) || /^data:/i.test(candidate.trim())) {
+        return candidate.trim();
+      }
+    }
+  }
+  return undefined;
+};
+
+const normalizeRecord = (id: string, data: any): PrebookingRecord => {
+  const items: CartItem[] = (data.items || []).map((item: any) => ({
+    id: item?.id || '',
+    title: item?.title || 'Product',
+    price: typeof item?.price === 'string' ? item.price : typeof item?.price === 'number' ? String(item.price) : '0',
+    quantity: typeof item?.quantity === 'number' ? item.quantity : 1,
+    originalPrice: item?.originalPrice,
+    image: normalizeItemImage(item),
+    emoji: item?.emoji,
+  }));
+
+  return {
+    ...data,
+    id,
+    items,
+  } as PrebookingRecord;
+};
+
 export const getUserPrebookings = async ({ userId, email }: GetUserPrebookingsParams): Promise<PrebookingRecord[]> => {
   try {
     if (!userId && !email) return [];
@@ -271,8 +312,8 @@ export const getUserPrebookings = async ({ userId, email }: GetUserPrebookingsPa
       ]);
 
       const records = [
-        ...bookingSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PrebookingRecord)),
-        ...legacySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PrebookingRecord)),
+        ...bookingSnapshot.docs.map(doc => normalizeRecord(doc.id, doc.data())),
+        ...legacySnapshot.docs.map(doc => normalizeRecord(doc.id, doc.data())),
       ];
 
       if (records.length > 0) {
@@ -287,8 +328,8 @@ export const getUserPrebookings = async ({ userId, email }: GetUserPrebookingsPa
       ]);
 
       const records = [
-        ...bookingSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PrebookingRecord)),
-        ...legacySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PrebookingRecord)),
+        ...bookingSnapshot.docs.map(doc => normalizeRecord(doc.id, doc.data())),
+        ...legacySnapshot.docs.map(doc => normalizeRecord(doc.id, doc.data())),
       ];
 
       return mergeAndSort(records);

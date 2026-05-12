@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Mail, Phone, MapPin } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { APP_CONFIG } from "@/config/constants";
 
 // Input validation constants
 const MAX_NAME_LENGTH = 100;
@@ -156,7 +157,7 @@ const Contact = () => {
                   </div>
                   <div>
                     <h3 className="font-bold mb-1">Phone</h3>
-                    <p className="text-muted-foreground">+91 7347340007</p>
+                    <p className="text-muted-foreground">{APP_CONFIG.SUPPORT_PHONE}</p>
                   </div>
                 </div>
 
@@ -166,7 +167,7 @@ const Contact = () => {
                   </div>
                   <div>
                     <h3 className="font-bold mb-1">Email</h3>
-                    <p className="text-muted-foreground">contact@pingiff.ai</p>
+                    <p className="text-muted-foreground">{APP_CONFIG.SUPPORT_EMAIL}</p>
                   </div>
                 </div>
               </div>

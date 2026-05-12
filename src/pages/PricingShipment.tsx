@@ -1,4 +1,5 @@
 import MainLayout from "@/layouts/MainLayout";
+import { APP_CONFIG } from "@/config/constants";
 
 const PricingShipment = () => {
   return (
@@ -49,7 +50,7 @@ const PricingShipment = () => {
 
             <h2 className="text-2xl font-bold mt-8 mb-4">Shipping Information</h2>
             <p className="text-muted-foreground mb-4">
-              We offer free shipping across India on all orders. Standard delivery takes 
+              We offer free shipping across {APP_CONFIG.DEFAULT_COUNTRY} on all orders. Standard delivery takes 
               5-7 business days, while express delivery (additional ₹50) takes 2-3 business days.
             </p>
 
