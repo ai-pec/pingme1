@@ -9,7 +9,6 @@ import { Loader2, CheckCircle, ShoppingBag, MapPin } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import NFCProfileBuilder, { NFCProfileData } from "@/components/NFCProfileBuilder";
-import { syncNfcProfileToPublicDomain } from "@/lib/prebookService";
 import {
   createRazorpayOrder,
   openRazorpayCheckout,
@@ -176,22 +175,6 @@ const Prebook = () => {
         status: "confirmed" as const,
         userId: user?.uid,
       };
-      const nfcDraftOrderData = showProfileBuilding
-        ? {
-            items,
-            totalAmount: cartTotal,
-            fullName: deliveryFullName,
-            email: deliveryEmail,
-            phone: deliveryPhone,
-            address: address.trim(),
-            city: city.trim(),
-            state,
-            pincode: pincode.trim(),
-            status: "pending" as const,
-            userId: user?.uid,
-          }
-        : undefined;
-
       const order = await createRazorpayOrder({
         amount: Math.round(cartTotal * 100),
         currency: "INR",
@@ -200,19 +183,6 @@ const Prebook = () => {
           userId: user?.uid || "guest",
         },
       });
-
-      if (showProfileBuilding) {
-        try {
-          await syncNfcProfileToPublicDomain(order.orderId, nfcProfile, nfcDraftOrderData);
-        } catch (syncError: unknown) {
-          console.error("Pre-payment NFC draft sync failed", syncError);
-          toast({
-            title: "NFC draft sync delayed",
-            description: "Your checkout will continue. We'll sync your NFC profile after payment confirmation.",
-            variant: "destructive",
-          });
-        }
-      }
 
       await openRazorpayCheckout({
         keyId: order.keyId,

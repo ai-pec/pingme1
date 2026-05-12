@@ -21,7 +21,6 @@ import { subscribeToProducts, type DbProduct, subscribeToProductCategories } fro
 
 const categoryEmojiBySlug: Record<string, string> = {
   "car-tags": "🚗",
-  "bike-tags": "🏍️",
   "pet-tags": "🐾",
   "nfc-cards": "💳",
   "keychain-tags": "🔑",
@@ -211,7 +210,7 @@ const Products = () => {
         if (right.slug === "car-tags") return 1;
         return left.name.localeCompare(right.name);
       });
-  }, [dbProducts]);
+  }, [dbProducts, categoryMetadata]);
 
   const activeCategory = categories.find((c) => c.slug === selectedCategory);
   const activeTutorial = useMemo(
