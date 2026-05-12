@@ -245,42 +245,7 @@ export const productCatalog: ProductCategory[] = [
       },
     ],
   },
-  {
-    slug: "Pet-tags",
-    name: " Tags",
-    description: "Compact, UV-resistant tags that attach easily to your two-wheeler.",
-    icon: "🏍️",
-    coverImage: tagOval,
-    gradient: "from-rose-500/20 to-pink-500/10",
-    products: [
-      {
-        id: "bike-tag-classic",
-        title: "Bike Tag - Circle",
-        price: "₹249",
-        originalPrice: "₹299",
-        image: tagCircle1,
-        popular: true,
-        features: ["Circular compact design", "UV resistant material", "Easy keychain installation", "Lifetime QR code activation"],
-      },
-      {
-        id: "bike-tag-classic",
-        title: "Bike Tag - Circle",
-        price: "₹249",
-        originalPrice: "₹299",
-        image: tagCircle2,
-        popular: true,
-        features: ["Circular compact design", "UV resistant material", "Easy keychain installation", "Lifetime QR code activation"],
-      },
-      {
-        id: "bike-tag-oval",
-        title: "Bike Tag - Oval",
-        price: "₹249",
-        originalPrice: "₹299",
-        image: tagOval,
-        features: ["Elegant oval shape", "UV resistant material", "Easy installation", "Lifetime activation"],
-      },
-    ],
-  },
+
   {
     slug: "pet-tags",
     name: "Pet Tags",
@@ -470,17 +435,7 @@ export const categoryTutorials: Record<string, CategoryTutorial> = {
     ],
     tip: "Best placement: front dashboard where the QR is visible from outside.",
   },
-  "bike-tags": {
-    title: "How to Use Your Bike Tag",
-    subtitle: "A compact smart tag for quick owner contact and lost bike recovery support.",
-    steps: [
-      "Fix the tag to your bike keyring, handle loop, or visible accessory point.",
-      "Activate the QR profile and add your contact and optional emergency note.",
-      "When scanned, the finder gets a secure contact option to reach you quickly.",
-      "Check your profile regularly and keep your details up to date.",
-    ],
-    tip: "Place it where it is easy to notice but difficult to detach accidentally.",
-  },
+
   "pet-tags": {
     title: "How to Use Your Pet Tag",
     subtitle: "Help anyone who finds your pet contact you in seconds.",

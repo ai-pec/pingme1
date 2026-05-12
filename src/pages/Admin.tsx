@@ -814,7 +814,7 @@ export default function Admin() {
                         <option key={slug} value={slug} />
                       ))}
                     </datalist>
-                    <p className="text-xs text-muted-foreground">Use lowercase words with hyphens (for example: bike-tags).</p>
+                    <p className="text-xs text-muted-foreground">Use lowercase words with hyphens (for example: car-tags).</p>
                   </div>
                   
                   <div className="space-y-2">
