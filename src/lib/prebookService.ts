@@ -250,15 +250,30 @@ const ensureAtLeastOneWriteSucceeded = async (
   throw new Error(`Failed to ${operation}.`);
 };
 
-const normalizeItemImage = (item: any): string | undefined => {
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === 'object' && value !== null;
+};
+
+const getString = (value: unknown): string | undefined => {
+  return typeof value === 'string' ? value : undefined;
+};
+
+const getNumber = (value: unknown): number | undefined => {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+};
+
+const normalizeItemImage = (item: unknown): string | undefined => {
+  if (!isRecord(item)) return undefined;
+
+  const images = Array.isArray(item.images) ? item.images : undefined;
   const candidates = [
-    item?.image,
-    item?.imageUrl,
-    item?.productImage,
-    item?.photoURL,
-    item?.photoUrl,
-    item?.photo,
-    Array.isArray(item?.images) ? item.images[0] : undefined,
+    item.image,
+    item.imageUrl,
+    item.productImage,
+    item.photoURL,
+    item.photoUrl,
+    item.photo,
+    images?.[0],
   ];
 
   for (const candidate of candidates) {
@@ -273,19 +288,28 @@ const normalizeItemImage = (item: any): string | undefined => {
   return undefined;
 };
 
-const normalizeRecord = (id: string, data: any): PrebookingRecord => {
-  const items: CartItem[] = (data.items || []).map((item: any) => ({
-    id: item?.id || '',
-    title: item?.title || 'Product',
-    price: typeof item?.price === 'string' ? item.price : typeof item?.price === 'number' ? String(item.price) : '0',
-    quantity: typeof item?.quantity === 'number' ? item.quantity : 1,
-    originalPrice: item?.originalPrice,
-    image: normalizeItemImage(item),
-    emoji: item?.emoji,
-  }));
+const normalizeRecord = (id: string, data: unknown): PrebookingRecord => {
+  const safeData = isRecord(data) ? data : {};
+  const rawItems = Array.isArray(safeData.items) ? safeData.items : [];
+
+  const items: CartItem[] = rawItems.map((item) => {
+    const safeItem = isRecord(item) ? item : {};
+    const priceValue = safeItem.price;
+    const quantityValue = getNumber(safeItem.quantity);
+
+    return {
+      id: getString(safeItem.id) || '',
+      title: getString(safeItem.title) || 'Product',
+      price: typeof priceValue === 'string' ? priceValue : typeof priceValue === 'number' ? String(priceValue) : '0',
+      quantity: quantityValue ?? 1,
+      originalPrice: getString(safeItem.originalPrice),
+      image: normalizeItemImage(safeItem),
+      emoji: getString(safeItem.emoji),
+    };
+  });
 
   return {
-    ...data,
+    ...(safeData as Omit<PrebookingRecord, 'id' | 'items'>),
     id,
     items,
   } as PrebookingRecord;

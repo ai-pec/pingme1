@@ -35,6 +35,19 @@ export const normalizeNfcUsername = (rawUsername: string): string => {
   return rawUsername.trim().toLowerCase();
 };
 
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null;
+};
+
+const isPublicNfcProfile = (value: unknown): value is PublicNfcProfile => {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.orderId === "string" &&
+    typeof value.username === "string" &&
+    typeof value.name === "string"
+  );
+};
+
 export const fetchPublicNfcProfile = async (username: string): Promise<PublicNfcProfile> => {
   const normalizedUsername = normalizeNfcUsername(username);
   if (!normalizedUsername) {
@@ -59,8 +72,8 @@ export const fetchPublicNfcProfile = async (username: string): Promise<PublicNfc
     throw new Error(text || "Failed to load public NFC profile.");
   }
 
-  const payload = (await response.json()) as { profile?: PublicNfcProfile };
-  if (!payload.profile) {
+  const payload: unknown = await response.json();
+  if (!isRecord(payload) || !isPublicNfcProfile(payload.profile)) {
     throw new Error("Invalid profile response.");
   }
 
@@ -75,8 +88,8 @@ export const checkUsernameUniqueness = async (username: string, currentOrderId?:
       return false; // It's their own profile, so it's not taken by someone else
     }
     return true; // Taken by someone else
-  } catch (err: any) {
-    if (err.message === "Profile not found.") {
+  } catch (err: unknown) {
+    if (err instanceof Error && err.message === "Profile not found.") {
       return false; // Available, not taken
     }
     throw err; // Other error
