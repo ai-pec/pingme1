@@ -12,7 +12,11 @@ const FooterNew = () => {
             <p className="text-sm text-muted-foreground">
               © 2026 PingME. All rights reserved.
             </p>
+            
+            
           </div>
+          <iframe style={{ width: '114px', height: '97px' ,border: '1px solid #ccc' ,marginLeft: '40px'}} src='https://dunsregistered.dnb.com/SealAuthentication.aspx?Cid=1' frameborder='0' scrolling='no' allowtransparency='true' ></iframe>
+          
 
           {/* Links */}
           <div className="flex flex-wrap items-center justify-center gap-4 text-sm">
