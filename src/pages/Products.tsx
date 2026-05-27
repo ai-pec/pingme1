@@ -31,7 +31,7 @@ const categoryEmojiBySlug: Record<string, string> = {
 // ─── Components ─────────────────────────────────────────
 
 const ProductCardItem = ({ product }: { product: ProductVariant }) => {
-  const { addToCart } = useCart();
+  const { addToCart, clearCart } = useCart();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [imageFailed, setImageFailed] = useState(false);
@@ -51,6 +51,21 @@ const ProductCardItem = ({ product }: { product: ProductVariant }) => {
       description: `${product.title} was added to your cart.`,
       action: <ToastAction altText="Checkout" onClick={() => navigate("/booking")}>Checkout</ToastAction>
     });
+  };
+
+  const handleBuyNow = () => {
+    clearCart();
+    addToCart({
+      id: product.id,
+      title: product.title,
+      price: product.price,
+      originalPrice: product.originalPrice,
+      image: product.image,
+      emoji: product.emoji,
+      quantity: 1,
+    });
+    setIsDialogOpen(false);
+    navigate("/booking");
   };
 
   return (
@@ -130,12 +145,26 @@ const ProductCardItem = ({ product }: { product: ProductVariant }) => {
             </ul>
           </div>
 
-          <Button type="button" className="w-full h-10 sm:h-11 text-sm sm:text-base font-bold shadow-lg shadow-primary/20" onClick={() => {
-            handleAddToCart();
-            setIsDialogOpen(false);
-          }}>
-            Add to Cart
-          </Button>
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-10 sm:h-11 text-sm sm:text-base font-bold"
+              onClick={handleBuyNow}
+            >
+              Buy Now
+            </Button>
+            <Button
+              type="button"
+              className="h-10 sm:h-11 text-sm sm:text-base font-bold shadow-lg shadow-primary/20"
+              onClick={() => {
+                handleAddToCart();
+                setIsDialogOpen(false);
+              }}
+            >
+              Add to Cart
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
