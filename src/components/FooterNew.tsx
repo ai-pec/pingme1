@@ -10,7 +10,7 @@ const FooterNew = () => {
           <div className="flex flex-col items-center md:items-start gap-1">
             <img src={logo} alt="PingME" className="h-14 w-14 object-contain" />
             <p className="text-sm text-muted-foreground">
-              © 2026 PingME. All rights reserved.
+              © 2026 PingME by Ping IFF LPP. All rights reserved.
             </p>
             
             

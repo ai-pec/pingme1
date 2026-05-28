@@ -34,6 +34,9 @@ import heroDemoVideoWebm from "@/assets/IMG_9847.webm";
 import { subscribeToProducts, type DbProduct } from "@/lib/productService";
 import { normalizeCategorySlug, buildProductImageUrl } from "@/lib/productCatalog";
 
+const heroImagePath = import.meta.env.VITE_HERO_IMAGE_PATH || "products/hero_image.PNG";
+const heroImageUrl = buildProductImageUrl(heroImagePath);
+
 const quickFacts = [
   {
     icon: ShieldCheck,
@@ -267,8 +270,8 @@ const LandingHero = () => {
         <div className="absolute bottom-0 left-[-5rem] h-80 w-80 rounded-full bg-orange-100/60 blur-3xl" />
       </div>
 
-      <div className="container relative py-10 md:py-14 lg:py-12 space-y-16 lg:space-y-24">
-        <section className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+      <div className="container relative pt-4 pb-10 md:pt-6 md:pb-14 lg:pt-4 lg:pb-12 space-y-16 lg:space-y-24">
+        <section className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
           <div className="space-y-8">
             <div className="space-y-4 max-w-3xl">
               <p className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-background/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-brown shadow-sm">
@@ -282,6 +285,19 @@ const LandingHero = () => {
                 smart tags. It solves the real-world need for contact without exposing your phone number, identity, or
                 unnecessary access.
               </p>
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Link to="/products">
+                <Button size="lg" className="group w-full sm:w-auto">
+                  Get Your Tag
+                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Button>
+              </Link>
+              <a href="https://app.plzpingme.com" target="_blank" rel="noreferrer" className="w-full sm:w-auto">
+                <Button size="lg" variant="outline" className="w-full">
+                  Register Your Tag
+                </Button>
+              </a>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -303,19 +319,7 @@ const LandingHero = () => {
               })}
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Link to="/products">
-                <Button size="lg" className="group w-full sm:w-auto">
-                  Explore Products
-                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </Button>
-              </Link>
-              <a href="https://app.plzpingme.com" target="_blank" rel="noreferrer" className="w-full sm:w-auto">
-                <Button size="lg" variant="outline" className="w-full">
-                  Register Your Tag
-                </Button>
-              </a>
-            </div>
+            
 
             <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
               {[
@@ -332,78 +336,25 @@ const LandingHero = () => {
             </div>
           </div>
 
-          <div className="relative">
-            
-            
-            
-            
-              <div className="overflow-hidden rounded-3xl border border-border/50 bg-black shadow-sm">
-
-                <div className="relative aspect-[9/16] w-full bg-black sm:aspect-[4/5] lg:aspect-[3/4]">
-                  <video
-                    ref={videoRef}
+          <div className="relative flex items-start justify-center lg:justify-end">
+            <div className="w-full max-w-[620px] overflow-hidden lg:max-w-[740px]">
+              <div className="relative aspect-[5/6] w-full overflow-hidden bg-transparent rounded-xl">
+                {heroImageUrl ? (
+                  <img
+                    src={heroImageUrl}
+                    alt="PingME hero"
                     className="h-full w-full object-contain"
-                    playsInline
-                    loop
-                    muted
-                    preload="metadata"
-                    onPlay={() => setIsPlaying(true)}
-                    onPause={() => setIsPlaying(false)}
-                  >
-                    <source src={heroDemoVideoMp4} type="video/mp4" />
-                    <source src={heroDemoVideoWebm} type="video/webm" />
-                    Your browser does not support this video format.
-                  </video>
-
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent p-4 text-white">
-                    <div className="flex items-end gap-3">
-                      <button
-                        type="button"
-                        onClick={handleVideoToggle}
-                        className="flex h-11 w-11 items-center justify-center rounded-full bg-white/15 backdrop-blur-md transition-colors hover:bg-white/25"
-                        aria-label={isPlaying ? "Pause video" : "Play video"}
-                      >
-                        {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
-                      </button>
-
-                      <div className="flex min-w-0 flex-1 items-center gap-3 rounded-full bg-white/10 px-3 py-2 backdrop-blur-md">
-                        <button
-                          type="button"
-                          onClick={handleMuteToggle}
-                          className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 transition-colors hover:bg-white/20"
-                          aria-label={isMuted || volume === 0 ? "Unmute video" : "Mute video"}
-                        >
-                          {isMuted || volume === 0 ? (
-                            <VolumeX className="h-4 w-4" />
-                          ) : volume < 50 ? (
-                            <Volume1 className="h-4 w-4" />
-                          ) : (
-                            <Volume2 className="h-4 w-4" />
-                          )}
-                        </button>
-
-                        <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          step="1"
-                          value={volume}
-                          onChange={handleVolumeChange}
-                          aria-label="Video volume"
-                          className="h-2 w-full cursor-pointer appearance-none rounded-full bg-white/30 accent-white"
-                        />
-
-                        <span className="w-10 text-right text-xs font-medium tabular-nums text-white/80">
-                          {volume}%
-                        </span>
-                      </div>
-                    </div>
+                    loading="eager"
+                    decoding="async"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center p-8">
+                    <img src={pingMeLogo} alt="PingME" className="max-h-[70%] max-w-[70%] object-contain" />
                   </div>
-                </div>
+                )
+                }
               </div>
-
-              
-            
+            </div>
           </div>
         </section>
 
