@@ -34,7 +34,7 @@ import heroDemoVideoWebm from "@/assets/IMG_9847.webm";
 import { subscribeToProducts, type DbProduct } from "@/lib/productService";
 import { normalizeCategorySlug, buildProductImageUrl } from "@/lib/productCatalog";
 
-const heroImagePath = import.meta.env.VITE_HERO_IMAGE_PATH || "products/hero_image.PNG";
+const heroImagePath = import.meta.env.VITE_HERO_IMAGE_PATH || "products/hero_i.PNG";
 const heroImageUrl = buildProductImageUrl(heroImagePath);
 
 const quickFacts = [
@@ -337,8 +337,8 @@ const LandingHero = () => {
           </div>
 
           <div className="relative flex items-start justify-center lg:justify-end">
-            <div className="w-full max-w-[620px] overflow-hidden lg:max-w-[740px]">
-              <div className="relative aspect-[5/6] w-full overflow-hidden bg-transparent rounded-xl">
+            <div className="w-full max-w-[820px] overflow-hidden lg:max-w-[1040px]">
+              <div className="relative aspect-[3.5/6] w-full overflow-hidden rounded-3xl border border-white/20 bg-transparent">  
                 {heroImageUrl ? (
                   <img
                     src={heroImageUrl}
