@@ -192,13 +192,20 @@ export const downloadReceipt = async (prebooking: PrebookingData, invoiceEmail: 
     locale: "en-IN",
   });
 
-  const blob = buildInvoicePdfBlob(invoiceData);
+  const blob = await buildInvoicePdfBlob(invoiceData);
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
   link.download = `pingme-invoice-${invoiceData.invoiceNumber.replace(/[^a-zA-Z0-9_-]/g, "")}.pdf`;
+  link.style.display = "none";
   document.body.appendChild(link);
-  link.click();
+
+  if (typeof MouseEvent === "function") {
+    link.dispatchEvent(new MouseEvent("click"));
+  } else {
+    link.click();
+  }
+
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 };

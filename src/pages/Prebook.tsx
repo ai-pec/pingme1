@@ -19,8 +19,6 @@ import {
 import type { PrebookingData } from "@/lib/prebookService";
 import { resolveProductImageUrl } from "@/lib/productCatalog";
 import { checkUsernameUniqueness, generateUsernameSuggestions } from "@/lib/publicNfcService";
-import { buildInvoiceDataFromPrebooking } from "@/lib/invoiceUtils";
-import { InvoiceTemplate } from "@/components/InvoiceTemplate";
 import type { DeliveryAddress } from "@/types/user";
 
 const indianStates = [
@@ -255,17 +253,6 @@ const Prebook = () => {
   };
 
   if (success) {
-    const invoiceData = receiptOrder
-      ? buildInvoiceDataFromPrebooking(receiptOrder, {
-          invoiceNumber: `#PM${receiptOrder.payment?.orderId?.slice(-8) || Date.now()}`,
-          invoiceDate: receiptOrder.payment?.paidAt || new Date().toISOString(),
-          billingCountry: "India",
-          paymentMode: "Online / Razorpay",
-          qrCodeUrl: "https://via.placeholder.com/104?text=QR",
-          locale: "en-IN",
-        })
-      : null;
-
     return (
       <MainLayout>
         <div className="container py-20 text-center max-w-md mx-auto">
@@ -277,6 +264,7 @@ const Prebook = () => {
           <p className="text-muted-foreground mb-6">
             We'll reach out to you shortly with payment and delivery details.
           </p>
+
           {receiptOrder && (
             <div className="flex flex-col sm:flex-row gap-3 justify-center mb-4">
               <Button onClick={() => downloadReceipt(receiptOrder, invoiceEmail)}>
@@ -289,12 +277,6 @@ const Prebook = () => {
             <Button variant="outline" onClick={() => navigate("/products")}>Continue Shopping</Button>
           </div>
         </div>
-
-        {invoiceData && (
-          <div className="container mb-20 max-w-[950px] mx-auto">
-            <InvoiceTemplate data={invoiceData} />
-          </div>
-        )}
       </MainLayout>
     );
   }

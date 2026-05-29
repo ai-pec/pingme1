@@ -37,6 +37,11 @@ const ProductCardItem = ({ product }: { product: ProductVariant }) => {
   const [imageFailed, setImageFailed] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
+  const responsiveImageSizes = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw";
+  const responsiveSrcSet = product.image
+    ? `${product.image} 480w, ${product.image} 768w, ${product.image} 1024w, ${product.image} 1280w`
+    : undefined;
+
   const handleAddToCart = () => {
     addToCart({
       id: product.id,
@@ -80,10 +85,12 @@ const ProductCardItem = ({ product }: { product: ProductVariant }) => {
             </span>
           )}
 
-          <div className="aspect-[4/3] sm:aspect-[5/4] md:aspect-[16/11] bg-secondary/40 rounded-xl mb-5 flex items-center justify-center p-3 overflow-hidden transition-colors group-hover:bg-secondary/70">
+          <div className="aspect-[4/3] sm:aspect-[5/4] md:aspect-[16/11] xl:aspect-[4/3] 2xl:aspect-[5/4] bg-secondary/40 rounded-xl mb-5 flex items-center justify-center p-3 overflow-hidden transition-colors group-hover:bg-secondary/70">
             {product.image && !imageFailed ? (
               <img
                 src={product.image}
+                srcSet={responsiveSrcSet}
+                sizes={responsiveImageSizes}
                 alt={product.title}
                 loading="lazy"
                 decoding="async"
@@ -115,10 +122,12 @@ const ProductCardItem = ({ product }: { product: ProductVariant }) => {
           {product.image && !imageFailed ? (
             <img
               src={product.image}
+              srcSet={responsiveSrcSet}
+              sizes="100vw"
               alt={product.title}
               loading="lazy"
               decoding="async"
-              className="w-full h-auto max-h-[260px] sm:max-h-[320px] md:max-h-[420px] object-contain drop-shadow-xl"
+              className="w-full h-auto max-h-[220px] sm:max-h-[280px] md:max-h-[360px] lg:max-h-[420px] object-contain drop-shadow-xl"
               onError={() => setImageFailed(true)}
             />
           ) : (
@@ -259,6 +268,9 @@ const Products = () => {
 
   const CategoryCoverImage = ({ category }: { category: ProductCategory }) => {
     const [coverFailed, setCoverFailed] = useState(false);
+    const responsiveCategorySrcSet = category.coverImage
+      ? `${category.coverImage} 600w, ${category.coverImage} 900w, ${category.coverImage} 1200w`
+      : undefined;
 
     if (!category.coverImage || coverFailed) {
       return <span className="text-6xl" aria-hidden="true">{category.icon}</span>;
@@ -267,6 +279,8 @@ const Products = () => {
     return (
       <img
         src={category.coverImage}
+        srcSet={responsiveCategorySrcSet}
+        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
         alt={category.name}
         loading="lazy"
         decoding="async"

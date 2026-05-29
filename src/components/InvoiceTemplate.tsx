@@ -1,30 +1,12 @@
 import React from "react";
-import { formatCurrency, formatDate, InvoiceData, InvoiceItem, TaxBreakdown } from "@/lib/invoiceUtils";
+import { formatCurrency, formatDate, InvoiceData, InvoiceItem } from "@/lib/invoiceUtils";
 import "./InvoiceTemplate.css";
 
 interface InvoiceTemplateProps {
   data: InvoiceData;
 }
 
-const getTaxCell = (item: InvoiceItem, currency: string, locale: string) => {
-  if (item.igst > 0) {
-    return (
-      <>
-        <td className="amount-cell">{formatCurrency(item.cgst, currency, locale)}</td>
-        <td className="amount-cell">{formatCurrency(item.sgst, currency, locale)}</td>
-        <td className="amount-cell">{formatCurrency(item.igst, currency, locale)}</td>
-      </>
-    );
-  }
 
-  return (
-    <>
-      <td className="amount-cell">{formatCurrency(item.cgst, currency, locale)}</td>
-      <td className="amount-cell">{formatCurrency(item.sgst, currency, locale)}</td>
-      <td className="amount-cell">-</td>
-    </>
-  );
-};
 
 export const InvoiceTemplate: React.FC<InvoiceTemplateProps> = ({ data }) => {
   const {
@@ -44,11 +26,11 @@ export const InvoiceTemplate: React.FC<InvoiceTemplateProps> = ({ data }) => {
     items,
     totals,
     notes,
-    footer,
     contact,
     returnPolicy,
     authorizedSignatory,
   } = data;
+
 
   return (
     <article className="invoice-root" id="invoice-root">
@@ -68,10 +50,18 @@ export const InvoiceTemplate: React.FC<InvoiceTemplateProps> = ({ data }) => {
             </div>
           </div>
 
-          <div className="invoice-header-meta">
+          <div className="invoice-summary-meta">
             <div className="invoice-meta-box">
               <div className="meta-label">Invoice No.</div>
               <div className="meta-value">{invoiceNumber}</div>
+              <div className="meta-row">
+                <span>Invoice Date</span>
+                <strong>{formatDate(invoiceDate, locale)}</strong>
+              </div>
+              <div className="meta-row">
+                <span>Order ID</span>
+                <strong>{orderId}</strong>
+              </div>
             </div>
             <div className="invoice-qr-block">
               <img className="invoice-qr" src={qrCodeUrl} alt="Invoice QR Code" />
@@ -90,24 +80,24 @@ export const InvoiceTemplate: React.FC<InvoiceTemplateProps> = ({ data }) => {
               <tr>
                 <th>Order ID</th>
                 <td>{orderId}</td>
-                <th>PAN</th>
-                <td>{company.pan}</td>
+                <th>Invoice Date</th>
+                <td>{formatDate(invoiceDate, locale)}</td>
               </tr>
               <tr>
                 <th>Order Date</th>
                 <td>{formatDate(orderDate, locale)}</td>
-                <th>CIN</th>
-                <td>{company.cin}</td>
+                <th>Payment Mode</th>
+                <td>{paymentMode}</td>
               </tr>
               <tr>
-                <th>Invoice Date</th>
-                <td>{formatDate(invoiceDate, locale)}</td>
+                <th>GSTIN</th>
+                <td>{company.gstin}</td>
                 <th>Currency</th>
                 <td>{currency}</td>
               </tr>
               <tr>
-                <th>Payment Mode</th>
-                <td>{paymentMode}</td>
+                <th>CIN</th>
+                <td>{company.cin}</td>
                 <th>State / Country</th>
                 <td>{billingCountry}</td>
               </tr>
@@ -148,14 +138,14 @@ export const InvoiceTemplate: React.FC<InvoiceTemplateProps> = ({ data }) => {
             <thead>
               <tr>
                 <th className="product-cell">Product</th>
-                <th>Qty</th>
-                <th>Gross</th>
-                <th>Discount</th>
-                <th>Taxable Value</th>
-                <th>CGST</th>
-                <th>SGST</th>
-                <th>IGST</th>
-                <th>Total</th>
+                <th className="center-cell">Qty</th>
+                <th className="right-cell">Gross Amount</th>
+                <th className="right-cell">Discount</th>
+                <th className="right-cell">Taxable Value</th>
+                <th className="right-cell">CGST</th>
+                <th className="right-cell">SGST</th>
+                <th className="right-cell">IGST</th>
+                <th className="right-cell">Total</th>
               </tr>
             </thead>
             <tbody>
@@ -168,8 +158,6 @@ export const InvoiceTemplate: React.FC<InvoiceTemplateProps> = ({ data }) => {
                   <td className="center-cell">{item.quantity}</td>
                   <td className="amount-cell">{formatCurrency(item.grossAmount, currency, locale)}</td>
                   <td className="amount-cell">{formatCurrency(item.discount, currency, locale)}</td>
-                  <td className="amount-cell">{formatCurrency(item.taxableValue, currency, locale)}</td>
-                  {getTaxCell(item, currency, locale)}
                   <td className="amount-cell">{formatCurrency(item.total, currency, locale)}</td>
                 </tr>
               ))}
@@ -188,16 +176,8 @@ export const InvoiceTemplate: React.FC<InvoiceTemplateProps> = ({ data }) => {
               <strong>{formatCurrency(totals.totalTaxableValue, currency, locale)}</strong>
             </div>
             <div className="summary-item">
-              <span>Total CGST</span>
-              <strong>{formatCurrency(totals.totalCgst, currency, locale)}</strong>
-            </div>
-            <div className="summary-item">
-              <span>Total SGST</span>
-              <strong>{formatCurrency(totals.totalSgst, currency, locale)}</strong>
-            </div>
-            <div className="summary-item">
-              <span>Total IGST</span>
-              <strong>{formatCurrency(totals.totalIgst, currency, locale)}</strong>
+              <span>Total Taxes</span>
+              <strong>{formatCurrency(totals.totalTaxes, currency, locale)}</strong>
             </div>
           </div>
 
