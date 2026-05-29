@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { subscribeToOrders, updateOrderStatus } from "@/lib/adminService";
+import { downloadReceipt } from "@/lib/paymentService";
 import { categoryDescriptionFromName, categoryNameFromSlug, normalizeCategorySlug } from "@/lib/productCatalog";
 import { subscribeToProducts, saveProduct, deleteProductDoc, uploadProductImage, DbProduct, renameCategory, moveProductsToCategory, subscribeToProductCategories, saveProductCategory, deleteCategory } from "@/lib/productService";
 import type { PrebookingRecord } from "@/lib/prebookService";
@@ -637,6 +638,7 @@ export default function Admin() {
                   <p><span className="font-medium">Status:</span> {selectedOrder.status || "pending"}</p>
                   <p><span className="font-medium">Name:</span> {selectedOrder.fullName || "-"}</p>
                   <p><span className="font-medium">Email:</span> {selectedOrder.email || "-"}</p>
+                  <p><span className="font-medium">Invoice Email:</span> {selectedOrder.email || "-"}</p>
                   <p><span className="font-medium">Phone:</span> {selectedOrder.phone || "-"}</p>
                   <p><span className="font-medium">Amount:</span> ₹{Number(selectedOrder.totalAmount || 0).toFixed(2)}</p>
                   <p><span className="font-medium">Address:</span> {selectedOrder.address || "-"}</p>
@@ -683,6 +685,13 @@ export default function Admin() {
                     disabled={!selectedOrder || updatingOrderId === selectedOrder.id || selectedOrder.status === "cancelled"}
                   >
                     Cancel Order
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => selectedOrder && downloadReceipt(selectedOrder, selectedOrder.email || "")}
+                    disabled={!selectedOrder?.payment}
+                  >
+                    Download Invoice
                   </Button>
                 </div>
               </div>

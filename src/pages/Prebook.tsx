@@ -11,12 +11,16 @@ import { useAuth } from "@/contexts/AuthContext";
 import NFCProfileBuilder, { NFCProfileData } from "@/components/NFCProfileBuilder";
 import {
   createRazorpayOrder,
+  downloadReceipt,
   openRazorpayCheckout,
   deleteNfcProfileDraft,
   verifyRazorpayPaymentAndCreatePrebooking,
 } from "@/lib/paymentService";
+import type { PrebookingData } from "@/lib/prebookService";
 import { resolveProductImageUrl } from "@/lib/productCatalog";
 import { checkUsernameUniqueness, generateUsernameSuggestions } from "@/lib/publicNfcService";
+import { buildInvoiceDataFromPrebooking } from "@/lib/invoiceUtils";
+import { InvoiceTemplate } from "@/components/InvoiceTemplate";
 import type { DeliveryAddress } from "@/types/user";
 
 const indianStates = [
@@ -47,6 +51,8 @@ const Prebook = () => {
   const [step, setStep] = useState<"delivery" | "profile" | "payment">("delivery");
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [receiptOrder, setReceiptOrder] = useState<PrebookingData | null>(null);
+  const [invoiceEmail, setInvoiceEmail] = useState("");
   
   // NFC Profile State
   const [nfcProfile, setNFCProfile] = useState<NFCProfileData>({
@@ -194,29 +200,34 @@ const Prebook = () => {
         phone: deliveryPhone,
         onSuccess: async (paymentResponse) => {
           try {
+            const completedPrebooking: PrebookingData = {
+              ...prebookingPayload,
+              payment: {
+                gateway: "razorpay",
+                orderId: paymentResponse.razorpay_order_id,
+                paymentId: paymentResponse.razorpay_payment_id,
+                signature: paymentResponse.razorpay_signature,
+                amount: order.amount,
+                currency: order.currency,
+                paidAt: new Date().toISOString(),
+              },
+            };
+
             await verifyRazorpayPaymentAndCreatePrebooking({
               orderId: paymentResponse.razorpay_order_id,
               paymentId: paymentResponse.razorpay_payment_id,
               signature: paymentResponse.razorpay_signature,
-              prebooking: {
-                ...prebookingPayload,
-                payment: {
-                  gateway: "razorpay",
-                  orderId: paymentResponse.razorpay_order_id,
-                  paymentId: paymentResponse.razorpay_payment_id,
-                  signature: paymentResponse.razorpay_signature,
-                  amount: order.amount,
-                  currency: order.currency,
-                  paidAt: new Date().toISOString(),
-                },
-              },
+              prebooking: completedPrebooking,
             });
 
+            setReceiptOrder(completedPrebooking);
+            setInvoiceEmail(deliveryEmail);
             setSuccess(true);
             clearCart();
           } catch (verifyErr: unknown) {
             const verifyMessage = verifyErr instanceof Error ? verifyErr.message : "Payment verification failed.";
             toast({ title: "Payment verification failed", description: verifyMessage, variant: "destructive" });
+            navigate("/booking");
           } finally {
             setSubmitting(false);
           }
@@ -233,6 +244,7 @@ const Prebook = () => {
             description: "You can retry payment whenever you are ready.",
             variant: "destructive",
           });
+          navigate("/booking");
         },
       });
     } catch (error: unknown) {
@@ -243,19 +255,46 @@ const Prebook = () => {
   };
 
   if (success) {
+    const invoiceData = receiptOrder
+      ? buildInvoiceDataFromPrebooking(receiptOrder, {
+          invoiceNumber: `#PM${receiptOrder.payment?.orderId?.slice(-8) || Date.now()}`,
+          invoiceDate: receiptOrder.payment?.paidAt || new Date().toISOString(),
+          billingCountry: "India",
+          paymentMode: "Online / Razorpay",
+          qrCodeUrl: "https://via.placeholder.com/104?text=QR",
+          locale: "en-IN",
+        })
+      : null;
+
     return (
       <MainLayout>
         <div className="container py-20 text-center max-w-md mx-auto">
           <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold mb-2">Booking Confirmed!</h1>
+          <p className="text-muted-foreground mb-2">
+            Invoice will be sent to <span className="font-semibold">{invoiceEmail || email || "your email"}</span>.
+          </p>
           <p className="text-muted-foreground mb-6">
             We'll reach out to you shortly with payment and delivery details.
           </p>
-          <div className="flex gap-3 justify-center">
+          {receiptOrder && (
+            <div className="flex flex-col sm:flex-row gap-3 justify-center mb-4">
+              <Button onClick={() => downloadReceipt(receiptOrder, invoiceEmail)}>
+                Download Invoice
+              </Button>
+            </div>
+          )}
+          <div className="flex gap-3 justify-center mb-12">
             <Button onClick={() => navigate("/profile")}>View My Profile</Button>
             <Button variant="outline" onClick={() => navigate("/products")}>Continue Shopping</Button>
           </div>
         </div>
+
+        {invoiceData && (
+          <div className="container mb-20 max-w-[950px] mx-auto">
+            <InvoiceTemplate data={invoiceData} />
+          </div>
+        )}
       </MainLayout>
     );
   }

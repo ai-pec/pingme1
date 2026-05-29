@@ -1,5 +1,6 @@
 import { auth } from "@/lib/firebase";
 import type { PrebookingData } from "@/lib/prebookService";
+import { buildInvoiceDataFromPrebooking, buildInvoicePdfBlob } from "@/lib/invoiceUtils";
 
 interface CreateOrderResponse {
   orderId: string;
@@ -52,9 +53,22 @@ declare global {
 
 const RAZORPAY_SDK_URL = "https://checkout.razorpay.com/v1/checkout.js";
 
-const getPaymentApiBaseUrl = () => {
+const getPaymentApiBaseUrl = (): string => {
   const base = import.meta.env.VITE_PAYMENT_API_BASE_URL;
-  return typeof base === "string" ? base.replace(/\/$/, "") : "";
+  if (typeof base === "string" && base.trim()) {
+    return base.replace(/\/$/, "");
+  }
+
+  if (typeof window !== "undefined" && window.location) {
+    const fallback = window.location.origin;
+    console.warn(
+      "VITE_PAYMENT_API_BASE_URL is not configured. Falling back to window.location.origin for payment API requests.",
+      fallback,
+    );
+    return fallback;
+  }
+
+  return "";
 };
 
 export const loadRazorpayCheckoutScript = async (): Promise<void> => {
@@ -166,6 +180,27 @@ export const deleteNfcProfileDraft = async (profileId: string): Promise<void> =>
     const text = await res.text();
     throw new Error(text || "Failed to delete NFC draft.");
   }
+};
+
+export const downloadReceipt = async (prebooking: PrebookingData, invoiceEmail: string): Promise<void> => {
+  const invoiceData = buildInvoiceDataFromPrebooking(prebooking, {
+    invoiceNumber: `#PM${prebooking.payment?.orderId?.slice(-8) || Date.now()}`,
+    invoiceDate: prebooking.payment?.paidAt || new Date().toISOString(),
+    billingCountry: "India",
+    paymentMode: "Online / Razorpay",
+    qrCodeUrl: "https://via.placeholder.com/104?text=QR",
+    locale: "en-IN",
+  });
+
+  const blob = buildInvoicePdfBlob(invoiceData);
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `pingme-invoice-${invoiceData.invoiceNumber.replace(/[^a-zA-Z0-9_-]/g, "")}.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 };
 
 export const openRazorpayCheckout = async (input: {

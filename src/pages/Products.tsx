@@ -80,12 +80,14 @@ const ProductCardItem = ({ product }: { product: ProductVariant }) => {
             </span>
           )}
 
-          <div className="aspect-[4/3] bg-secondary/40 rounded-xl mb-5 flex items-center justify-center p-3 overflow-hidden transition-colors group-hover:bg-secondary/70">
+          <div className="aspect-[4/3] sm:aspect-[5/4] md:aspect-[16/11] bg-secondary/40 rounded-xl mb-5 flex items-center justify-center p-3 overflow-hidden transition-colors group-hover:bg-secondary/70">
             {product.image && !imageFailed ? (
               <img
                 src={product.image}
                 alt={product.title}
-                className="max-w-full max-h-full object-contain transition-transform duration-300 group-hover:scale-105"
+                loading="lazy"
+                decoding="async"
+                className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
                 onError={() => setImageFailed(true)}
               />
             ) : (
@@ -114,7 +116,9 @@ const ProductCardItem = ({ product }: { product: ProductVariant }) => {
             <img
               src={product.image}
               alt={product.title}
-              className="max-h-[220px] sm:max-h-[235px] object-contain drop-shadow-xl"
+              loading="lazy"
+              decoding="async"
+              className="w-full h-auto max-h-[260px] sm:max-h-[320px] md:max-h-[420px] object-contain drop-shadow-xl"
               onError={() => setImageFailed(true)}
             />
           ) : (
@@ -264,7 +268,9 @@ const Products = () => {
       <img
         src={category.coverImage}
         alt={category.name}
-        className="max-w-full max-h-full object-contain transition-transform duration-500 group-hover:scale-110"
+        loading="lazy"
+        decoding="async"
+        className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-110"
         onError={() => setCoverFailed(true)}
       />
     );
@@ -320,7 +326,7 @@ const Products = () => {
                     className={`group relative rounded-2xl border border-border bg-gradient-to-br ${cat.gradient} p-6 text-left transition-all hover:shadow-xl hover:border-primary/40 hover:scale-[1.02] active:scale-[0.98] overflow-hidden`}
                   >
                     {/* Cover Image */}
-                    <div className="aspect-[16/10] rounded-xl bg-white/60 dark:bg-white/10 mb-5 flex items-center justify-center p-4 overflow-hidden">
+                    <div className="aspect-[16/10] sm:aspect-[5/4] md:aspect-[4/3] rounded-xl bg-white/60 dark:bg-white/10 mb-5 flex items-center justify-center p-4 overflow-hidden">
                       <CategoryCoverImage category={cat} />
                     </div>
 

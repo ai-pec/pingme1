@@ -197,6 +197,93 @@ const sanitizeText = (value) => {
   return value.trim();
 };
 
+const escapePdfText = (value) => {
+  return String(value || "")
+    .replace(/\\/g, "\\\\")
+    .replace(/\(/g, "\\(")
+    .replace(/\)/g, "\\)")
+    .replace(/\r?\n/g, " ");
+};
+
+const buildInvoicePdfBuffer = ({
+  invoiceTitle,
+  invoiceNumber,
+  invoiceDate,
+  customerName,
+  customerEmail,
+  billingAddress,
+  orderId,
+  paymentId,
+  paymentGateway,
+  currency,
+  amount,
+  items,
+}) => {
+  const lines = [
+    invoiceTitle,
+    "------------------------------------------------------------",
+    `Invoice Number: ${invoiceNumber}`,
+    `Invoice Date: ${invoiceDate}`,
+    "",
+    `Customer Name: ${customerName}`,
+    `Customer Email: ${customerEmail}`,
+    `Billing Address: ${billingAddress}`,
+    "",
+    `Order ID: ${orderId}`,
+    `Payment ID: ${paymentId}`,
+    `Payment Gateway: ${paymentGateway}`,
+    `Currency: ${currency}`,
+    `Amount Paid: INR ${Number(amount || 0).toFixed(2)}`,
+    "",
+    "Items:",
+    ...((Array.isArray(items) && items.length)
+      ? items.map((item, index) => {
+          const quantity = Number(item.quantity || 1);
+          const price = Number(item.price || 0).toFixed(2);
+          const total = (quantity * Number(item.price || 0)).toFixed(2);
+          return `${index + 1}. ${item.title || "Item"} | Qty: ${quantity} | Unit: INR ${price} | Total: INR ${total}`;
+        })
+      : ["No items listed"]),
+    "",
+    `Total Amount Due: INR ${Number(amount || 0).toFixed(2)}`,
+    "",
+    "Thank you for choosing PingME.",
+    "For support, contact support@pingme.com",
+  ];
+
+  const pageLines = lines.map((line, index) => {
+    const y = 820 - index * 16;
+    return `BT /F1 10 Tf 50 ${y} Td (${escapePdfText(line)}) Tj ET`;
+  });
+
+  const content = pageLines.join("\n");
+  const contentLength = Buffer.byteLength(content, "utf8");
+
+  const objects = [
+    "%PDF-1.3\n",
+    "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n",
+    "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n",
+    "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>\nendobj\n",
+    "4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n",
+    `5 0 obj\n<< /Length ${contentLength} >>\nstream\n${content}\nendstream\nendobj\n`,
+  ];
+
+  let offset = 0;
+  const xrefEntries = ["0000000000 65535 f \n"];
+  const objectStrings = objects.map((object) => {
+    const result = object;
+    xrefEntries.push(`${offset.toString().padStart(10, "0")} 00000 n \n`);
+    offset += Buffer.byteLength(result, "utf8");
+    return result;
+  });
+
+  const xref = `xref\n0 ${objects.length + 1}\n${xrefEntries.join("")} `;
+  const trailer = `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${offset}\n%%EOF`;
+  const pdf = objectStrings.join("") + xref + trailer;
+
+  return Buffer.from(pdf, "utf8");
+};
+
 const buildPublicNfcProfilePayload = ({ profileId, profile }) => {
   const normalizedUsername = normalizeNfcUsername(profile?.username || "");
   const fallbackUsername = normalizeNfcUsername(`profile-${String(profileId || "").slice(0, 8)}`);
@@ -273,7 +360,15 @@ const syncProfileToNfcProfilesCollection = async ({ profileId, profile, source =
   return { synced: true, username: payload.username };
 };
 
-const sendBookingConfirmationEmail = async ({ email, fullName, bookingId, items, totalAmount }) => {
+const sendBookingConfirmationEmail = async ({
+  email,
+  fullName,
+  bookingId,
+  items,
+  totalAmount,
+  payment,
+  billingAddress,
+}) => {
   if (!email) {
     return;
   }
@@ -297,6 +392,23 @@ const sendBookingConfirmationEmail = async ({ email, fullName, bookingId, items,
     : "-";
 
   const totalLabel = Number(totalAmount || 0).toFixed(2);
+  const invoiceNumber = bookingId || `INV-${Date.now()}`;
+  const invoiceDate = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" });
+
+  const invoiceBuffer = buildInvoicePdfBuffer({
+    invoiceTitle: "PINGME INVOICE",
+    invoiceNumber,
+    invoiceDate,
+    customerName: fullName || "Customer",
+    customerEmail: email,
+    billingAddress: billingAddress || "Not provided",
+    orderId: payment?.orderId || bookingId,
+    paymentId: payment?.paymentId || "N/A",
+    paymentGateway: payment?.gateway || "Razorpay",
+    currency: payment?.currency || "INR",
+    amount: payment?.amount || totalAmount || 0,
+    items,
+  });
 
   await transporter.sendMail({
     from: fromEmail,
@@ -310,6 +422,8 @@ const sendBookingConfirmationEmail = async ({ email, fullName, bookingId, items,
       `Items: ${itemsLabel}`,
       `Total Paid: INR ${totalLabel}`,
       "",
+      "Please find your invoice attached to this email.",
+      "",
       "Thank you for choosing PingME.",
     ].join("\n"),
     html: `
@@ -318,8 +432,16 @@ const sendBookingConfirmationEmail = async ({ email, fullName, bookingId, items,
       <p><strong>Booking ID:</strong> ${bookingId}</p>
       <p><strong>Items:</strong> ${itemsLabel}</p>
       <p><strong>Total Paid:</strong> INR ${totalLabel}</p>
+      <p>Please find your invoice attached to this email.</p>
       <p>Thank you for choosing PingME.</p>
     `,
+    attachments: [
+      {
+        filename: `pingme-invoice-${invoiceNumber}.pdf`,
+        content: invoiceBuffer,
+        contentType: "application/pdf",
+      },
+    ],
   });
 };
 
@@ -568,6 +690,8 @@ exports.verifyPayment = onRequest({
           bookingId: bookingRef.id,
           items: prebooking?.items,
           totalAmount: prebooking?.totalAmount,
+          payment: paymentData,
+          billingAddress: `${prebooking?.address || ""}, ${prebooking?.city || ""}, ${prebooking?.state || ""} - ${prebooking?.pincode || ""}`,
         });
       } catch (mailErr) {
         console.error("booking confirmation email error", mailErr);
