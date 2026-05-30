@@ -193,6 +193,27 @@ export const categoryCoverImageFromProducts = (products: ProductVariant[]): stri
   return coverSource?.image?.trim() || "";
 };
 
+export const startingPriceFromProducts = (products: ProductVariant[]): string => {
+  if (!products || products.length === 0) return "";
+
+  let minPrice = Number.POSITIVE_INFINITY;
+  let minPriceStr = "";
+
+  for (const p of products) {
+    const raw = (p.price || "").trim();
+    if (!raw) continue;
+
+    const numeric = Number(raw.replace(/[^0-9.]/g, ""));
+    if (!Number.isFinite(numeric)) continue;
+
+    if (numeric < minPrice) {
+      minPrice = numeric;
+      minPriceStr = raw;
+    }
+  }
+
+  return minPriceStr;
+};
 export const buildGenericCategoryTutorial = (categoryName: string): CategoryTutorial => {
   return {
     title: `How to Use Your ${categoryName}`,

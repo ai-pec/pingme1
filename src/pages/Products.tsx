@@ -13,6 +13,7 @@ import {
   categoryDescriptionFromName,
   categoryGradientFromSlug,
   categoryIconFromProducts,
+  startingPriceFromProducts,
   categoryNameFromSlug,
   normalizeCategorySlug,
   type ProductVariant,
@@ -381,7 +382,12 @@ const Products = () => {
                           </span>
                           <h3 className="text-lg font-bold leading-none pt-0.5">{cat.name}</h3>
                         </div>
+                        {cat.products.length > 0 && (
+                          <span className="inline-block mt-2 text-sm font-bold text-foreground">Starting at {startingPriceFromProducts(cat.products)}</span>
+                        )}
+                        
                         <p className="text-sm text-muted-foreground line-clamp-2">{cat.description}</p>
+
                         <span className="inline-block mt-3 text-xs font-medium text-primary">
                           {cat.products.length} design{cat.products.length > 1 ? "s" : ""} available
                         </span>
