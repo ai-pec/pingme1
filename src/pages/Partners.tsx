@@ -1,4 +1,5 @@
 import MainLayout from "@/layouts/MainLayout";
+import { Link } from "react-router-dom";
 import { BadgeCheck, Building2, Handshake, Rocket, ShieldCheck, Users } from "lucide-react";
 import pingMeLogo from "@/assets/pingprocard_logo.jpeg";
 import collaborationCard from "@/assets/pingprocard.jpeg";
@@ -55,6 +56,18 @@ const Partners = () => {
               PingME is proud to announce a pilot partnership with <span className="font-semibold text-amber-200">Pro Ultimate Gym Chain</span>, our
               first collaborator. This program validates how privacy-first communication can improve member safety and day-to-day operations.
             </p>
+          </div>
+
+          <div className="mx-auto max-w-3xl">
+            <div className="mt-8 flex justify-center">
+              <Link
+                to="/contact"
+                role="button"
+                className="inline-block w-full sm:w-auto text-center bg-amber-200/8 hover:bg-amber-200/12 border border-amber-300/20 text-amber-50 hover:text-amber-200 font-extrabold text-2xl md:text-3xl px-6 py-4 rounded-2xl shadow-lg"
+              >
+                Want to collaborate with us? Contact us
+              </Link>
+            </div>
           </div>
 
           <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
@@ -125,6 +138,13 @@ const Partners = () => {
               <p className="mt-4 text-sm leading-7 text-stone-300">
                 This pilot marks the beginning of PingME's partnership track. We are working closely with Pro Ultimate Gym Chain
                 to shape reliable, privacy-first communication at scale.
+              </p>
+              <p className="mt-4 text-sm leading-7 text-stone-300">
+                Want to collaborate with us?{' '}
+                <Link to="/contact" className="font-semibold text-amber-200 hover:underline">
+                  Contact us
+                </Link>
+                .
               </p>
             </aside>
           </div>
