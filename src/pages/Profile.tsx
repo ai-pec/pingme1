@@ -117,53 +117,128 @@ export default function Profile() {
     setNfcDialogOpen(true);
   };
 
-  if (!user || !profile) {
+  
+    // If not signed in at all, show login prompt (ProtectedRoute normally handles this)
+    if (!user) {
+      return (
+        <MainLayout>
+          <div className="container py-8 flex items-center justify-center min-h-[60vh]">
+            <p className="text-sm text-muted-foreground">You must be signed in to view profiles.</p>
+          </div>
+        </MainLayout>
+      );
+    }
+
+    // Viewing another user's profile: wait for fetch or show not-found
+    if (isViewingOtherUser) {
+      if (fetchingOtherProfile) {
+        return (
+          <MainLayout>
+            <div className="container py-8 flex items-center justify-center min-h-[60vh]">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          </MainLayout>
+        );
+      }
+
+      if (!fetchedProfile) {
+        return (
+          <MainLayout>
+            <div className="container py-8 flex items-center justify-center min-h-[60vh]">
+              <p className="text-sm text-muted-foreground">User profile not found.</p>
+            </div>
+          </MainLayout>
+        );
+      }
+    }
+
+    // Viewing own profile: ensure the current profile is loaded
+    if (!isViewingOtherUser && !profile) {
+      return (
+        <MainLayout>
+          <div className="container py-8 flex items-center justify-center min-h-[60vh]">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          </div>
+        </MainLayout>
+      );
+    }
+
+    // If viewing another user's profile, show read-only customer view
+    if (isViewingOtherUser) {
+      return (
+        <MainLayout>
+          <div className="container max-w-3xl py-8">
+            <div className="space-y-6">
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight">Customer Profile</h1>
+                <p className="text-muted-foreground">Viewing information for {fetchedProfile?.displayName || "Customer"}</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <p><span className="font-medium">Name:</span> {fetchedProfile?.displayName || "-"}</p>
+                <p><span className="font-medium">Email:</span> {fetchedProfile?.email || "-"}</p>
+                <p><span className="font-medium">Mobile:</span> {fetchedProfile?.mobile || "-"}</p>
+                <p><span className="font-medium">Joined:</span> {fetchedProfile?.createdAt ? new Date((fetchedProfile.createdAt as any).seconds * 1000).toLocaleString() : "-"}</p>
+              </div>
+
+              <OrderHistory orders={orders} ordersLoading={ordersLoading} onEditNFC={openEditNFC} />
+
+              <NFCEditModal
+                open={nfcDialogOpen}
+                onOpenChange={(open) => {
+                  setNfcDialogOpen(open);
+                  if (!open) {
+                    setSelectedNfcOrderId(null);
+                  }
+                }}
+                orderId={selectedNfcOrderId}
+                profileDraft={nfcProfileDraft}
+                setProfileDraft={setNfcProfileDraft}
+              />
+            </div>
+          </div>
+        </MainLayout>
+      );
+    }
+
+    // Default: viewing own profile (editable)
     return (
       <MainLayout>
-        <div className="container py-8 flex items-center justify-center min-h-[60vh]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="container max-w-3xl py-8">
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">Profile Settings</h1>
+              <p className="text-muted-foreground">Manage your account information and delivery preferences</p>
+            </div>
+
+            <EmailVerificationBanner
+              user={user}
+              resending={resendMutation.isPending}
+              refreshing={refreshMutation.isPending}
+              onResend={() => resendMutation.mutate()}
+              onRefresh={() => refreshMutation.mutate()}
+            />
+
+            <PersonalInfoForm />
+            <EmailSettings />
+            <AddressManagement />
+            <OrderHistory orders={orders} ordersLoading={ordersLoading} onEditNFC={openEditNFC} />
+            <SavedPayments />
+
+            <NFCEditModal
+              open={nfcDialogOpen}
+              onOpenChange={(open) => {
+                setNfcDialogOpen(open);
+                if (!open) {
+                  setSelectedNfcOrderId(null);
+                }
+              }}
+              orderId={selectedNfcOrderId}
+              profileDraft={nfcProfileDraft}
+              setProfileDraft={setNfcProfileDraft}
+            />
+          </div>
         </div>
       </MainLayout>
     );
-  }
-
-  return (
-    <MainLayout>
-      <div className="container max-w-3xl py-8">
-        <div className="space-y-6">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Profile Settings</h1>
-            <p className="text-muted-foreground">Manage your account information and delivery preferences</p>
-          </div>
-
-          <EmailVerificationBanner
-            user={user}
-            resending={resendMutation.isPending}
-            refreshing={refreshMutation.isPending}
-            onResend={() => resendMutation.mutate()}
-            onRefresh={() => refreshMutation.mutate()}
-          />
-
-          <PersonalInfoForm />
-          <EmailSettings />
-          <AddressManagement />
-          <OrderHistory orders={orders} ordersLoading={ordersLoading} onEditNFC={openEditNFC} />
-          <SavedPayments />
-
-          <NFCEditModal
-            open={nfcDialogOpen}
-            onOpenChange={(open) => {
-              setNfcDialogOpen(open);
-              if (!open) {
-                setSelectedNfcOrderId(null);
-              }
-            }}
-            orderId={selectedNfcOrderId}
-            profileDraft={nfcProfileDraft}
-            setProfileDraft={setNfcProfileDraft}
-          />
-        </div>
-      </div>
-    </MainLayout>
-  );
 }
