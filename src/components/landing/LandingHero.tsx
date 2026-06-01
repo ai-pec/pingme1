@@ -358,6 +358,8 @@ const LandingHero = () => {
           </div>
         </section>
 
+        
+
         <section id="what-we-offer" className="space-y-8">
           <div className="max-w-3xl">
             <p className="section-eyebrow text-left">What We Offer</p>
@@ -480,6 +482,19 @@ const LandingHero = () => {
             </ul>
           </div>
         </section>
+        {/* Find Us block placed below 'Our Mission' and 'What We Stand For' */}
+        <div className="mx-auto max-w-6xl mt-6">
+          <div className="bg-white rounded-2xl p-6 shadow-sm">
+            <p className="text-xs font-semibold text-muted-foreground uppercase">Find us</p>
+            <h3 className="font-bold text-2xl mt-2">Our Office</h3>
+            <div className="mt-2 text-sm font-light text-muted-foreground">
+              Ping IFF LLP<br/>
+              745, Burail, Ekta Market,<br/>
+              Burail Village, Sector 45,<br/>
+              Chandigarh – 160047
+            </div>
+          </div>
+        </div>
       </div>
     </main>
   );
