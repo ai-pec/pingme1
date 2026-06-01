@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { Loader2, Linkedin, Twitter, Instagram, Youtube, Facebook, Link as LinkIcon } from "lucide-react";
 import { fetchPublicNfcProfile, normalizeNfcUsername, type PublicNfcProfile } from "@/lib/publicNfcService";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,6 @@ const getErrorMessage = (error: unknown, fallback: string): string => {
   if (error instanceof Error && error.message) {
     return error.message;
   }
-
   return fallback;
 };
 
@@ -42,25 +41,26 @@ function createVCard(profile: PublicNfcProfile) {
   return { vcard, blob, file, filename };
 }
 
+
 const getSocialIcon = (label: string) => {
   switch (label) {
-    case "LinkedIn": return <Linkedin className="w-4 h-4 mr-2" />;
-    case "X / Twitter": return <Twitter className="w-4 h-4 mr-2" />;
-    case "Instagram": return <Instagram className="w-4 h-4 mr-2" />;
-    case "YouTube": return <Youtube className="w-4 h-4 mr-2" />;
-    case "Facebook": return <Facebook className="w-4 h-4 mr-2" />;
-    default: return <LinkIcon className="w-4 h-4 mr-2" />;
+    case "LinkedIn":   return <Linkedin  className="w-4 h-4 mr-2" />;
+    case "X / Twitter": return <Twitter  className="w-4 h-4 mr-2" />;
+    case "Instagram":  return <Instagram className="w-4 h-4 mr-2" />;
+    case "YouTube":    return <Youtube   className="w-4 h-4 mr-2" />;
+    case "Facebook":   return <Facebook  className="w-4 h-4 mr-2" />;
+    default:           return <LinkIcon  className="w-4 h-4 mr-2" />;
   }
 };
 
 export default function PublicNFCProfile() {
   const location = useLocation();
-  const usernameWithHash = location.pathname.slice(1); // Remove leading slash
-  const username = usernameWithHash.replace("#", ""); // Remove hash
+  const usernameWithHash = location.pathname.slice(1);
+  const username = usernameWithHash.replace("#", "");
   const normalizedUsername = useMemo(() => normalizeNfcUsername(username), [username]);
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string>("");
+  const [error, setError]   = useState<string>("");
   const [profile, setProfile] = useState<PublicNfcProfile | null>(null);
 
   useEffect(() => {
@@ -71,18 +71,14 @@ export default function PublicNFCProfile() {
         setLoading(true);
         setError("");
         const result = await fetchPublicNfcProfile(normalizedUsername);
-        if (!isCancelled) {
-          setProfile(result);
-        }
+        if (!isCancelled) setProfile(result);
       } catch (error: unknown) {
         if (!isCancelled) {
           setError(getErrorMessage(error, "Unable to load profile."));
           setProfile(null);
         }
       } finally {
-        if (!isCancelled) {
-          setLoading(false);
-        }
+        if (!isCancelled) setLoading(false);
       }
     };
 
@@ -93,10 +89,7 @@ export default function PublicNFCProfile() {
     }
 
     void loadProfile();
-
-    return () => {
-      isCancelled = true;
-    };
+    return () => { isCancelled = true; };
   }, [normalizedUsername]);
 
   const tagList = useMemo(
@@ -111,23 +104,63 @@ export default function PublicNFCProfile() {
   const subtitle = [profile?.jobTitle, profile?.companyName].filter(Boolean).join(" at ");
 
   const socialRows = [
-    { label: "LinkedIn", href: profile?.linkedin },
-    { label: "X / Twitter", href: profile?.twitter },
-    { label: "Instagram", href: profile?.instagram },
-    { label: "YouTube", href: profile?.youtube },
-    { label: "Facebook", href: profile?.facebook },
+    { label: "LinkedIn",   href: profile?.linkedin  },
+    { label: "X / Twitter", href: profile?.twitter  },
+    { label: "Instagram",  href: profile?.instagram },
+    { label: "YouTube",    href: profile?.youtube   },
+    { label: "Facebook",   href: profile?.facebook  },
   ].filter((item) => !!item.href);
 
-  const hasContent = !!profile && (
-    !!profile.bio ||
-    tagList.length > 0 ||
-    !!profile.email ||
-    !!profile.phone ||
-    !!profile.website ||
-    !!profile.address ||
-    socialRows.length > 0 ||
-    (profile.projects?.length || 0) > 0
-  );
+  const hasContent =
+    !!profile &&
+    (!!profile.bio ||
+      tagList.length > 0 ||
+      !!profile.email ||
+      !!profile.phone ||
+      !!profile.website ||
+      !!profile.address ||
+      socialRows.length > 0 ||
+      (profile.projects?.length || 0) > 0);
+
+  /* ── Handler: Save full contact ── */
+  const handleSaveContact = async () => {
+    if (!profile) return;
+    try {
+      const { vcard, filename } = createVCard(profile);
+      const nav: any = navigator;
+
+      if (typeof nav.canShare === "function") {
+        // Build file only when Web Share is available
+        const blob = new Blob([vcard], { type: "text/vcard;charset=utf-8" });
+        const file = new File([blob], filename, { type: "text/vcard;charset=utf-8" });
+        if (nav.canShare({ files: [file] })) {
+          await nav.share({ files: [file], title: profile.name || profile.username, text: profile.jobTitle || undefined });
+          toast.success("Contact shared");
+          return;
+        }
+      }
+
+      if (typeof (navigator as any).share === "function") {
+        await (navigator as any).share({ title: profile.name || profile.username, text: vcard });
+        toast.success("Contact shared");
+        return;
+      }
+
+      // Desktop fallback — use data URI to avoid "can't download securely" warning
+      const dataUri = `data:text/vcard;charset=utf-8,${encodeURIComponent(vcard)}`;
+      const a = document.createElement("a");
+      a.href = dataUri;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      toast.success("vCard downloaded");
+    } catch (err) {
+      console.error(err);
+      toast.error(getErrorMessage(err, "Unable to share or save contact."));
+    }
+  };
+
 
   return (
     <div className="nfc-public-page">
@@ -152,6 +185,18 @@ export default function PublicNFCProfile() {
                 <p className="nfc-eyebrow">NFC Business Profile</p>
                 <h1>{profile?.name || (loading ? "Loading..." : normalizedUsername || "NFC Profile")}</h1>
                 <p className="nfc-sub-title">{subtitle || "Business profile"}</p>
+
+                <div className="mt-3">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    disabled={!profile}
+                    onClick={handleSaveContact}
+                  >
+                    Save Contact
+                  </Button>
+                </div>
+
                 <div className="nfc-header-badges" aria-hidden="true">
                   <span>Live profile</span>
                   <span>PlzPingMe NFC</span>
@@ -190,9 +235,7 @@ export default function PublicNFCProfile() {
                   {tagList.length > 0 && (
                     <div className="nfc-chip-row">
                       {tagList.map((tag) => (
-                        <span className="nfc-chip" key={tag}>
-                          {tag}
-                        </span>
+                        <span className="nfc-chip" key={tag}>{tag}</span>
                       ))}
                     </div>
                   )}
@@ -209,55 +252,16 @@ export default function PublicNFCProfile() {
                         <a href={`mailto:${profile.email}`}>{profile.email}</a>
                       </li>
                     )}
+
                     {profile.phone && (
                       <li>
                         <span>Phone</span>
-                                  <div className="flex items-center gap-2">
-                                    <a href={`tel:${profile.phone}`}>{profile.phone}</a>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={async () => {
-                                        try {
-                                          const { vcard, blob, file, filename } = createVCard(profile);
-
-                                          const nav: any = navigator;
-                                          const canShareFiles = typeof nav.canShare === "function" && nav.canShare({ files: [file] });
-
-                                          if (canShareFiles) {
-                                            await nav.share({ files: [file], title: profile.name || profile.username, text: profile.jobTitle || undefined });
-                                            toast.success("Contact shared");
-                                            return;
-                                          }
-
-                                          if (typeof nav.share === "function") {
-                                            // Fallback: share as text
-                                            await nav.share({ title: profile.name || profile.username, text: vcard });
-                                            toast.success("Contact shared");
-                                            return;
-                                          }
-
-                                          // Final fallback: trigger download
-                                          const url = URL.createObjectURL(blob);
-                                          const a = document.createElement("a");
-                                          a.href = url;
-                                          a.download = filename;
-                                          document.body.appendChild(a);
-                                          a.click();
-                                          a.remove();
-                                          setTimeout(() => URL.revokeObjectURL(url), 5000);
-                                          toast.success("vCard downloaded");
-                                        } catch (err) {
-                                          console.error(err);
-                                          toast.error(getErrorMessage(err, "Unable to share or save contact."));
-                                        }
-                                      }}
-                                    >
-                                      Save Contact
-                                    </Button>
-                                  </div>
+                        <div className="flex items-center gap-2">
+                          <a href={`tel:${profile.phone}`}>{profile.phone}</a>
+                        </div>
                       </li>
                     )}
+
                     {profile.website && (
                       <li>
                         <span>Website</span>
@@ -266,6 +270,7 @@ export default function PublicNFCProfile() {
                         </a>
                       </li>
                     )}
+
                     {profile.address && (
                       <li>
                         <span>Address</span>
@@ -325,6 +330,33 @@ export default function PublicNFCProfile() {
             </div>
           )}
         </section>
+
+        {/* ── Powered By Footer ── */}
+        <footer className="mt-6 mb-4 flex flex-col items-center gap-1">
+          <p
+            style={{
+              fontSize: "15px",
+              letterSpacing: "0.08em",
+              color: "rgba(120,120,140,0.75)",
+              fontWeight: 400,
+            }}
+          >
+            Powered By{" "}
+            <span
+              style={{
+                fontWeight: 900,
+                fontStyle: "italic",
+                color: "rgba(90,90,120,0.85)",
+                letterSpacing: "0.04em",
+              }}
+            >
+              PingME
+            </span>{" "}
+            <span style={{ fontWeight: 300, fontSize: "15px" }}>
+              — A Brand By Ping IFF LLP
+            </span>
+          </p>
+        </footer>
       </main>
     </div>
   );

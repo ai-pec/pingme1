@@ -1,5 +1,6 @@
 import { ShoppingBag, Package, Edit2, CheckCircle, Clock, MapPin, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { downloadReceipt } from "@/lib/paymentService";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -83,6 +84,17 @@ export function OrderHistory({ orders, ordersLoading, onEditNFC }: OrderHistoryP
                           <span className="hidden md:inline">Edit NFC</span>
                         </Button>
                       )}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-9 w-9 shrink-0 md:h-9 md:w-auto md:px-3 md:gap-2"
+                        onClick={() => downloadReceipt(order as any, order.email || "")}
+                        disabled={!order.payment}
+                        aria-label="Download Invoice"
+                      >
+                        <span className="hidden md:inline">Download Invoice</span>
+                      </Button>
                       <Badge
                         variant="secondary"
                         className={`inline-flex h-8 min-w-8 items-center justify-center gap-1 rounded-full px-2 text-xs ${
