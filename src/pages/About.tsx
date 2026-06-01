@@ -168,6 +168,22 @@ const About = () => {
                 </p>
               )}
             </div>
+
+            {/* Find Us block (moved below Stats banner) */}
+            <div className="mt-6">
+              <div className="bg-white rounded-2xl p-6 shadow-sm">
+                <p className="text-xs font-semibold text-muted-foreground uppercase">Find us</p>
+                <h3 className="font-bold text-2xl mt-2">Our Office</h3>
+                <div className="mt-2 text-sm font-light text-muted-foreground">
+                  Ping IFF LLP<br/>
+                  745, Burail, Ekta Market,<br/>
+                  Burail Village, Sector 45,<br/>
+                  Chandigarh – 160047
+                </div>
+              </div>
+            </div>
+
+            
           </div>
         </div>
       </div>
