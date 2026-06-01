@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ping IFF LLP GST Invoice</title>
+  <style>
+    :root {
+      --color-black: #000000;
+      --color-dark: #1a1a1a;
+      --color-mid: #555555;
+      --color-light: #888888;
+      --color-border: #cccccc;
+      --color-border-dark: #000000;
+      --color-bg-header: #f7f7f7;
+      --color-bg-white: #ffffff;
+      --color-grand-total: #000000;
+    }
+
+    /* PDF NOTE: Use pixel units only for print precision */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      margin: 0;
+      padding: 12px;
+      background: var(--color-bg-white);
+      color: var(--color-dark);
+      font-family: 'Arial', 'Helvetica Neue', sans-serif;
+      font-size: 10px;
+      line-height: 1.4;
+    }
+
+    .invoice-wrapper {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      padding: 14px;
+      border: 0;
+      background: var(--color-bg-white);
+    }
+
+    .invoice-header-box {
+      width: 100%;
+      border: 1px solid var(--color-border-dark);
+      display: table;
+      border-collapse: collapse;
+      padding: 8px 0;
+      margin-bottom: 10px;
+    }
+
+    .header-left,
+    .header-right {
+      display: table-cell;
+      vertical-align: top;
+      padding: 8px 10px;
+    }
+
+    .header-left {
+      width: 60%;
+    }
+
+    .header-right {
+      width: 40%;
+      text-align: right;
+    }
+
+    .company-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--color-black);
+      margin-bottom: 6px;
+    }
+
+    .company-address,
+    .company-ids {
+      font-size: 10px;
+      color: var(--color-dark);
+      line-height: 1.4;
+    }
+
+    .company-ids div {
+      margin-top: 4px;
+    }
+
+    .qr-block {
+      display: inline-block;
+      text-align: right;
+    }
+
+    .qr-image {
+      width: 128px;
+      height: 128px;
+      border: 1px solid #cccccc;
+      object-fit: cover;
+      display: block;
+      margin-left: auto;
+    }
+
+    .invoice-meta-box {
+      display: inline-block;
+      width: 100%;
+      margin-top: 10px;
+      border: 1px solid var(--color-border);
+      padding: 8px 10px;
+      text-align: left;
+    }
+
+    .meta-label {
+      font-size: 9px;
+      letter-spacing: 0.08em;
+      color: var(--color-mid);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .meta-invoice-number {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--color-black);
+      margin-bottom: 4px;
+      line-height: 1.2;
+    }
+
+    .meta-order-id {
+      font-size: 10px;
+      color: var(--color-dark);
+      line-height: 1.3;
+    }
+
+    .tax-invoice-title {
+      width: 100%;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin: 14px 0 8px;
+      padding: 8px 0;
+      border-top: 1px solid var(--color-black);
+      border-bottom: 1px solid var(--color-black);
+    }
+
+    .order-info-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      margin-bottom: 12px;
+      border: 1px solid var(--color-border);
+    }
+
+    .order-info-table th,
+    .order-info-table td {
+      padding: 6px 8px;
+      border-right: 1px solid #cccccc;
+      border-bottom: 1px solid #cccccc;
+      vertical-align: top;
+      word-break: break-word;
+    }
+
+    .order-info-table th:last-child,
+    .order-info-table td:last-child {
+      border-right: none;
+    }
+
+    .order-info-table th {
+      font-size: 8px;
+      font-weight: 700;
+      color: var(--color-mid);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .order-info-table td {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--color-black);
+    }
+
+    .party-boxes {
+      display: table;
+      width: 100%;
+      border-top: 1px solid var(--color-border-dark);
+      border-bottom: 1px solid var(--color-border-dark);
+      border-left: 1px solid var(--color-border);
+      border-right: 1px solid var(--color-border);
+      border-collapse: collapse;
+      margin-bottom: 12px;
+    }
+
+    .party-column {
+      display: table-cell;
+      width: 50%;
+      padding: 10px;
+      border-right: 1px solid var(--color-border);
+      vertical-align: top;
+    }
+
+    .party-column:last-child {
+      border-right: none;
+    }
+
+    .party-label {
+      font-size: 8px;
+      font-weight: 700;
+      color: var(--color-black);
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .party-name {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--color-black);
+      margin-bottom: 4px;
+    }
+
+    .party-address-line,
+    .party-city-state,
+    .party-country {
+      font-size: 10px;
+      color: var(--color-dark);
+      line-height: 1.4;
+    }
+
+    .product-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      border: 1px solid var(--color-border-dark);
+      margin-bottom: 12px;
+    }
+
+    .product-table th,
+    .product-table td {
+      padding: 5px 6px;
+      border: 1px solid #dddddd;
+      vertical-align: top;
+      word-break: break-word;
+    }
+
+    .product-table th {
+      background: var(--color-bg-header);
+      font-size: 8px;
+      font-weight: 700;
+      color: var(--color-black);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      text-align: left;
+    }
+
+    .product-table td {
+      font-size: 10px;
+      color: var(--color-dark);
+    }
+
+    .text-right {
+      text-align: right;
+    }
+
+    .text-left {
+      text-align: left;
+    }
+
+    .text-center {
+      text-align: center;
+    }
+
+    .notes-totals {
+      display: table;
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 12px;
+    }
+
+    .notes-column,
+    .totals-column {
+      display: table-cell;
+      vertical-align: top;
+      padding: 8px;
+    }
+
+    .notes-column {
+      width: 55%;
+      border: 1px solid var(--color-border);
+      border-right: 1px solid var(--color-border);
+    }
+
+    .totals-column {
+      width: 45%;
+      border: 1px solid var(--color-border);
+      border-left: none;
+    }
+
+    .notes-label,
+    .totals-label {
+      font-size: 8px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--color-black);
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    .notes-text,
+    .totals-row {
+      font-size: 9px;
+      color: var(--color-dark);
+      line-height: 1.4;
+    }
+
+    .totals-row {
+      padding: 2px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    .totals-row span:first-child {
+      font-size: 9px;
+      color: var(--color-dark);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 700;
+    }
+
+    .totals-row span:last-child {
+      font-size: 9px;
+      color: var(--color-dark);
+      font-weight: 700;
+    }
+
+    .totals-grand {
+      border-top: 1px solid var(--color-border-dark);
+      padding-top: 6px;
+      margin-top: 6px;
+    }
+
+    .grand-total-value {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--color-grand-total);
+    }
+
+    .footer-section {
+      display: table;
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 24px;
+    }
+
+    .footer-column {
+      display: table-cell;
+      width: 50%;
+      vertical-align: top;
+      padding: 4px 8px;
+    }
+
+    .footer-label {
+      font-size: 8px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    .footer-text {
+      font-size: 9px;
+      color: var(--color-dark);
+      line-height: 1.4;
+    }
+
+    .signature-section {
+      margin-top: 6px;
+      padding-top: 16px;
+      width: 100%;
+    }
+
+    .signature-line {
+      width: 80px;
+      border-bottom: 1px solid var(--color-border-dark);
+      margin-bottom: 4px;
+    }
+
+    .signature-label {
+      font-size: 8px;
+      font-weight: 700;
+      color: var(--color-black);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-top: 4px;
+    }
+
+    .page-footer {
+      width: 100%;
+      display: table;
+      border-collapse: collapse;
+      font-size: 8px;
+      color: #666666;
+      margin-top: 14px;
+    }
+
+    .page-footer .footer-left,
+    .page-footer .footer-center,
+    .page-footer .footer-right {
+      display: table-cell;
+      vertical-align: middle;
+      padding: 0 4px;
+    }
+
+    .page-footer .footer-center {
+      text-align: center;
+    }
+
+    .page-footer .footer-right {
+      text-align: right;
+    }
+
+    @media print {
+      /* PDF NOTE: A4 page size required for print PDF output */
+      @page {
+        size: A4 portrait;
+        margin: 12mm 10mm 12mm 10mm;
+      }
+
+      body {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+
+      table {
+        page-break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="invoice-wrapper" id="invoice-wrapper">
+    <section class="invoice-header-box">
+      <div class="header-left">
+        <div class="company-name" id="company-name">Ping IFF LLP</div>
+        <div class="company-address" id="company-address">
+          <div>745, Street No. 8,</div>
+          <div>Keshoram Complex Burail,</div>
+          <div>Sector 45C Chandigarh, Chandigarh 160047</div>
+          <div>INDIA</div>
+        </div>
+        <div class="company-ids" id="company-identifiers">
+          <div id="company-gstin">GSTIN: 04ABGF35925N1ZU</div>
+          <div id="company-pan">PAN: ABGFP5925N</div>
+          <div id="company-cin">CIN: ACL-0255</div>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="qr-block">
+          <img id="qr-code" class="qr-image" src="https://api.qrserver.com/v1/create-qr-code/?size=128x128&data=#PM12345" alt="QR Code" />
+        </div>
+        <div class="invoice-meta-box">
+          <div class="meta-label">Invoice No.</div>
+          <div class="meta-invoice-number" id="invoice-number">#PM12345</div>
+          <div class="meta-order-id" id="order-id">ORDER ID: OJ60DU73AhbOreCEhaFO</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="tax-invoice-title">Tax Invoice</div>
+
+    <table class="order-info-table" id="order-info-table">
+      <thead>
+        <tr>
+          <th>ORDER ID</th>
+          <th>ORDER DATE</th>
+          <th>INVOICE DATE</th>
+          <th>PAN</th>
+          <th>CIN</th>
+          <th>PAYMENT MODE</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td id="order-id-cell">OJ60DU73AhbOreCEhaFO</td>
+          <td id="order-date">28/5/2026</td>
+          <td id="invoice-date">28/5/2026</td>
+          <td id="company-pan-cell">ABGFP5925N</td>
+          <td id="company-cin-cell">ACL-0255</td>
+          <td id="payment-mode">UPI</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="party-boxes">
+      <div class="party-column">
+        <span class="party-label">Bill To</span>
+        <div class="party-name" id="bill-name">Shubham</div>
+        <div class="party-address-line" id="bill-line1">chd</div>
+        <div class="party-address-line" id="bill-line2">chd</div>
+        <div class="party-city-state" id="bill-city-state">Chandigarh, 160036</div>
+        <div class="party-country" id="bill-country">India</div>
+      </div>
+      <div class="party-column">
+        <span class="party-label">Ship To</span>
+        <div class="party-name" id="ship-name">Shubham</div>
+        <div class="party-address-line" id="ship-line1">chd</div>
+        <div class="party-address-line" id="ship-line2">chd</div>
+        <div class="party-city-state" id="ship-city-state">Chandigarh, 160036</div>
+        <div class="party-country" id="ship-country">India</div>
+      </div>
+    </div>
+
+    <table class="product-table" id="product-table">
+      <thead>
+        <tr>
+          <th class="text-left">PRODUCT</th>
+          <th class="text-left">TITLE</th>
+          <th class="text-right">QTY</th>
+          <th class="text-right">GROSS AMOUNT</th>
+          <th class="text-right">DISCOUNT</th>
+          <th class="text-right">TAXABLE VALUE</th>
+          <th class="text-right">CGST</th>
+          <th class="text-right">SGST</th>
+          <th class="text-right">IGST</th>
+          <th class="text-right">TOTAL</th>
+        </tr>
+      </thead>
+      <tbody id="product-rows">
+      </tbody>
+    </table>
+
+    <div class="notes-totals">
+      <div class="notes-column">
+        <span class="notes-label">Notes</span>
+        <div class="notes-text">Currency: <span id="note-currency">INR</span></div>
+        <div class="notes-text">Tax mode: <span id="note-tax-mode">CGST + SGST</span></div>
+        <div class="notes-text">Payment mode: <span id="note-payment-mode">UPI</span></div>
+      </div>
+      <div class="totals-column">
+        <div class="totals-row"><span>Total Quantity</span><span id="total-quantity">1</span></div>
+        <div class="totals-row"><span>Total Taxable Amount</span><span id="total-taxable">₹1.00</span></div>
+        <div class="totals-row"><span>Total Taxes</span><span id="total-taxes">₹0.18</span></div>
+        <div class="totals-row totals-grand"><span>Grand Total</span><span class="grand-total-value" id="grand-total">₹1.18</span></div>
+      </div>
+    </div>
+
+    <div class="footer-section">
+      <div class="footer-column">
+        <span class="footer-label">Return Policy</span>
+        <div class="footer-text">Goods once sold can only be returned under the applicable policy and statutory conditions.</div>
+      </div>
+      <div class="footer-column">
+        <span class="footer-label">Contact</span>
+        <div class="footer-text">Email: support@pingiff.com | Phone: +91 00000 00000</div>
+      </div>
+    </div>
+
+    <div class="signature-section">
+      <div class="signature-line"></div>
+      <div class="signature-label">Authorized Signatory</div>
+    </div>
+
+    <div class="page-footer">
+      <div class="footer-left"></div>
+      <div class="footer-center">Ping IFF LLP</div>
+      <div class="footer-right">Page 1 of 1</div>
+    </div>
+  </div>
+
+  <script src="invoice-utils.js"></script>
+  <script>
+    window.INVOICE_DATA = window.INVOICE_DATA || {
+      invoiceNumber: '#PMCEHAFO',
+      orderId: 'OJ60DU73AhbOreCEhaFO',
+      orderDate: '28/5/2026',
+      invoiceDate: '28/5/2026',
+      paymentMode: 'UPI',
+      currency: 'INR',
+      customerCountry: 'India',
+      billTo: {
+        name: 'Shubham',
+        line1: 'chd',
+        line2: 'chd',
+        city: 'Chandigarh',
+        pin: '160036',
+        country: 'India'
+      },
+      shipTo: {
+        name: 'Shubham',
+        line1: 'chd',
+        line2: 'chd',
+        city: 'Chandigarh',
+        pin: '160036',
+        country: 'India'
+      },
+      products: [
+        {
+          sku: 'car-card-standard',
+          title: 'PingME Car Card - Standard',
+          qty: 1,
+          grossAmount: 599.00,
+          discount: 598.00
+        }
+      ],
+      qrCodeUrl: 'https://api.qrserver.com/v1/create-qr-code/?size=128x128&data=PMCEHAFO'
+    };
+
+    function setText(id, value) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.textContent = value;
+      }
+    }
+
+    function renderInvoice(data) {
+      const defaultCompany = {
+        name: 'Ping IFF LLP',
+        addressLines: [
+          '745, Street No. 8,',
+          'Keshoram Complex Burail,',
+          'Sector 45C Chandigarh, Chandigarh 160047',
+          'INDIA'
+        ],
+        gstin: '04ABGF35925N1ZU',
+        pan: 'ABGFP5925N',
+        cin: 'ACL-0255',
+        email: 'support@pingiff.com',
+        phone: '+91 00000 00000'
+      };
+
+      const company = Object.assign({}, defaultCompany, data.company || {});
+
+      setText('company-name', company.name);
+      const addressContainer = document.getElementById('company-address');
+      if (addressContainer) {
+        addressContainer.innerHTML = company.addressLines.map(line => `<div>${line}</div>`).join('');
+      }
+      setText('company-gstin', 'GSTIN: ' + company.gstin);
+      setText('company-pan', 'PAN: ' + company.pan);
+      setText('company-cin', 'CIN: ' + company.cin);
+      setText('invoice-number', data.invoiceNumber || '#PM00000');
+      setText('order-id', 'ORDER ID: ' + (data.orderId || 'N/A'));
+      setText('order-id-cell', data.orderId || 'N/A');
+      setText('order-date', data.orderDate || 'N/A');
+      setText('invoice-date', data.invoiceDate || 'N/A');
+      setText('company-pan-cell', company.pan);
+      setText('company-cin-cell', company.cin);
+      setText('payment-mode', data.paymentMode || 'N/A');
+      setText('note-currency', data.currency || 'INR');
+      setText('note-payment-mode', data.paymentMode || 'N/A');
+
+      const country = (data.customerCountry || 'India').trim();
+      const taxMode = country.toLowerCase() === 'india' ? 'CGST + SGST' : 'IGST';
+      setText('note-tax-mode', taxMode);
+      setText('bill-name', data.billTo?.name || 'N/A');
+      setText('bill-line1', data.billTo?.line1 || '');
+      setText('bill-line2', data.billTo?.line2 || '');
+      setText('bill-city-state', `${data.billTo?.city || ''}${data.billTo?.pin ? ', ' + data.billTo.pin : ''}`);
+      setText('bill-country', data.billTo?.country || '');
+      setText('ship-name', data.shipTo?.name || 'N/A');
+      setText('ship-line1', data.shipTo?.line1 || '');
+      setText('ship-line2', data.shipTo?.line2 || '');
+      setText('ship-city-state', `${data.shipTo?.city || ''}${data.shipTo?.pin ? ', ' + data.shipTo.pin : ''}`);
+      setText('ship-country', data.shipTo?.country || '');
+
+      const productBody = document.getElementById('product-rows');
+      if (productBody) {
+        const items = Array.isArray(data.products) ? data.products : [];
+        productBody.innerHTML = items.map(product => {
+          const lineItem = computeLineItem(product, country);
+          const cgst = lineItem.cgst !== null ? formatCurrency(lineItem.cgst, data.currency) : '-';
+          const sgst = lineItem.sgst !== null ? formatCurrency(lineItem.sgst, data.currency) : '-';
+          const igst = lineItem.igst !== null ? formatCurrency(lineItem.igst, data.currency) : '-';
+          return `
+            <tr>
+              <td class="text-left">${product.sku || '-'}</td>
+              <td class="text-left">${product.title || '-'}</td>
+              <td class="text-right">${product.qty || 0}</td>
+              <td class="text-right">${formatCurrency(product.grossAmount, data.currency)}</td>
+              <td class="text-right">${formatCurrency(product.discount, data.currency)}</td>
+              <td class="text-right">${formatCurrency(lineItem.taxableValue, data.currency)}</td>
+              <td class="text-right">${cgst}</td>
+              <td class="text-right">${sgst}</td>
+              <td class="text-right">${igst}</td>
+              <td class="text-right">${formatCurrency(lineItem.total, data.currency)}</td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      const totals = computeInvoiceTotals(data.products || [], country);
+      setText('total-quantity', totals.totalQty.toString());
+      setText('total-taxable', formatCurrency(totals.totalTaxable, data.currency));
+      setText('total-taxes', formatCurrency(totals.totalTax, data.currency));
+      setText('grand-total', formatCurrency(totals.grandTotal, data.currency));
+
+      const qrEl = document.getElementById('qr-code');
+      if (qrEl && data.qrCodeUrl) {
+        qrEl.setAttribute('src', data.qrCodeUrl);
+      }
+    }
+
+    renderInvoice(window.INVOICE_DATA);
+  </script>
+</body>
+</html>

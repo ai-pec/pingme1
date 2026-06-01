@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useParams } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import MainLayout from "@/layouts/MainLayout";
 import { toast } from "sonner";
 import type { NFCProfileData } from "@/components/NFCProfileBuilder";
 import { getUserPrebookings, type PrebookingRecord } from "@/lib/prebookService";
+import { getUserProfile } from "@/lib/userService";
+import type { UserProfile } from "@/types/user";
 
 import { EmailVerificationBanner } from "@/components/profile/EmailVerificationBanner";
 import { PersonalInfoForm } from "@/components/profile/PersonalInfoForm";
@@ -16,7 +19,13 @@ import { SavedPayments } from "@/components/profile/SavedPayments";
 import { NFCEditModal } from "@/components/profile/NFCEditModal";
 
 export default function Profile() {
-  const { user, profile, resendVerification, refreshProfile } = useAuth();
+  const { userId } = useParams<{ userId?: string }>();
+  const { user, profile: currentUserProfile, resendVerification, refreshProfile } = useAuth();
+  const [fetchedProfile, setFetchedProfile] = useState<UserProfile | null>(null);
+
+  // Determine if viewing another user's profile
+  const isViewingOtherUser = !!userId && userId !== user?.uid;
+  const profile = isViewingOtherUser ? fetchedProfile : currentUserProfile;
 
   const [nfcDialogOpen, setNfcDialogOpen] = useState(false);
   const [selectedNfcOrderId, setSelectedNfcOrderId] = useState<string | null>(null);
@@ -40,10 +49,24 @@ export default function Profile() {
     projects: [],
   });
 
+  // Fetch other user's profile if userId parameter is provided
+  const { isLoading: fetchingOtherProfile } = useQuery({
+    queryKey: ["userProfile", userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      const userProfile = await getUserProfile(userId);
+      if (userProfile) {
+        setFetchedProfile(userProfile);
+      }
+      return userProfile;
+    },
+    enabled: !!userId && userId !== user?.uid,
+  });
+
   const { data: orders = [], isLoading: ordersLoading } = useQuery({
-    queryKey: ["userPrebookings", user?.uid],
-    queryFn: () => getUserPrebookings({ userId: user!.uid, email: user!.email || undefined }),
-    enabled: !!user?.uid,
+    queryKey: ["userPrebookings", isViewingOtherUser ? userId : user?.uid],
+    queryFn: () => getUserPrebookings({ userId: isViewingOtherUser ? userId! : user!.uid, email: isViewingOtherUser ? undefined : user!.email || undefined }),
+    enabled: isViewingOtherUser ? !!userId : !!user?.uid,
   });
 
   const resendMutation = useMutation({

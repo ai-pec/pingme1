@@ -1,0 +1,35 @@
+{
+  "invoiceNumber": "#PMCEHAFO",
+  "orderId": "OJ60DU73AhbOreCEhaFO",
+  "orderDate": "28/5/2026",
+  "invoiceDate": "28/5/2026",
+  "paymentMode": "UPI",
+  "currency": "INR",
+  "customerCountry": "India",
+  "billTo": {
+    "name": "Shubham",
+    "line1": "chd",
+    "line2": "chd",
+    "city": "Chandigarh",
+    "pin": "160036",
+    "country": "India"
+  },
+  "shipTo": {
+    "name": "Shubham",
+    "line1": "chd",
+    "line2": "chd",
+    "city": "Chandigarh",
+    "pin": "160036",
+    "country": "India"
+  },
+  "products": [
+    {
+      "sku": "car-card-standard",
+      "title": "PingME Car Card - Standard",
+      "qty": 1,
+      "grossAmount": 599.00,
+      "discount": 598.00
+    }
+  ],
+  "qrCodeUrl": "https://api.qrserver.com/v1/create-qr-code/?size=128x128&data=PMCEHAFO"
+}
