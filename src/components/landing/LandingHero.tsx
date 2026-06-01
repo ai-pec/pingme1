@@ -480,18 +480,6 @@ const LandingHero = () => {
             </ul>
           </div>
         </section>
-
-        <section className="rounded-[1.75rem] border border-border/60 bg-background/90 p-6 shadow-[0_18px_50px_rgba(81,60,9,0.08)] md:p-8">
-          <p className="section-eyebrow text-left">Find Us</p>
-          <h2 className="text-2xl font-bold tracking-tight text-foreground mb-4">Our Office</h2>
-          <address className="not-italic text-muted-foreground leading-7">
-            <strong className="text-foreground">Ping IFF LLP</strong><br />
-            745, Burail, Ekta Market, Burail Village,<br />
-            Sector 45, Chandigarh &ndash; 160047, India<br />
-            Phone: <a href="tel:+917347340007" className="hover:underline">+91 73473 40007</a>&nbsp;&nbsp;|&nbsp;&nbsp;
-            Email: <a href="mailto:contact@pingiff.ai" className="hover:underline">contact@pingiff.ai</a>
-          </address>
-        </section>
       </div>
     </main>
   );

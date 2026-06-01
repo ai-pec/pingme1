@@ -159,19 +159,8 @@ export const categoryGradientFromSlug = (slug: string): string => {
   return CATEGORY_GRADIENTS[hashString(normalized) % CATEGORY_GRADIENTS.length];
 };
 
-export const categoryDescriptionFromName = (categorySlugOrName: string, categoryName?: string): string => {
-  const normalizedSlug = normalizeCategorySlug(categorySlugOrName);
-  const displayName = categoryName || categoryNameFromSlug(categorySlugOrName);
-
-  const descriptionBySlug: Record<string, string> = {
-    "car-tags": "Hang on your dashboard. Anyone who needs to reach you about parking or an emergency can scan and alert you — without ever seeing your phone number.",
-    "pet-tags": "Clip onto your pet's collar. If they wander off, whoever finds them can call or message you immediately — safely and anonymously.",
-    "nfc-cards": "Tap your card to share contact details instantly. No app needed for the other person — seamless, private, and effortless.",
-    "keychain-tags": "Attach to your keys or wallet. A quick scan lets anyone who finds them reach you safely, without knowing who you are.",
-    "backpack-stickers": "Stick it on your bag or laptop. If it ever gets lost, the finder can contact you instantly and privately — no personal details exposed.",
-  };
-
-  return descriptionBySlug[normalizedSlug] || `Smart ${displayName} products for secure identification and faster owner contact.`;
+export const categoryDescriptionFromName = (categoryName: string): string => {
+  return `Smart ${categoryName} products for secure identification and faster owner contact.`;
 };
 
 export const categoryIconFromProducts = (products: ProductVariant[]): string => {
@@ -193,27 +182,6 @@ export const categoryCoverImageFromProducts = (products: ProductVariant[]): stri
   return coverSource?.image?.trim() || "";
 };
 
-export const startingPriceFromProducts = (products: ProductVariant[]): string => {
-  if (!products || products.length === 0) return "";
-
-  let minPrice = Number.POSITIVE_INFINITY;
-  let minPriceStr = "";
-
-  for (const p of products) {
-    const raw = (p.price || "").trim();
-    if (!raw) continue;
-
-    const numeric = Number(raw.replace(/[^0-9.]/g, ""));
-    if (!Number.isFinite(numeric)) continue;
-
-    if (numeric < minPrice) {
-      minPrice = numeric;
-      minPriceStr = raw;
-    }
-  }
-
-  return minPriceStr;
-};
 export const buildGenericCategoryTutorial = (categoryName: string): CategoryTutorial => {
   return {
     title: `How to Use Your ${categoryName}`,

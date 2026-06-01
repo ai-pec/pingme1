@@ -7,7 +7,6 @@ vite.config.*.timestamp-*
 
 # Build outputs
 dist/
-dist.zip
 
 # Logs
 npm-debug.log*

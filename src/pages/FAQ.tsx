@@ -95,18 +95,6 @@ const FAQ = () => {
                 </AccordionItem>
               </Accordion>
             </section>
-
-            <section className="mt-10 rounded-2xl border border-border/60 bg-background/90 p-6 md:p-8">
-              <h2 className="text-xl font-bold mb-4">Still have questions?</h2>
-              <p className="text-muted-foreground mb-4">Our team is happy to help. Reach out to us directly:</p>
-              <address className="not-italic text-muted-foreground leading-7">
-                <strong className="text-foreground">Ping IFF LLP</strong><br />
-                745, Burail, Ekta Market, Burail Village,<br />
-                Sector 45, Chandigarh &ndash; 160047, India<br />
-                Phone: <a href="tel:+917347340007" className="hover:underline">+91 73473 40007</a><br />
-                Email: <a href="mailto:contact@pingiff.ai" className="hover:underline">contact@pingiff.ai</a>
-              </address>
-            </section>
           </div>
         </div>
       </div>

@@ -79,6 +79,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Get or sync profile
           let userProfile = await getUserProfile(firebaseUser.uid);
 
+          if (!userProfile) {
+            await createUserProfile(firebaseUser.uid, {
+              email: firebaseUser.email || "",
+              displayName: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "User",
+              photoURL: firebaseUser.photoURL,
+              authProvider: firebaseUser.providerData?.[0]?.providerId === "google.com" ? "google" : "email",
+            });
+
+            userProfile = await getUserProfile(firebaseUser.uid);
+          }
+
           // Sync email verification status if needed
           if (userProfile && userProfile.emailVerified !== firebaseUser.emailVerified) {
             await syncEmailVerification(firebaseUser.uid, firebaseUser.emailVerified);

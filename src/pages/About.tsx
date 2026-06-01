@@ -136,7 +136,7 @@ const About = () => {
                 <div>
                   <h3 className="font-bold text-lg mb-2">Made in India</h3>
                   <p className="text-muted-foreground">
-                    Proudly designed and manufactured in Chandigarh, India, for Indian vehicle owners.
+                    Proudly designed and manufactured in India, for Indian vehicle owners.
                   </p>
                 </div>
               </div>
@@ -167,18 +167,6 @@ const About = () => {
                   Loading live stats...
                 </p>
               )}
-            </div>
-
-            {/* Office Address */}
-            <div className="mt-12 rounded-2xl border border-border/60 bg-background/90 p-6 md:p-8">
-              <h2 className="text-xl font-bold mb-4">Our Office</h2>
-              <address className="not-italic text-muted-foreground leading-7">
-                <strong>Ping IFF LLP</strong><br />
-                745, Burail, Ekta Market, Burail Village,<br />
-                Sector 45, Chandigarh &ndash; 160047, India<br />
-                Phone: <a href="tel:+917347340007" className="hover:underline">+91 73473 40007</a><br />
-                Email: <a href="mailto:contact@pingiff.ai" className="hover:underline">contact@pingiff.ai</a>
-              </address>
             </div>
           </div>
         </div>

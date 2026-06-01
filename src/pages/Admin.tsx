@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, startTransition } from "react";
+import { useNavigate } from "react-router-dom";
 import { CheckCircle2, Copy, Eye, Loader2, Save, Search, Shield, SlidersHorizontal, XCircle, Plus, Edit, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import MainLayout from "@/layouts/MainLayout";
@@ -71,6 +72,7 @@ const AdminProductMedia = ({ product }: { product: DbProduct }) => {
 
 export default function Admin() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [orders, setOrders] = useState<PrebookingRecord[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
@@ -157,7 +159,7 @@ export default function Admin() {
         return {
           slug,
           name,
-          description: meta.description || categoryDescriptionFromName(slug, name),
+          description: meta.description || categoryDescriptionFromName(name),
           icon: meta.icon?.trim() || getCategoryIcon(products),
           products: products.sort((left, right) => left.title.localeCompare(right.title)),
         };
@@ -467,7 +469,19 @@ export default function Admin() {
                       {filteredOrders.map((order) => (
                         <TableRow key={order.id}>
                           <TableCell className="font-mono text-xs max-w-[140px] truncate">{order.id}</TableCell>
-                          <TableCell>{order.fullName || "-"}</TableCell>
+                          <TableCell>
+                            {order.userId ? (
+                              <button
+                                onClick={() => navigate(`/profile/${order.userId}`)}
+                                className="text-primary hover:underline cursor-pointer"
+                                title="View customer profile"
+                              >
+                                {order.fullName || "-"}
+                              </button>
+                            ) : (
+                              order.fullName || "-"
+                            )}
+                          </TableCell>
                           <TableCell>{order.phone || "-"}</TableCell>
                           <TableCell>₹{Number(order.totalAmount || 0).toFixed(2)}</TableCell>
                           <TableCell>

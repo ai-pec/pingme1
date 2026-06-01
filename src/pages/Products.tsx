@@ -13,7 +13,6 @@ import {
   categoryDescriptionFromName,
   categoryGradientFromSlug,
   categoryIconFromProducts,
-  startingPriceFromProducts,
   categoryNameFromSlug,
   normalizeCategorySlug,
   type ProductVariant,
@@ -235,7 +234,7 @@ const Products = () => {
         return {
           slug,
           name,
-          description: meta.description || categoryDescriptionFromName(slug, name),
+          description: meta.description || categoryDescriptionFromName(name),
           icon: meta.icon?.trim() || categoryEmojiBySlug[slug] || categoryIconFromProducts(categoryProducts),
           coverImage: meta.coverImage || categoryCoverImageFromProducts(categoryProducts),
           gradient: meta.gradient || categoryGradientFromSlug(slug),
@@ -328,38 +327,9 @@ const Products = () => {
           {/* ── Category Grid (Landing View) ── */}
           {!selectedCategory && (
             categories.length === 0 ? (
-              /* ── Hardcoded fallback: shown before Firebase loads (what crawlers see) ── */
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[
-                  { slug: "car-tags", emoji: "🚗", name: "Car Tags", description: "Hang on your dashboard. Anyone who needs to reach you about parking or an emergency can scan and alert you — without ever seeing your phone number.", price: "₹299", count: 3 },
-                  { slug: "pet-tags", emoji: "🐾", name: "Pet Tags", description: "Clip onto your pet's collar. If they wander off, whoever finds them can call or message you immediately — safely and anonymously.", price: "₹249", count: 2, popular: true },
-                  { slug: "nfc-cards", emoji: "💳", name: "NFC Cards", description: "Tap your card to share contact details instantly. No app needed for the other person — seamless, private, and effortless.", price: "₹349", count: 3 },
-                  { slug: "keychain-tags", emoji: "🔑", name: "Keychain Tags", description: "Attach to your keys or wallet. A quick scan lets anyone who finds them reach you safely, without knowing who you are.", price: "₹199", count: 2 },
-                  { slug: "backpack-stickers", emoji: "🎒", name: "Backpack Stickers", description: "Stick it on your bag or laptop. If it ever gets lost, the finder can contact you instantly and privately — no personal details exposed.", price: "₹149", count: 2 },
-                ].map((cat) => (
-                  <button
-                    key={cat.slug}
-                    onClick={() => navigate(`/products/${cat.slug}`)}
-                    className="group relative rounded-2xl border border-border bg-card p-6 text-left transition-all hover:shadow-xl hover:border-primary/40 hover:scale-[1.02] active:scale-[0.98] overflow-hidden"
-                  >
-                    <div className="aspect-[4/3] rounded-xl bg-secondary/40 mb-5 flex items-center justify-center text-5xl">
-                      {cat.emoji}
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="mb-1 flex items-center gap-2">
-                          <span className="inline-flex h-7 w-7 items-center justify-center text-xl leading-none shrink-0" aria-hidden="true">{cat.emoji}</span>
-                          <h3 className="text-lg font-bold leading-none pt-0.5">{cat.name}</h3>
-                          {cat.popular && <span className="text-xs font-bold bg-primary text-primary-foreground rounded-full px-2 py-0.5">Best Seller</span>}
-                        </div>
-                        <p className="text-sm text-muted-foreground line-clamp-2">{cat.description}</p>
-                        <span className="inline-block mt-2 text-sm font-bold text-foreground">Starting at {cat.price}</span>
-                        <span className="block mt-1 text-xs font-medium text-primary">{cat.count} designs available</span>
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0 transition-transform group-hover:translate-x-1 group-hover:text-primary" />
-                    </div>
-                  </button>
-                ))}
+              <div className="rounded-2xl border border-dashed p-8 text-center">
+                <h2 className="text-xl font-semibold mb-2">Products are coming soon</h2>
+                <p className="text-muted-foreground">No product categories are available yet. Please check back shortly.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -373,6 +343,7 @@ const Products = () => {
                     <div className="aspect-[16/10] sm:aspect-[5/4] md:aspect-[4/3] rounded-xl bg-white/60 dark:bg-white/10 mb-5 flex items-center justify-center p-4 overflow-hidden">
                       <CategoryCoverImage category={cat} />
                     </div>
+
                     {/* Info */}
                     <div className="flex items-center justify-between">
                       <div>
@@ -382,12 +353,7 @@ const Products = () => {
                           </span>
                           <h3 className="text-lg font-bold leading-none pt-0.5">{cat.name}</h3>
                         </div>
-                        {cat.products.length > 0 && (
-                          <span className="inline-block mt-2 text-sm font-bold text-foreground">Starting at {startingPriceFromProducts(cat.products)}</span>
-                        )}
-                        
                         <p className="text-sm text-muted-foreground line-clamp-2">{cat.description}</p>
-
                         <span className="inline-block mt-3 text-xs font-medium text-primary">
                           {cat.products.length} design{cat.products.length > 1 ? "s" : ""} available
                         </span>
