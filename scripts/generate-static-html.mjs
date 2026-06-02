@@ -18,6 +18,7 @@ const siteNav = `
       <nav aria-label="Primary" class="flex flex-wrap gap-4 text-sm text-muted-foreground">
         <a href="/">Home</a>
         <a href="/products">Products</a>
+        <a href="/blog">Blog</a>
         <a href="/partners">Partners</a>
         <a href="/about">About Us</a>
         <a href="/contact">Contact Us</a>
@@ -32,6 +33,7 @@ const siteFooter = `
       <address style="font-style:normal;">Ping IFF LLP, 745, Burail, Ekta Market, Burail Village, Sector 45, Chandigarh &ndash; 160047, India</address>
       <p>Phone: <a href="tel:+917347340007">+91 73473 40007</a> &nbsp;|&nbsp; Email: <a href="mailto:contact@pingiff.ai">contact@pingiff.ai</a></p>
       <nav style="display:flex;flex-wrap:wrap;gap:16px;margin-top:4px;">
+        <a href="/blog">Blog</a>
         <a href="/privacy-policy">Privacy Policy</a>
         <a href="/refund-policy">Refund Policy</a>
         <a href="/terms-conditions">Terms &amp; Conditions</a>
@@ -141,6 +143,53 @@ const productsContent = `
         <li>NFC Smart Cards for tap-to-share contact experiences.</li>
       </ul>
       <p class="mt-6 text-muted-foreground">Use the product cards to view details, add to cart, or choose Buy Now for a direct checkout flow.</p>
+    </section>
+  </main>`;
+
+const blogContent = `
+  <main>
+    <section class="container py-16 max-w-6xl space-y-10">
+      <div class="space-y-4">
+        <p class="section-eyebrow">Blog</p>
+        <h1 class="text-4xl font-bold tracking-tight text-foreground">Smart tag stories, setup guides, and privacy-first ideas.</h1>
+        <p class="max-w-3xl text-lg leading-8 text-muted-foreground">
+          One blog page for everything we want to teach clearly: vehicle tags, pet tags, lost and found tags, door tags,
+          privacy, and practical guides. No attribute categories, no extra pages, just a scalable content hub that is easy
+          to browse and easy to index.
+        </p>
+      </div>
+      <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <article class="rounded-3xl border border-border bg-card p-6">
+          <p class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Vehicle Tag</p>
+          <h2 class="mt-4 text-xl font-bold text-foreground">Vehicle Tags: The privacy-first way to reach a parked car owner</h2>
+          <p class="mt-3 text-sm leading-7 text-muted-foreground">A practical guide to why vehicle tags matter, what problems they solve, and how they keep contact private when someone needs to reach you.</p>
+        </article>
+        <article class="rounded-3xl border border-border bg-card p-6">
+          <p class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Pet Tag</p>
+          <h2 class="mt-4 text-xl font-bold text-foreground">Pet Tags that help lost pets get home faster</h2>
+          <p class="mt-3 text-sm leading-7 text-muted-foreground">How pet tags turn a moment of uncertainty into a safe return path with fast, private owner contact.</p>
+        </article>
+        <article class="rounded-3xl border border-border bg-card p-6">
+          <p class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Lost and Found Tag</p>
+          <h2 class="mt-4 text-xl font-bold text-foreground">Lost and Found Tags for bags, keys, and everyday essentials</h2>
+          <p class="mt-3 text-sm leading-7 text-muted-foreground">Best practices for tags that help people return lost items quickly while keeping owner information protected.</p>
+        </article>
+        <article class="rounded-3xl border border-border bg-card p-6">
+          <p class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Door Tag</p>
+          <h2 class="mt-4 text-xl font-bold text-foreground">Door Tags that make home and office contact effortless</h2>
+          <p class="mt-3 text-sm leading-7 text-muted-foreground">A practical look at door tags for apartments, offices, and shared spaces where quick communication matters.</p>
+        </article>
+        <article class="rounded-3xl border border-border bg-card p-6">
+          <p class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Privacy</p>
+          <h2 class="mt-4 text-xl font-bold text-foreground">Privacy by design: why PingME keeps contact protected by default</h2>
+          <p class="mt-3 text-sm leading-7 text-muted-foreground">Why privacy-first communication should be the default for every smart tag product, not an afterthought.</p>
+        </article>
+        <article class="rounded-3xl border border-border bg-card p-6">
+          <p class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Guides</p>
+          <h2 class="mt-4 text-xl font-bold text-foreground">Guides that help customers set up tags the right way</h2>
+          <p class="mt-3 text-sm leading-7 text-muted-foreground">A scalable content approach for setup guides that helps customers activate, place, and use their tags correctly.</p>
+        </article>
+      </div>
     </section>
   </main>`;
 
@@ -265,6 +314,7 @@ const pages = [
   { route: "home", file: path.join("home", "index.html"), title: "PingME | Privacy-first contact ecosystem", description: "PingME NFC and QR products for private contact experiences.", content: homeContent },
   { route: "about", file: path.join("about", "index.html"), title: "About PingME", description: "The story behind privacy-first vehicle contact.", content: aboutContent },
   { route: "products", file: path.join("products", "index.html"), title: "PingME Products", description: "Browse privacy-first QR and NFC products.", content: productsContent },
+  { route: "blog", file: path.join("blog", "index.html"), title: "PingME Blog", description: "Blog posts about vehicle tags, pet tags, lost and found tags, door tags, privacy, and guides.", content: blogContent },
   { route: "partners", file: path.join("partners", "index.html"), title: "PingME Partners", description: "PingME partnership program and pilot collaboration details.", content: partnersContent },
   { route: "contact", file: path.join("contact", "index.html"), title: "Contact PingME", description: "Get in touch with PingME.", content: contactContent },
   { route: "faq", file: path.join("faq", "index.html"), title: "PingME FAQ", description: "Answers to common PingME questions.", content: faqContent },
