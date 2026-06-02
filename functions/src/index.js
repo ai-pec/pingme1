@@ -6,7 +6,6 @@ const nodemailer = require("nodemailer");
 const twilio = require("twilio");
 const { onRequest } = require("firebase-functions/v2/https");
 const { onDocumentUpdated } = require("firebase-functions/v2/firestore");
-const functions = require("firebase-functions/v1");
 const { defineSecret } = require("firebase-functions/params");
 
 const RAZORPAY_KEY_ID = defineSecret("RAZORPAY_KEY_ID");
@@ -889,45 +888,5 @@ exports.syncLegacyPrebookingNfcProfileToNfcCard = onDocumentUpdated({
     });
   } catch (error) {
     console.error("syncLegacyPrebookingNfcProfileToNfcCard error", error);
-  }
-});
-
-// When a user account is created, link any existing bookings/prebookings that match their email.
-exports.linkOrdersOnUserCreate = functions.auth.user().onCreate(async (user, context) => {
-  try {
-    const email = (user.email || "").toString().trim();
-    if (!email) return;
-
-    const normalizedEmail = email.toLowerCase();
-
-    const bookingQuery = await db.collection("booking").where("email", "==", email).get();
-    const legacyQuery = await db.collection("prebookings").where("email", "==", email).get();
-
-    if (bookingQuery.empty && legacyQuery.empty) {
-      // Try normalized (lowercased) email match as a fallback
-      const bookingNormalized = await db.collection("booking").where("email", "==", normalizedEmail).get();
-      const legacyNormalized = await db.collection("prebookings").where("email", "==", normalizedEmail).get();
-      if (bookingNormalized.empty && legacyNormalized.empty) return;
-
-      // merge into the earlier variables for processing
-      bookingQuery.docs.push(...bookingNormalized.docs);
-      legacyQuery.docs.push(...legacyNormalized.docs);
-    }
-
-    const batch = db.batch();
-    const uid = user.uid;
-    bookingQuery.forEach((docSnap) => {
-      const ref = docSnap.ref;
-      batch.update(ref, { userId: uid, email: normalizedEmail });
-    });
-    legacyQuery.forEach((docSnap) => {
-      const ref = docSnap.ref;
-      batch.update(ref, { userId: uid, email: normalizedEmail });
-    });
-
-    await batch.commit();
-    console.log(`Linked ${bookingQuery.size + legacyQuery.size} bookings to user ${uid}`);
-  } catch (err) {
-    console.error("linkOrdersOnUserCreate error", err);
   }
 });

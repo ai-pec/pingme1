@@ -1,4 +1,5 @@
 import MainLayout from "@/layouts/MainLayout";
+import { Link } from "react-router-dom";
 import { BadgeCheck, Building2, Handshake, Rocket, ShieldCheck, Users } from "lucide-react";
 import pingMeLogo from "@/assets/pingprocard_logo.jpeg";
 import collaborationCard from "@/assets/pingprocard.jpeg";
@@ -55,6 +56,18 @@ const Partners = () => {
               PingME is proud to announce a pilot partnership with <span className="font-semibold text-amber-200">Pro Ultimate Gym Chain</span>, our
               first collaborator. This program validates how privacy-first communication can improve member safety and day-to-day operations.
             </p>
+          </div>
+
+          <div className="mx-auto max-w-3xl">
+            <div className="mt-8 flex justify-center">
+              <Link
+                to="/contact"
+                role="button"
+                className="inline-block w-full sm:w-auto text-center bg-amber-200/8 hover:bg-amber-200/12 border border-amber-300/20 text-amber-50 hover:text-amber-200 font-extrabold text-2xl md:text-3xl px-6 py-4 rounded-2xl shadow-lg"
+              >
+                Want to collaborate with us? Contact us
+              </Link>
+            </div>
           </div>
 
           <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
@@ -126,7 +139,25 @@ const Partners = () => {
                 This pilot marks the beginning of PingME's partnership track. We are working closely with Pro Ultimate Gym Chain
                 to shape reliable, privacy-first communication at scale.
               </p>
+              <p className="mt-4 text-sm leading-7 text-stone-300">
+                Want to collaborate with us?{' '}
+                <Link to="/contact" className="font-semibold text-amber-200 hover:underline">
+                  Contact us
+                </Link>
+                .
+              </p>
             </aside>
+          </div>
+          <div className="mt-10 rounded-2xl border border-border/60 bg-background/90 p-6">
+            <h2 className="text-lg font-bold mb-3">Become a Partner</h2>
+            <p className="text-muted-foreground mb-4">Interested in bringing PingME to your gym, society, or office? Contact us:</p>
+            <address className="not-italic text-muted-foreground leading-7">
+              <strong className="text-foreground">Ping IFF LLP</strong><br />
+              745, Burail, Ekta Market, Burail Village,<br />
+              Sector 45, Chandigarh &ndash; 160047, India<br />
+              Phone: <a href="tel:+917347340007" className="hover:underline">+91 73473 40007</a><br />
+              Email: <a href="mailto:contact@pingiff.ai" className="hover:underline">contact@pingiff.ai</a>
+            </address>
           </div>
         </div>
       </section>

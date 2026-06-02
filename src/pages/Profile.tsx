@@ -117,7 +117,7 @@ export default function Profile() {
     setNfcDialogOpen(true);
   };
 
-  
+
     // If not signed in at all, show login prompt (ProtectedRoute normally handles this)
     if (!user) {
       return (

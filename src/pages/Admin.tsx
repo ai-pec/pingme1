@@ -159,7 +159,7 @@ export default function Admin() {
         return {
           slug,
           name,
-          description: meta.description || categoryDescriptionFromName(name),
+          description: meta.description || categoryDescriptionFromName(slug, name),
           icon: meta.icon?.trim() || getCategoryIcon(products),
           products: products.sort((left, right) => left.title.localeCompare(right.title)),
         };
