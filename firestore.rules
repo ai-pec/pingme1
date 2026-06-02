@@ -1,0 +1,110 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function hasAdminClaim() {
+      return isSignedIn() && request.auth.token.admin == true;
+    }
+
+    function hasAdminDoc() {
+      return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function isAdmin() {
+      return hasAdminClaim() || hasAdminDoc();
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isOwnerOrder() {
+      return isSignedIn() && (
+        request.auth.uid == resource.data.userId ||
+        request.auth.token.email == resource.data.email
+      );
+    }
+
+    function isOwnerOrderCreate() {
+      return isSignedIn() && (
+        request.auth.uid == request.resource.data.userId ||
+        request.auth.token.email == request.resource.data.email
+      );
+    }
+
+    function hasValidOrderStatus(status) {
+      return status in ['pending', 'confirmed', 'cancelled'];
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create: if isOwner(uid);
+      allow update: if isOwner(uid) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /adminAccess/{docId} {
+      allow read: if isSignedIn() && docId == 'panel';
+      allow write: if false;
+    }
+
+    match /admins/{uid} {
+      allow read: if isAdmin() || (isSignedIn() && (request.auth.uid == uid || request.auth.token.email == uid));
+      allow create, update, delete: if hasAdminClaim();
+    }
+
+    match /booking/{orderId} {
+      allow read: if isOwnerOrder() || isAdmin();
+      allow create: if (isOwnerOrderCreate() || isAdmin()) && hasValidOrderStatus(request.resource.data.status);
+      allow update: if (isOwnerOrder() || isAdmin()) && hasValidOrderStatus(request.resource.data.status);
+      allow delete: if isAdmin();
+    }
+
+    match /prebookings/{orderId} {
+      allow read: if isOwnerOrder() || isAdmin();
+      allow create: if (isOwnerOrderCreate() || isAdmin()) && hasValidOrderStatus(request.resource.data.status);
+      allow update: if (isOwnerOrder() || isAdmin()) && hasValidOrderStatus(request.resource.data.status);
+      allow delete: if isAdmin();
+    }
+
+    match /payments/{paymentId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /productCategories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /contacts/{contactId} {
+      allow read: if isAdmin();
+      allow create: if
+        request.resource.data.keys().hasOnly(['name', 'email', 'phone', 'message', 'createdAt', 'status']) &&
+        request.resource.data.keys().hasAll(['name', 'email', 'message', 'createdAt', 'status']) &&
+        request.resource.data.name is string &&
+        request.resource.data.name.size() > 0 &&
+        request.resource.data.name.size() <= 100 &&
+        request.resource.data.email is string &&
+        request.resource.data.email.size() > 0 &&
+        request.resource.data.email.size() <= 255 &&
+        request.resource.data.email.matches('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$') &&
+        (!('phone' in request.resource.data) ||
+          (request.resource.data.phone is string && request.resource.data.phone.size() <= 20)) &&
+        request.resource.data.message is string &&
+        request.resource.data.message.size() > 0 &&
+        request.resource.data.message.size() <= 1000 &&
+        request.resource.data.status == 'new' &&
+        request.resource.data.createdAt == request.time;
+      allow update, delete: if isAdmin();
+    }
+  }
+}

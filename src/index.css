@@ -1,0 +1,305 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Core Brand Colors */
+    --ping-yellow: 45 100% 48%;
+    --ping-dark: 40 76% 7%;
+    --ping-ink: 250 33% 7%;
+    --ping-ash: 40 12% 37%;
+    --ping-card: 45 100% 94%;
+    --ping-white: 0 0% 100%;
+    --ping-cream: 42 100% 96%;
+    --ping-brown: 30 75% 26%;
+    
+    /* Semantic tokens */
+    --background: 0 0% 100%;
+    --foreground: 40 76% 7%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 40 76% 7%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 40 76% 7%;
+
+    /* Primary - Golden Yellow */
+    --primary: 45 100% 48%;
+    --primary-foreground: 40 76% 7%;
+    --primary-dark: 30 75% 26%;
+
+    /* Secondary - Cream */
+    --secondary: 42 100% 96%;
+    --secondary-foreground: 40 76% 7%;
+
+    --muted: 42 30% 94%;
+    --muted-foreground: 40 12% 37%;
+
+    --accent: 45 100% 48%;
+    --accent-foreground: 40 76% 7%;
+
+    /* Success - Green */
+    --success: 145 63% 32%;
+    --success-foreground: 0 0% 100%;
+
+    /* Destructive - Red */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 40 15% 88%;
+    --border-light: 40 15% 92%;
+    --input: 40 15% 88%;
+    --ring: 45 100% 48%;
+
+    --radius: 0.75rem;
+    --radius-sm: 0.5rem;
+    --radius-md: 0.75rem;
+    --radius-lg: 1rem;
+    --radius-xl: 1.5rem;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    --shadow-soft: 0 25px 60px rgba(81, 60, 9, 0.15);
+
+    /* Transitions */
+    --transition-base: 0.2s ease;
+    --transition-smooth: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 0 0% 5%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 8%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 45 100% 48%;
+    --primary-foreground: 40 76% 7%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 65%;
+    --accent: 45 100% 48%;
+    --accent-foreground: 40 76% 7%;
+    --success: 145 63% 42%;
+    --success-foreground: 0 0% 100%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 45 100% 48%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Poppins', 'Space Grotesk', system-ui, sans-serif;
+    color: hsl(var(--ping-dark));
+    background: radial-gradient(circle at 20% 20%, rgba(255, 231, 170, 0.4), transparent 50%),
+      radial-gradient(circle at 80% 0%, rgba(255, 248, 226, 0.5), transparent 45%),
+      hsl(var(--ping-white));
+  }
+}
+
+@layer components {
+  /* Container */
+  .container {
+    @apply max-w-[1200px] mx-auto px-4;
+  }
+
+  /* Highlight text with yellow underline */
+  .highlight-yellow {
+    color: hsl(var(--primary));
+    font-weight: 800;
+  }
+
+  .highlight-underline {
+    position: relative;
+    display: inline-block;
+  }
+
+  .highlight-underline::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    left: 0;
+    right: 0;
+    height: 14px;
+    background: linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(45, 100%, 54%) 100%);
+    opacity: 0.4;
+    z-index: -1;
+    border-radius: 4px;
+  }
+
+  /* Section eyebrow */
+  .section-eyebrow {
+    @apply text-center text-sm font-semibold uppercase tracking-wider mb-2;
+    color: hsl(var(--ping-brown));
+  }
+
+  .section-title {
+    @apply text-center text-2xl md:text-3xl font-bold mb-8 max-w-3xl mx-auto;
+    color: hsl(var(--ping-dark));
+  }
+
+  /* Benefit/Feature Items */
+  .benefit-icon {
+    @apply text-4xl leading-none;
+  }
+
+  /* Card styles */
+  .card-elevated {
+    @apply bg-card rounded-2xl;
+    box-shadow: var(--shadow-lg);
+  }
+
+  /* Alert button base */
+  .alert-button {
+    @apply w-full py-4 px-5 bg-primary text-primary-foreground rounded-xl font-medium text-left flex items-center gap-3 transition-all duration-200;
+    box-shadow: var(--shadow-md);
+  }
+
+  .alert-button:hover {
+    @apply scale-[1.02];
+    box-shadow: var(--shadow-lg);
+  }
+
+  .alert-button:active {
+    @apply scale-[0.98];
+  }
+
+  /* Call owner button */
+  .call-button {
+    @apply w-full py-5 bg-success text-success-foreground rounded-xl font-bold text-lg flex items-center justify-center gap-3 transition-all duration-200;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .call-button:hover {
+    @apply brightness-110;
+    box-shadow: var(--shadow-xl);
+  }
+
+  /* Button hover effects */
+  .btn-hover-lift {
+    @apply transition-all duration-200;
+  }
+
+  .btn-hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+
+  /* Stats card */
+  .stat-card {
+    @apply p-6 text-center flex flex-col gap-2;
+    border-right: 1px solid rgba(0, 0, 0, 0.1);
+  }
+
+  .stat-card:last-child {
+    border-right: none;
+  }
+
+  /* Feature card with border */
+  .feature-card-bordered {
+    @apply bg-background rounded-lg p-6;
+    border: 2px solid hsl(var(--ping-brown));
+  }
+
+  /* FAQ Item */
+  .faq-item {
+    @apply bg-secondary rounded-lg px-6 py-4 flex justify-between items-center cursor-pointer transition-all duration-200;
+    border: 2px solid hsl(var(--border));
+  }
+
+  .faq-item:hover {
+    border-color: hsl(var(--primary));
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* Form inputs */
+  .form-input-styled {
+    @apply w-full py-3 px-4 rounded-lg text-base transition-all duration-200;
+    border: 2px solid hsl(var(--border));
+    background: hsl(var(--ping-cream));
+    font-family: inherit;
+  }
+
+  .form-input-styled:focus {
+    @apply outline-none;
+    border-color: hsl(var(--primary));
+    box-shadow: 0 0 0 3px rgba(244, 180, 0, 0.1);
+  }
+
+  /* Hazard stripe pattern */
+  .hazard-stripe {
+    background: repeating-linear-gradient(
+      -45deg,
+      hsl(var(--primary)),
+      hsl(var(--primary)) 10px,
+      hsl(var(--ping-dark)) 10px,
+      hsl(var(--ping-dark)) 20px
+    );
+  }
+
+  .hazard-stripe-thin {
+    background: repeating-linear-gradient(
+      -45deg,
+      hsl(var(--primary)),
+      hsl(var(--primary)) 5px,
+      hsl(var(--ping-dark)) 5px,
+      hsl(var(--ping-dark)) 10px
+    );
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Background utilities */
+  .bg-cream {
+    background-color: hsl(var(--ping-cream));
+  }
+
+  .bg-ping-card {
+    background-color: hsl(var(--ping-card));
+  }
+
+  /* Text utilities */
+  .text-brown {
+    color: hsl(var(--ping-brown));
+  }
+
+  .text-ash {
+    color: hsl(var(--ping-ash));
+  }
+
+  .text-ink {
+    color: hsl(var(--ping-ink));
+  }
+}

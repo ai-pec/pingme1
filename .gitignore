@@ -1,0 +1,41 @@
+# Node
+node_modules/
+
+# Vite
+vite.config.*.timestamp-*
+.vite/
+
+# Build outputs
+dist/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment files
+.env
+.env.*
+functions/.env
+functions/.env.*
+
+# Coverage
+coverage/
+
+# Editor/OS
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Firebase
+.firebase/
+"functions/tmp_razorpay_id.txt" 
+"functions/tmp_razorpay_secret.txt" 
+"**firebase-debug.log" 
+
+#razorpay
+functions/tmp_razorpay_id.txt
+functions/tmp_razorpay_secret.txt
+**/firebase-debug.log
+firebase-debug.log
