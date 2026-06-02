@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import MainLayout from "@/layouts/MainLayout";
-import { Users, Target, Shield, Heart } from "lucide-react";
+import { Users, Target, Shield, Heart, MapPin, Phone, Mail } from "lucide-react";
 import { getCachedPublicStats, refreshPublicStats } from "@/lib/publicStatsService";
 
 const STATIC_CITIES_COVERED = 3;
@@ -179,6 +179,45 @@ const About = () => {
                 Phone: <a href="tel:+917347340007" className="hover:underline">+91 73473 40007</a><br />
                 Email: <a href="mailto:contact@pingiff.ai" className="hover:underline">contact@pingiff.ai</a>
               </address>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Find Us / Our Office Section */}
+      <div className="bg-[#FAF7F2] py-16 border-t border-border/30">
+        <div className="container">
+          <div className="mx-auto max-w-6xl">
+
+            <h2 className="text-3xl font-extrabold text-foreground mb-8">Our Office</h2>
+
+            <div className="border-t border-border/40 pt-7">
+              <p className="font-bold text-base text-foreground mb-2">Ping IFF LLP</p>
+
+              <div className="flex flex-col gap-1.5 text-muted-foreground text-[15px]">
+                <div className="flex items-start gap-2">
+                  <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0 text-[#8B6A2E]" />
+                  <span>
+                    745, Burail, Ekta Market, Burail Village,<br />
+                    Sector 45, Chandigarh – 160047, India
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Phone className="w-4 h-4 flex-shrink-0 text-[#8B6A2E]" />
+                  <span>+91 73473 40007</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Mail className="w-4 h-4 flex-shrink-0 text-[#8B6A2E]" />
+                  <a
+                    href="mailto:contact@pingiff.ai"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    contact@pingiff.ai
+                  </a>
+                </div>
+              </div>
             </div>
           </div>
         </div>
