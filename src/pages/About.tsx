@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import MainLayout from "@/layouts/MainLayout";
-import { Users, Target, Shield, Heart, MapPin, Phone, Mail } from "lucide-react";
+import { Users, Target, Shield, Heart } from "lucide-react";
 import { getCachedPublicStats, refreshPublicStats } from "@/lib/publicStatsService";
 
 const STATIC_CITIES_COVERED = 3;
@@ -69,6 +69,9 @@ const About = () => {
       alive = false;
     };
   }, [cachedStats]);
+
+  const googleMapsUrl =
+    "https://www.google.com/maps/search/?api=1&query=745+Burail+Ekta+Market+Burail+Village+Sector+45+Chandigarh+160047";
 
   return (
     <MainLayout>
@@ -169,53 +172,35 @@ const About = () => {
               )}
             </div>
 
-            {/* Office Address */}
-            <div className="mt-12 rounded-2xl border border-border/60 bg-background/90 p-6 md:p-8">
-              <h2 className="text-xl font-bold mb-4">Our Office</h2>
-              <address className="not-italic text-muted-foreground leading-7">
-                <strong>Ping IFF LLP</strong><br />
-                745, Burail, Ekta Market, Burail Village,<br />
-                Sector 45, Chandigarh &ndash; 160047, India<br />
-                Phone: <a href="tel:+917347340007" className="hover:underline">+91 73473 40007</a><br />
-                Email: <a href="mailto:contact@pingiff.ai" className="hover:underline">contact@pingiff.ai</a>
-              </address>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Find Us / Our Office Section */}
-      <div className="bg-[#FAF7F2] py-16 border-t border-border/30">
-        <div className="container">
-          <div className="mx-auto max-w-6xl">
-
-            <h2 className="text-3xl font-extrabold text-foreground mb-8">Our Office</h2>
-
-            <div className="border-t border-border/40 pt-7">
-              <p className="font-bold text-base text-foreground mb-2">Ping IFF LLP</p>
-
-              <div className="flex flex-col gap-1.5 text-muted-foreground text-[15px]">
-                <div className="flex items-start gap-2">
-                  <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0 text-[#8B6A2E]" />
-                  <span>
-                    745, Burail, Ekta Market, Burail Village,<br />
-                    Sector 45, Chandigarh – 160047, India
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Phone className="w-4 h-4 flex-shrink-0 text-[#8B6A2E]" />
-                  <span>+91 73473 40007</span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Mail className="w-4 h-4 flex-shrink-0 text-[#8B6A2E]" />
-                  <a
-                    href="mailto:contact@pingiff.ai"
-                    className="hover:text-foreground transition-colors"
-                  >
-                    contact@pingiff.ai
-                  </a>
+            {/* Find Us block */}
+            <div className="mt-6">
+              <div className="bg-white rounded-2xl p-6 shadow-sm">
+                <p className="text-xs font-semibold text-muted-foreground uppercase">Find us</p>
+                <h3 className="font-bold text-2xl mt-2">Our Office</h3>
+                <a
+                  href={googleMapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 text-sm font-light text-muted-foreground block"
+                >
+                  Ping IFF LLP<br />
+                  745, Burail, Ekta Market,<br />
+                  Burail Village, Sector 45,<br />
+                  Chandigarh – 160047
+                </a>
+                <div className="mt-3 text-sm font-light text-muted-foreground space-y-1">
+                  <div>
+                    Phone:{" "}
+                    <a href="tel:+917347340007" className="text-muted-foreground">
+                      +91 73473 40007
+                    </a>
+                  </div>
+                  <div>
+                    Email:{" "}
+                    <a href="mailto:contact@pingiff.ai" className="text-muted-foreground">
+                      contact@pingiff.ai
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>

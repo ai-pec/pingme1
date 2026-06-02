@@ -478,28 +478,38 @@ const LandingHero = () => {
           </div>
         </section>
 
-        {/* Find Us / Our Office */}
-        <section className="rounded-[1.75rem] border border-border/60 bg-background/90 p-6 shadow-[0_18px_50px_rgba(81,60,9,0.08)] md:p-8">
-          <p className="section-eyebrow text-left">Find Us</p>
-          <h2 className="text-3xl font-bold tracking-tight text-foreground mb-6">Our Office</h2>
-
-          <p className="font-bold text-base text-foreground mb-1">Ping IFF LLP</p>
-          <p className="text-muted-foreground text-[15px] leading-7">
-            745, Burail, Ekta Market, Burail Village,
-          </p>
-          <p className="text-muted-foreground text-[15px] leading-7">
-            Sector 45, Chandigarh – 160047, India
-          </p>
-          <p className="text-muted-foreground text-[15px] leading-7 mt-0.5">
-            Phone: +91 73473 40007&nbsp;&nbsp;|&nbsp;&nbsp;Email:{" "}
+        {/* Find Us block */}
+        <div className="mx-auto max-w-6xl mt-6">
+          <div className="bg-white rounded-2xl p-6 shadow-sm">
+            <p className="text-xs font-semibold text-muted-foreground uppercase">Find us</p>
+            <h3 className="font-bold text-2xl mt-2">Our Office</h3>
             <a
-              href="mailto:contact@pingiff.ai"
-              className="hover:text-foreground transition-colors"
+              href="https://www.google.com/maps/search/?api=1&query=745+Burail+Ekta+Market+Burail+Village+Sector+45+Chandigarh+160047"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 text-sm font-light text-muted-foreground block"
             >
-              contact@pingiff.ai
+              Ping IFF LLP<br/>
+              745, Burail, Ekta Market,<br/>
+              Burail Village, Sector 45,<br/>
+              Chandigarh – 160047
             </a>
-          </p>
-        </section>
+            <div className="mt-3 text-sm font-light text-muted-foreground space-y-1">
+              <div>
+                Phone:{" "}
+                <a href="tel:+917347340007" className="text-muted-foreground">
+                  +91 73473 40007
+                </a>
+              </div>
+              <div>
+                Email:{" "}
+                <a href="mailto:contact@pingiff.ai" className="text-muted-foreground">
+                  contact@pingiff.ai
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </main>
   );

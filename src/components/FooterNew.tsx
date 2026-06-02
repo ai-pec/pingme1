@@ -9,15 +9,14 @@ const FooterNew = () => {
           {/* Brand */}
           <div className="flex flex-col items-center md:items-start gap-1">
             <img src={logo} alt="PingME" className="h-14 w-14 object-contain" />
-            <div className="text-sm text-muted-foreground">
-              <p>© 2026 PingME by Ping IFF LLP. All rights reserved.</p>
-              <address className="not-italic text-xs mt-1">
-                745, Street No. 8,<br/>
-                Keshoram Complex Burail,<br/>
-                Sector 45C Chandigarh (160047)<br/>
-                INDIA
-              </address>
-            </div>
+            <p className="text-sm text-muted-foreground">
+              © 2026 Ping IFF LLP.<br /> All rights reserved<br />
+            </p>
+            <span className="text-xs font-light text-muted-foreground block mt-1">
+              Ping IFF LLP, 745, Burail, Ekta Market,<br />
+              Burail Village, Sector 45,<br />
+              Chandigarh – 160047
+            </span>
           </div>
           <iframe
             style={{ width: '114px', height: '97px', border: '1px solid #ccc', marginLeft: '40px' }}
