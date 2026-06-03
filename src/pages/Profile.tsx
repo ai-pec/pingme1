@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { Suspense, lazy, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
-import { Loader2 } from "lucide-react";
+import { Loader2, MapPin, ChevronDown } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import MainLayout from "@/layouts/MainLayout";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import type { NFCProfileData } from "@/components/NFCProfileBuilder";
 import { getUserPrebookings, type PrebookingRecord } from "@/lib/prebookService";
 import { getUserProfile } from "@/lib/userService";
@@ -13,10 +14,11 @@ import type { UserProfile } from "@/types/user";
 import { EmailVerificationBanner } from "@/components/profile/EmailVerificationBanner";
 import { PersonalInfoForm } from "@/components/profile/PersonalInfoForm";
 import { EmailSettings } from "@/components/profile/EmailSettings";
-import { AddressManagement } from "@/components/profile/AddressManagement";
 import { OrderHistory } from "@/components/profile/OrderHistory";
 import { SavedPayments } from "@/components/profile/SavedPayments";
-import { NFCEditModal } from "@/components/profile/NFCEditModal";
+
+const NFCEditModal = lazy(() => import("@/components/profile/NFCEditModal").then((module) => ({ default: module.NFCEditModal })));
+const AddressManagement = lazy(() => import("@/components/profile/AddressManagement").then((module) => ({ default: module.AddressManagement })));
 
 export default function Profile() {
   const { userId } = useParams<{ userId?: string }>();
@@ -29,6 +31,7 @@ export default function Profile() {
 
   const [nfcDialogOpen, setNfcDialogOpen] = useState(false);
   const [selectedNfcOrderId, setSelectedNfcOrderId] = useState<string | null>(null);
+  const [showAddressManagement, setShowAddressManagement] = useState(false);
   const [nfcProfileDraft, setNfcProfileDraft] = useState<NFCProfileData>({
     username: "",
     name: "",
@@ -117,7 +120,7 @@ export default function Profile() {
     setNfcDialogOpen(true);
   };
 
-  
+
     // If not signed in at all, show login prompt (ProtectedRoute normally handles this)
     if (!user) {
       return (
@@ -183,18 +186,26 @@ export default function Profile() {
 
               <OrderHistory orders={orders} ordersLoading={ordersLoading} onEditNFC={openEditNFC} />
 
-              <NFCEditModal
-                open={nfcDialogOpen}
-                onOpenChange={(open) => {
-                  setNfcDialogOpen(open);
-                  if (!open) {
-                    setSelectedNfcOrderId(null);
-                  }
-                }}
-                orderId={selectedNfcOrderId}
-                profileDraft={nfcProfileDraft}
-                setProfileDraft={setNfcProfileDraft}
-              />
+              <Suspense
+                fallback={
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  </div>
+                }
+              >
+                <NFCEditModal
+                  open={nfcDialogOpen}
+                  onOpenChange={(open) => {
+                    setNfcDialogOpen(open);
+                    if (!open) {
+                      setSelectedNfcOrderId(null);
+                    }
+                  }}
+                  orderId={selectedNfcOrderId}
+                  profileDraft={nfcProfileDraft}
+                  setProfileDraft={setNfcProfileDraft}
+                />
+              </Suspense>
             </div>
           </div>
         </MainLayout>
@@ -222,21 +233,67 @@ export default function Profile() {
             <PersonalInfoForm />
             <EmailSettings />
             <AddressManagement />
+              <div className="rounded-xl border bg-card p-4 sm:p-5">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                      <MapPin className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-semibold">Saved Delivery Addresses</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {profile?.addresses?.length ? `${profile.addresses.length} saved address${profile.addresses.length > 1 ? "es" : ""} available.` : "Keep addresses ready for faster checkout."}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="sm:self-start"
+                    onClick={() => setShowAddressManagement((open) => !open)}
+                  >
+                    {showAddressManagement ? "Hide Addresses" : "Manage Addresses"}
+                    <ChevronDown className={`ml-2 h-4 w-4 transition-transform ${showAddressManagement ? "rotate-180" : ""}`} />
+                  </Button>
+                </div>
+
+                {showAddressManagement && (
+                  <div className="mt-5 border-t border-border pt-5">
+                    <Suspense
+                      fallback={
+                        <div className="flex items-center justify-center py-8">
+                          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                        </div>
+                      }
+                    >
+                      <AddressManagement />
+                    </Suspense>
+                  </div>
+                )}
+              </div>
             <OrderHistory orders={orders} ordersLoading={ordersLoading} onEditNFC={openEditNFC} />
             <SavedPayments />
 
-            <NFCEditModal
-              open={nfcDialogOpen}
-              onOpenChange={(open) => {
-                setNfcDialogOpen(open);
-                if (!open) {
-                  setSelectedNfcOrderId(null);
-                }
-              }}
-              orderId={selectedNfcOrderId}
-              profileDraft={nfcProfileDraft}
-              setProfileDraft={setNfcProfileDraft}
-            />
+            <Suspense
+              fallback={
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              }
+            >
+              <NFCEditModal
+                open={nfcDialogOpen}
+                onOpenChange={(open) => {
+                  setNfcDialogOpen(open);
+                  if (!open) {
+                    setSelectedNfcOrderId(null);
+                  }
+                }}
+                orderId={selectedNfcOrderId}
+                profileDraft={nfcProfileDraft}
+                setProfileDraft={setNfcProfileDraft}
+              />
+            </Suspense>
           </div>
         </div>
       </MainLayout>
