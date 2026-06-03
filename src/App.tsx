@@ -12,6 +12,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import AdminRoute from "@/components/auth/AdminRoute";
+import SmoothScroll from "@/components/SmoothScroll";
 
 // Pages
 const Landing = lazy(() => import("./pages/Landing"));
@@ -98,6 +99,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <SmoothScroll />
             <ChunkErrorBoundary>
               <Suspense fallback={<PageLoader />}>
               <Routes>
