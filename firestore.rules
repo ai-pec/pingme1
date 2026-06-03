@@ -106,5 +106,16 @@ service cloud.firestore {
         request.resource.data.createdAt == request.time;
       allow update, delete: if isAdmin();
     }
+
+    match /faqs/{faqId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    match /blogPosts/{postId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
   }
 }
+
