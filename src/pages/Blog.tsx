@@ -29,7 +29,7 @@ const Blog = () => {
         jsonLd={blogSchema}
       />
 
-      <main className="py-16 md:py-24">
+      <main className="pt-8 pb-16 md:pt-10 md:pb-20">
         <div className="container">
           <section className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-primary/10 via-background to-secondary/30 p-6 md:p-10">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(14,165,233,0.14),transparent_35%)]" />
