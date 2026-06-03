@@ -33,6 +33,7 @@ import heroDemoVideoMp4 from "@/assets/IMG_9847.mp4";
 import heroDemoVideoWebm from "@/assets/IMG_9847.webm";
 import { subscribeToProducts, type DbProduct } from "@/lib/productService";
 import { normalizeCategorySlug, buildProductImageUrl } from "@/lib/productCatalog";
+import LandingDownloadSection from "./LandingDownloadSection";
 
 const heroImagePath = import.meta.env.VITE_HERO_IMAGE_PATH || "products/hero_i.PNG";
 const heroImageUrl = buildProductImageUrl(heroImagePath);
@@ -515,6 +516,9 @@ const LandingHero = () => {
             </div>
           </div>
         </div>
+
+        {/* Download Section */}
+        <LandingDownloadSection />
       </div>
     </main>
   );
