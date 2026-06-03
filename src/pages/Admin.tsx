@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, startTransition } from "react";
 import { useNavigate } from "react-router-dom";
-import { CheckCircle2, Copy, Eye, Loader2, Save, Search, Shield, SlidersHorizontal, XCircle, Plus, Edit, Trash2 } from "lucide-react";
+import { CheckCircle2, Copy, Eye, Loader2, MessageSquare, Save, Search, Shield, SlidersHorizontal, XCircle, Plus, Edit, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import MainLayout from "@/layouts/MainLayout";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
-import { subscribeToOrders, updateOrderStatus } from "@/lib/adminService";
+import { subscribeToOrders, updateOrderStatus, subscribeToContactMessages, deleteContactMessage, markContactMessageRead, type ContactMessage } from "@/lib/adminService";
 import { downloadReceipt } from "@/lib/paymentService";
 import { categoryDescriptionFromName, categoryNameFromSlug, normalizeCategorySlug } from "@/lib/productCatalog";
 import { subscribeToProducts, saveProduct, deleteProductDoc, uploadProductImage, DbProduct, renameCategory, moveProductsToCategory, subscribeToProductCategories, saveProductCategory, deleteCategory } from "@/lib/productService";
@@ -102,6 +102,11 @@ export default function Admin() {
   const [savingProductId, setSavingProductId] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
+  const [contactMessages, setContactMessages] = useState<ContactMessage[]>([]);
+  const [loadingMessages, setLoadingMessages] = useState(true);
+  const [messageSearch, setMessageSearch] = useState("");
+  const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null);
+
   useEffect(() => {
     setLoadingOrders(true);
     const unsubscribe = subscribeToOrders(
@@ -125,6 +130,22 @@ export default function Admin() {
       (error) => {
         console.error("Failed to load products", error);
         toast.error("Failed to load products from Firebase.");
+      },
+    );
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    setLoadingMessages(true);
+    const unsubscribe = subscribeToContactMessages(
+      (latest) => {
+        setContactMessages(latest);
+        setLoadingMessages(false);
+      },
+      (error) => {
+        console.error("Failed to sync contact messages", error);
+        toast.error("Failed to load message queries from Firebase.");
+        setLoadingMessages(false);
       },
     );
     return unsubscribe;
@@ -361,6 +382,29 @@ export default function Admin() {
     });
   };
 
+  const handleOpenMessage = (msg: ContactMessage) => {
+    setSelectedMessage(msg);
+    // Mark as read silently — real-time listener will update the count automatically
+    if (msg.status === "new") {
+      markContactMessageRead(msg.id).catch((err) =>
+        console.error("Failed to mark message as read", err),
+      );
+    }
+  };
+
+  const handleDeleteMessage = async (msgId: string) => {
+    if (!window.confirm("Delete this message query? This cannot be undone.")) return;
+    try {
+      // Close dialog if the deleted message is currently open
+      setSelectedMessage((prev) => (prev?.id === msgId ? null : prev));
+      await deleteContactMessage(msgId);
+      toast.success("Message deleted.");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to delete message.");
+    }
+  };
+
   return (
     <MainLayout>
       <div className="container py-8 space-y-6">
@@ -376,9 +420,18 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="orders" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 sm:w-[360px]">
+          <TabsList className="grid w-full grid-cols-3 sm:w-[520px]">
             <TabsTrigger value="orders">Order History</TabsTrigger>
             <TabsTrigger value="products">Products</TabsTrigger>
+            <TabsTrigger value="messages" className="flex items-center gap-1.5">
+              <MessageSquare className="w-3.5 h-3.5" />
+              Message Queries
+              {contactMessages.length > 0 && (
+                <span className="ml-1 inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-bold w-4 h-4">
+                  {contactMessages.length > 99 ? "99+" : contactMessages.length}
+                </span>
+              )}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="orders" className="space-y-6">
@@ -637,7 +690,234 @@ export default function Admin() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="messages" className="space-y-6">
+            {/* Stats */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardDescription>Total Messages</CardDescription>
+                  <CardTitle className="text-3xl">{contactMessages.length}</CardTitle>
+                </CardHeader>
+              </Card>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardDescription>New / Unread</CardDescription>
+                  <CardTitle className="text-3xl">
+                    {contactMessages.filter((m) => m.status === "new").length}
+                  </CardTitle>
+                </CardHeader>
+              </Card>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardDescription>With Phone</CardDescription>
+                  <CardTitle className="text-3xl">
+                    {contactMessages.filter((m) => m.phone && m.phone.trim()).length}
+                  </CardTitle>
+                </CardHeader>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5" />
+                  Message Queries
+                </CardTitle>
+                <CardDescription>
+                  Real-time contact form submissions from the website. New entries appear instantly.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {/* Search */}
+                <div className="relative mb-4 max-w-sm">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={messageSearch}
+                    onChange={(e) => setMessageSearch(e.target.value)}
+                    placeholder="Search by name, email or message..."
+                    className="pl-9"
+                  />
+                </div>
+
+                {loadingMessages ? (
+                  <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <span>Loading messages…</span>
+                  </div>
+                ) : contactMessages.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
+                    <MessageSquare className="h-10 w-10 opacity-30" />
+                    <p className="text-sm">No messages yet. They'll appear here as soon as someone fills in the contact form.</p>
+                  </div>
+                ) : (() => {
+                  const filtered = contactMessages.filter((m) => {
+                    const q = messageSearch.toLowerCase();
+                    return (
+                      !q ||
+                      m.name.toLowerCase().includes(q) ||
+                      m.email.toLowerCase().includes(q) ||
+                      m.message.toLowerCase().includes(q)
+                    );
+                  });
+
+                  return filtered.length === 0 ? (
+                    <p className="py-8 text-center text-sm text-muted-foreground">No messages match your search.</p>
+                  ) : (
+                    <div className="rounded-md border overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-[140px]">Name</TableHead>
+                            <TableHead className="w-[80px]">Status</TableHead>
+                            <TableHead className="w-[200px]">Email</TableHead>
+                            <TableHead className="w-[130px]">Phone</TableHead>
+                            <TableHead>Message</TableHead>
+                            <TableHead className="w-[160px]">Received At</TableHead>
+                            <TableHead className="w-[60px] text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filtered.map((msg) => (
+                            <TableRow
+                              key={msg.id}
+                              className="cursor-pointer hover:bg-muted/60 transition-colors"
+                              onClick={() => handleOpenMessage(msg)}
+                            >
+                              <TableCell className="font-medium whitespace-nowrap">
+                                <button
+                                  className="text-primary hover:underline text-left font-medium"
+                                  onClick={(e) => { e.stopPropagation(); handleOpenMessage(msg); }}
+                                >
+                                  {msg.name}
+                                </button>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={msg.status === "new" ? "default" : "outline"} className="whitespace-nowrap">
+                                  {msg.status === "new" ? "New" : "Read"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <a
+                                  href={`mailto:${msg.email}`}
+                                  className="text-primary hover:underline break-all"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {msg.email}
+                                </a>
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap text-muted-foreground">
+                                {msg.phone && msg.phone.trim() ? (
+                                  <a
+                                    href={`tel:${msg.phone}`}
+                                    className="hover:underline"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    {msg.phone}
+                                  </a>
+                                ) : (
+                                  <span className="italic opacity-50">—</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <p className="max-w-xs text-sm text-muted-foreground truncate">
+                                  {msg.message}
+                                </p>
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                                {formatDate(msg.createdAt)}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-destructive hover:bg-destructive/10 h-7 w-7"
+                                  onClick={(e) => { e.stopPropagation(); handleDeleteMessage(msg.id); }}
+                                  title="Delete message"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
+
+        {/* Message Detail Dialog */}
+        <Dialog open={!!selectedMessage} onOpenChange={(open) => !open && setSelectedMessage(null)}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-primary" />
+                Message from {selectedMessage?.name}
+              </DialogTitle>
+              <DialogDescription>Full message details from the contact form</DialogDescription>
+            </DialogHeader>
+            {selectedMessage && (
+              <div className="space-y-4 pt-2">
+                <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-3 text-sm">
+                  <span className="font-semibold text-muted-foreground">Name</span>
+                  <span className="font-medium">{selectedMessage.name}</span>
+
+                  <span className="font-semibold text-muted-foreground">Email</span>
+                  <a
+                    href={`mailto:${selectedMessage.email}`}
+                    className="text-primary hover:underline break-all"
+                  >
+                    {selectedMessage.email}
+                  </a>
+
+                  <span className="font-semibold text-muted-foreground">Phone</span>
+                  {selectedMessage.phone && selectedMessage.phone.trim() ? (
+                    <a href={`tel:${selectedMessage.phone}`} className="hover:underline">
+                      {selectedMessage.phone}
+                    </a>
+                  ) : (
+                    <span className="italic text-muted-foreground opacity-60">Not provided</span>
+                  )}
+
+                  <span className="font-semibold text-muted-foreground">Received</span>
+                  <span>{formatDate(selectedMessage.createdAt)}</span>
+                </div>
+
+                <div className="border-t pt-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Message</p>
+                  <div className="rounded-lg bg-muted/50 border p-4 text-sm whitespace-pre-wrap leading-relaxed">
+                    {selectedMessage.message}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-1">
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleDeleteMessage(selectedMessage.id)}
+                  >
+                    <Trash2 className="w-4 h-4 mr-1.5" />
+                    Delete Query
+                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" asChild>
+                      <a href={`mailto:${selectedMessage.email}`}>
+                        Reply via Email
+                      </a>
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setSelectedMessage(null)}>
+                      Close
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
 
         <Dialog open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrder(null)}>
           <DialogContent className="max-w-2xl">

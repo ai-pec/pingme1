@@ -18,6 +18,17 @@ import type { UserProfile } from "@/types/user";
 const BOOKING_COLLECTION = "booking";
 const LEGACY_PREBOOKINGS_COLLECTION = "prebookings";
 const USERS_COLLECTION = "users";
+const CONTACTS_COLLECTION = "contacts";
+
+export interface ContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  message: string;
+  status: string;
+  createdAt: unknown;
+}
 
 const toMillis = (createdAt: unknown): number => {
   if (!createdAt || typeof createdAt !== "object") return 0;
@@ -155,4 +166,40 @@ export async function updateOrderStatus(orderId: string, status: PrebookingRecor
       updatedAt: serverTimestamp(),
     }),
   ], "update order status");
+}
+
+export function subscribeToContactMessages(
+  onUpdate: (messages: ContactMessage[]) => void,
+  onError: (error: Error) => void,
+): () => void {
+  const contactsQuery = query(
+    collection(db, CONTACTS_COLLECTION),
+    orderBy("createdAt", "desc"),
+  );
+
+  const unsubscribe = onSnapshot(
+    contactsQuery,
+    (snapshot) => {
+      const messages: ContactMessage[] = snapshot.docs.map((snap) => ({
+        id: snap.id,
+        ...(snap.data() as Omit<ContactMessage, "id">),
+      }));
+      onUpdate(messages);
+    },
+    (error) => {
+      onError(error);
+    },
+  );
+
+  return unsubscribe;
+}
+
+export async function deleteContactMessage(messageId: string): Promise<void> {
+  await deleteDoc(doc(db, CONTACTS_COLLECTION, messageId));
+}
+
+export async function markContactMessageRead(messageId: string): Promise<void> {
+  await updateDoc(doc(db, CONTACTS_COLLECTION, messageId), {
+    status: "read",
+  });
 }
