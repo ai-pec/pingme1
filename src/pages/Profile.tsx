@@ -64,12 +64,18 @@ export default function Profile() {
       return userProfile;
     },
     enabled: !!userId && userId !== user?.uid,
+    staleTime: 5 * 60 * 1000,   // 5 minutes — user profiles rarely change
+    gcTime: 10 * 60 * 1000,     // keep in cache for 10 minutes
+    refetchOnWindowFocus: false, // don't refetch on tab switch
   });
 
   const { data: orders = [], isLoading: ordersLoading } = useQuery({
     queryKey: ["userPrebookings", isViewingOtherUser ? userId : user?.uid],
     queryFn: () => getUserPrebookings({ userId: isViewingOtherUser ? userId! : user!.uid, email: isViewingOtherUser ? undefined : user!.email || undefined }),
     enabled: isViewingOtherUser ? !!userId : !!user?.uid,
+    staleTime: 60 * 1000,        // 60 seconds — orders don't update that often
+    gcTime: 5 * 60 * 1000,      // keep in cache for 5 minutes
+    refetchOnWindowFocus: false, // don't refetch on tab switch
   });
 
   const resendMutation = useMutation({
