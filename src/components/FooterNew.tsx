@@ -32,7 +32,7 @@ const FooterNew = () => {
   };
 
   const socialLinks = [
-    { icon: Instagram, href: "https://instagram.com/plzping.me", label: "Twitter" },
+    { icon: Instagram, href: "https://instagram.com/plzping.me", label: "Instagram" },
     { icon: Linkedin, href: "https://www.linkedin.com/company/plzpingme", label: "LinkedIn" },
   ];
 
@@ -127,23 +127,6 @@ const FooterNew = () => {
                   Chandigarh - 160047, India
                 </span>
               </div>
-            </div>
-
-            {/* D&B Seal */}
-            <div className="pt-2">
-              <iframe
-                style={{
-                  width: "114px",
-                  height: "97px",
-                  border: "none",
-                  borderRadius: "6px",
-                  overflow: "hidden",
-                }}
-                src="https://dunsregistered.dnb.com/SealAuthentication.aspx?Cid=1"
-                frameBorder={0}
-                scrolling="no"
-                title="DnB Seal"
-              />
             </div>
           </div>
 
@@ -289,7 +272,7 @@ const FooterNew = () => {
         </div>
 
         {/* PING ME — letters justified across full width */}
-        <div className="mb-[6px] mt-[-150px]">
+        <div className="mb-[6px] mt-[-50px]">
           <div
             className="flex justify-between items-baseline w-full"
             style={{
@@ -348,8 +331,52 @@ const FooterNew = () => {
             </p>
           </div>
 
-          {/* Social Links */}
+          {/* Social Links + D&B DUNS Seal */}
           <div className="flex items-center gap-6">
+
+            {/* D&B DUNS Registered Seal */}
+            {/* ⚠️ Replace this placeholder div with your real D&B embed code once you have your Cid from dunsregistered.com */}
+            <div
+              style={{
+                width: "114px",
+                height: "97px",
+                border: "1.5px solid hsl(var(--ping-brown) / 0.4)",
+                borderRadius: "6px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "4px",
+                flexShrink: 0,
+              }}
+            >
+              <span
+                style={{
+                  fontSize: "9px",
+                  fontWeight: 700,
+                  letterSpacing: "0.08em",
+                  color: "hsl(var(--ping-brown))",
+                  fontFamily: "'Poppins', sans-serif",
+                  textAlign: "center",
+                  lineHeight: 1.3,
+                }}
+              >
+                D-U-N-S<br />REGISTERED™
+              </span>
+              <span
+                style={{
+                  fontSize: "8px",
+                  color: "hsl(var(--ping-ash))",
+                  fontFamily: "'Poppins', sans-serif",
+                  textAlign: "center",
+                  opacity: 0.7,
+                }}
+              >
+                Ping IFF LLP
+              </span>
+            </div>
+
+            {/* Social icons */}
             {socialLinks.map(({ icon: Icon, href, label }) => (
               <a
                 key={label}

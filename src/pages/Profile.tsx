@@ -8,6 +8,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import type { NFCProfileData } from "@/components/NFCProfileBuilder";
 import { getUserPrebookings, type PrebookingRecord } from "@/lib/prebookService";
+import { getNfcLineProfilesFromOrder } from "@/lib/nfcCheckout";
+import type { NFCProfile } from "@/lib/prebookService";
 import { getUserProfile } from "@/lib/userService";
 import type { UserProfile } from "@/types/user";
 
@@ -31,6 +33,8 @@ export default function Profile() {
 
   const [nfcDialogOpen, setNfcDialogOpen] = useState(false);
   const [selectedNfcOrderId, setSelectedNfcOrderId] = useState<string | null>(null);
+  const [selectedNfcLineKey, setSelectedNfcLineKey] = useState<string | null>(null);
+  const [selectedNfcLineTitle, setSelectedNfcLineTitle] = useState<string | null>(null);
   const [showAddressManagement, setShowAddressManagement] = useState(false);
   const [nfcProfileDraft, setNfcProfileDraft] = useState<NFCProfileData>({
     username: "",
@@ -102,27 +106,35 @@ export default function Profile() {
     },
   });
 
-  const openEditNFC = (order: PrebookingRecord) => {
+  const buildNfcDraft = (order: PrebookingRecord, nfcProfile?: NFCProfile): NFCProfileData => ({
+    username: nfcProfile?.username || "",
+    name: nfcProfile?.name || order.fullName || profile?.displayName || "",
+    companyName: nfcProfile?.companyName || "",
+    jobTitle: nfcProfile?.jobTitle || "",
+    email: nfcProfile?.email || order.email || user?.email || "",
+    phone: nfcProfile?.phone || order.phone || profile?.mobile || "",
+    bio: nfcProfile?.bio || "",
+    businessTags: nfcProfile?.businessTags || "",
+    website: nfcProfile?.website || "",
+    address: nfcProfile?.address || [order.address, order.city].filter(Boolean).join(", "),
+    linkedin: nfcProfile?.linkedin || "",
+    twitter: nfcProfile?.twitter || "",
+    instagram: nfcProfile?.instagram || "",
+    youtube: nfcProfile?.youtube || "",
+    facebook: nfcProfile?.facebook || "",
+    profilePhoto: nfcProfile?.profilePhoto || "",
+    projects: nfcProfile?.projects || [],
+  });
+
+  const openEditNFC = (order: PrebookingRecord, lineKey?: string, lineTitle?: string) => {
+    const lines = getNfcLineProfilesFromOrder(order);
+    const line = lineKey ? lines.find((l) => l.lineKey === lineKey) : lines[0];
+    const nfcProfile = line?.nfcProfile || order.nfcProfile;
+
     setSelectedNfcOrderId(order.id);
-    setNfcProfileDraft({
-      username: order.nfcProfile?.username || "",
-      name: order.nfcProfile?.name || order.fullName || profile?.displayName || "",
-      companyName: order.nfcProfile?.companyName || "",
-      jobTitle: order.nfcProfile?.jobTitle || "",
-      email: order.nfcProfile?.email || order.email || user?.email || "",
-      phone: order.nfcProfile?.phone || order.phone || profile?.mobile || "",
-      bio: order.nfcProfile?.bio || "",
-      businessTags: order.nfcProfile?.businessTags || "",
-      website: order.nfcProfile?.website || "",
-      address: order.nfcProfile?.address || [order.address, order.city].filter(Boolean).join(", "),
-      linkedin: order.nfcProfile?.linkedin || "",
-      twitter: order.nfcProfile?.twitter || "",
-      instagram: order.nfcProfile?.instagram || "",
-      youtube: order.nfcProfile?.youtube || "",
-      facebook: order.nfcProfile?.facebook || "",
-      profilePhoto: order.nfcProfile?.profilePhoto || "",
-      projects: order.nfcProfile?.projects || [],
-    });
+    setSelectedNfcLineKey(line?.lineKey || lineKey || null);
+    setSelectedNfcLineTitle(lineTitle || line?.title || null);
+    setNfcProfileDraft(buildNfcDraft(order, nfcProfile));
     setNfcDialogOpen(true);
   };
 
@@ -205,9 +217,13 @@ export default function Profile() {
                     setNfcDialogOpen(open);
                     if (!open) {
                       setSelectedNfcOrderId(null);
+                      setSelectedNfcLineKey(null);
+                      setSelectedNfcLineTitle(null);
                     }
                   }}
                   orderId={selectedNfcOrderId}
+                  lineKey={selectedNfcLineKey}
+                  lineTitle={selectedNfcLineTitle}
                   profileDraft={nfcProfileDraft}
                   setProfileDraft={setNfcProfileDraft}
                 />
@@ -293,9 +309,13 @@ export default function Profile() {
                   setNfcDialogOpen(open);
                   if (!open) {
                     setSelectedNfcOrderId(null);
+                    setSelectedNfcLineKey(null);
+                    setSelectedNfcLineTitle(null);
                   }
                 }}
                 orderId={selectedNfcOrderId}
+                lineKey={selectedNfcLineKey}
+                lineTitle={selectedNfcLineTitle}
                 profileDraft={nfcProfileDraft}
                 setProfileDraft={setNfcProfileDraft}
               />
