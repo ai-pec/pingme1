@@ -2,13 +2,12 @@ import { useState } from "react";
 import MainLayout from "@/layouts/MainLayout";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Phone, MapPin, Copy, ExternalLink } from "lucide-react";
+import { Mail, Phone, MapPin, Clock, ExternalLink } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { APP_CONFIG } from "@/config/constants";
 import { sanitizeText } from "@/lib/prebookService";
 
-// Input validation constants
 const MAX_NAME_LENGTH = 100;
 const MAX_EMAIL_LENGTH = 255;
 const MAX_PHONE_LENGTH = 20;
@@ -16,129 +15,67 @@ const MAX_MESSAGE_LENGTH = 1000;
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 const SUPPORT_ADDRESS = "Ping IFF LLP, 745, Burail, Ekta Market, Burail Village, Sector 45, Chandigarh, 160047";
 
-const buildGoogleMapsUrl = (address: string): string => {
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
-};
+const buildGoogleMapsUrl = (address: string) =>
+  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
 
-const buildTelUrl = (phone: string): string => {
-  const normalizedPhone = phone.replace(/[^+\d]/g, "");
-  return `tel:${normalizedPhone}`;
-};
+const buildTelUrl = (phone: string) =>
+  `tel:${phone.replace(/[^+\d]/g, "")}`;
 
-const buildGmailComposeUrl = (email: string): string => {
-  return `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}`;
-};
+const buildGmailComposeUrl = (email: string) =>
+  `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}`;
+
+const businessHours = [
+  { day: "Monday – Friday", hours: "9:00 am – 8:00 pm" },
+  { day: "Saturday", hours: "10:00 am – 6:00 pm" },
+  { day: "Sunday", hours: "Closed" },
+];
 
 const Contact = () => {
   const { toast } = useToast();
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    message: "",
-  });
+  const [formData, setFormData] = useState({ name: "", email: "", phone: "", message: "" });
   const [loading, setLoading] = useState(false);
 
-  const handleCopyContactDetail = async (value: string, label: string) => {
-    try {
-      await navigator.clipboard.writeText(value);
-      toast({
-        title: `${label} copied`,
-        description: `${label} copied to clipboard.`,
-      });
-    } catch (error) {
-      console.error(`Failed to copy ${label.toLowerCase()}:`, error);
-      toast({
-        title: "Copy failed",
-        description: `Unable to copy the ${label.toLowerCase()}.`,
-        variant: "destructive",
-      });
-    }
-  };
-
   const validateForm = (): boolean => {
-    const trimmedName = formData.name.trim();
-    const trimmedEmail = formData.email.trim();
-    const trimmedPhone = formData.phone.trim();
-    const trimmedMessage = formData.message.trim();
+    const { name, email, phone, message } = formData;
+    const t = (s: string) => s.trim();
 
-    // Name validation
-    if (!trimmedName || trimmedName.length > MAX_NAME_LENGTH) {
-      toast({
-        title: "Invalid Name",
-        description: `Name must be between 1 and ${MAX_NAME_LENGTH} characters.`,
-        variant: "destructive",
-      });
+    if (!t(name) || t(name).length > MAX_NAME_LENGTH) {
+      toast({ title: "Invalid Name", description: `Name must be 1–${MAX_NAME_LENGTH} characters.`, variant: "destructive" });
       return false;
     }
-
-    // Email validation
-    if (!trimmedEmail || !EMAIL_REGEX.test(trimmedEmail) || trimmedEmail.length > MAX_EMAIL_LENGTH) {
-      toast({
-        title: "Invalid Email",
-        description: "Please enter a valid email address.",
-        variant: "destructive",
-      });
+    if (!t(email) || !EMAIL_REGEX.test(t(email)) || t(email).length > MAX_EMAIL_LENGTH) {
+      toast({ title: "Invalid Email", description: "Please enter a valid email address.", variant: "destructive" });
       return false;
     }
-
-    // Phone validation (optional but if provided, must be valid)
-    if (trimmedPhone && (trimmedPhone.length > MAX_PHONE_LENGTH || !/^[+\d\s()-]*$/.test(trimmedPhone))) {
-      toast({
-        title: "Invalid Phone",
-        description: "Please enter a valid phone number.",
-        variant: "destructive",
-      });
+    if (t(phone) && (t(phone).length > MAX_PHONE_LENGTH || !/^[+\d\s()-]*$/.test(t(phone)))) {
+      toast({ title: "Invalid Phone", description: "Please enter a valid phone number.", variant: "destructive" });
       return false;
     }
-
-    // Message validation
-    if (!trimmedMessage || trimmedMessage.length > MAX_MESSAGE_LENGTH) {
-      toast({
-        title: "Invalid Message",
-        description: `Message must be between 1 and ${MAX_MESSAGE_LENGTH} characters.`,
-        variant: "destructive",
-      });
+    if (!t(message) || t(message).length > MAX_MESSAGE_LENGTH) {
+      toast({ title: "Invalid Message", description: `Message must be 1–${MAX_MESSAGE_LENGTH} characters.`, variant: "destructive" });
       return false;
     }
-
     return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validate before submission
-    if (!validateForm()) {
-      return;
-    }
-    
+    if (!validateForm()) return;
     setLoading(true);
-    
     try {
-      // Sanitize and save contact form data to Firebase Firestore
       await addDoc(collection(db, "contacts"), {
         name: sanitizeText(formData.name).substring(0, MAX_NAME_LENGTH),
         email: formData.email.trim().toLowerCase().substring(0, MAX_EMAIL_LENGTH),
         phone: sanitizeText(formData.phone).substring(0, MAX_PHONE_LENGTH),
         message: sanitizeText(formData.message).substring(0, MAX_MESSAGE_LENGTH),
         createdAt: serverTimestamp(),
-        status: "new"
+        status: "new",
       });
-      
-      toast({
-        title: "Message Sent!",
-        description: "We'll get back to you within 24 hours.",
-      });
-      
+      toast({ title: "Message Sent!", description: "We'll get back to you within 24 hours." });
       setFormData({ name: "", email: "", phone: "", message: "" });
     } catch (error) {
       console.error("Error saving contact form:", error);
-      toast({
-        title: "Error",
-        description: "Failed to send message. Please try again.",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to send message. Please try again.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -146,128 +83,49 @@ const Contact = () => {
 
   return (
     <MainLayout>
-      <div className="py-16">
-        <div className="container">
-          <p className="section-eyebrow">Contact Us</p>
-          <h1 className="section-title text-4xl">
-            We'd love to hear from you
-          </h1>
+      {/* ── Page hero ── */}
+      <div className="bg-cream border-b border-border/40 py-12 md:py-16">
+        <div className="container mx-auto flex flex-col items-center text-center gap-3">
+          <div>
+            <p className="section-eyebrow">Contact Us</p>
+            <h1 className="mt-2 text-4xl font-extrabold tracking-tight text-foreground md:text-5xl">
+              We'd love to hear from you
+            </h1>
+          </div>
+        </div>
+      </div>
 
-          <div className="grid lg:grid-cols-2 gap-12 max-w-6xl mx-auto">
-            {/* Contact Info */}
-            <div>
-              <h2 className="text-2xl font-bold mb-6">Get in Touch</h2>
-              <p className="text-muted-foreground mb-8">
-                Have questions about PingME? Want to partner with us? 
-                We're here to help.
-              </p>
+      {/* ── Main two-column section ── */}
+      <div className="container py-12 md:py-16">
+        <div className="grid gap-6 lg:grid-cols-[1fr_420px]">
 
-              <div className="space-y-6">
-                <div className="flex gap-4">
-                  <a
-                    href={buildGoogleMapsUrl(SUPPORT_ADDRESS)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform hover:scale-105"
-                    aria-label="Open address in Google Maps"
-                  >
-                    <MapPin className="w-6 h-6 text-primary-foreground" />
-                  </a>
-                  <div className="space-y-2">
-                    <h3 className="font-bold mb-1">Address</h3>
-                    <a
-                      href={buildGoogleMapsUrl(SUPPORT_ADDRESS)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
-                    >
-                      <span>{SUPPORT_ADDRESS}</span>
-                      <ExternalLink className="h-4 w-4" />
-                    </a>
-                  </div>
-                </div>
+          {/* Left — Form card */}
+          <div className="rounded-2xl border border-border/60 bg-background p-6 shadow-[0_12px_40px_rgba(81,60,9,0.07)] md:p-8">
+            <h2 className="mb-1 text-xs font-semibold uppercase tracking-widest text-primary">
+              Get in Touch
+            </h2>
+            <p className="mb-6 text-2xl font-bold text-foreground">Send us a message</p>
 
-                <div className="flex gap-4">
-                  <a
-                    href={buildTelUrl(APP_CONFIG.SUPPORT_PHONE)}
-                    className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform hover:scale-105"
-                    aria-label={`Call ${APP_CONFIG.SUPPORT_PHONE}`}
-                  >
-                    <Phone className="w-6 h-6 text-primary-foreground" />
-                  </a>
-                  <div className="space-y-2">
-                    <h3 className="font-bold mb-1">Phone</h3>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <a
-                        href={buildTelUrl(APP_CONFIG.SUPPORT_PHONE)}
-                        className="text-muted-foreground transition-colors hover:text-foreground"
-                      >
-                        {APP_CONFIG.SUPPORT_PHONE}
-                      </a>
-                      
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex gap-4">
-                  <a
-                    href={buildGmailComposeUrl(APP_CONFIG.SUPPORT_EMAIL)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform hover:scale-105"
-                    aria-label={`Email ${APP_CONFIG.SUPPORT_EMAIL}`}
-                  >
-                    <Mail className="w-6 h-6 text-primary-foreground" />
-                  </a>
-                  <div className="space-y-2">
-                    <h3 className="font-bold mb-1">Email</h3>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <a
-                        href={buildGmailComposeUrl(APP_CONFIG.SUPPORT_EMAIL)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-muted-foreground transition-colors hover:text-foreground"
-                      >
-                        {APP_CONFIG.SUPPORT_EMAIL}
-                      </a>
-                      
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Contact Form */}
-            <div className="bg-card rounded-2xl p-8 border border-border">
-              <h2 className="text-xl font-bold mb-6">Send us a message</h2>
-              
-              <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Name + Phone row */}
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Name</label>
+                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Name <span className="text-primary">*</span>
+                  </label>
                   <input
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="form-input-styled"
-                    placeholder="Your name"
+                    placeholder="Enter your name"
                     required
                   />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium mb-2">Email</label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="form-input-styled"
-                    placeholder="mohitshrrivastava@example.com"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2">Phone</label>
+                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Phone Number
+                  </label>
                   <input
                     type="tel"
                     value={formData.phone}
@@ -276,27 +134,134 @@ const Contact = () => {
                     placeholder="+91 98765XXXXX"
                   />
                 </div>
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium mb-2">Message</label>
-                  <textarea
-                    value={formData.message}
-                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                    className="form-input-styled resize-y min-h-[120px]"
-                    placeholder="How can we help you?"
-                    rows={4}
-                    required
-                  />
+              {/* Email full-width */}
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Email <span className="text-primary">*</span>
+                </label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="form-input-styled"
+                  placeholder="Enter your email"
+                  required
+                />
+              </div>
+
+              {/* Message */}
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Your Message <span className="text-primary">*</span>
+                </label>
+                <textarea
+                  value={formData.message}
+                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                  className="form-input-styled min-h-[140px] resize-y"
+                  placeholder="How can we help you?"
+                  rows={5}
+                  required
+                />
+              </div>
+
+              <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                {loading ? "Sending…" : "Send Message"}
+              </Button>
+            </form>
+          </div>
+
+          {/* Right — Info + Hours stacked */}
+          <div className="flex flex-col gap-5">
+
+            {/* Contact information card */}
+            <div className="rounded-2xl border border-border/60 bg-background p-6 shadow-[0_12px_40px_rgba(81,60,9,0.07)]">
+              <h2 className="mb-1 text-xs font-semibold uppercase tracking-widest text-primary">
+                Contact Information
+              </h2>
+              <p className="mb-5 text-lg font-bold text-foreground">Reach us directly</p>
+
+              <div className="space-y-5">
+                {/* Phone */}
+                <div className="flex items-start gap-4">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                    <Phone className="h-4.5 w-4.5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Phone</p>
+                    <a
+                      href={buildTelUrl(APP_CONFIG.SUPPORT_PHONE)}
+                      className="mt-0.5 text-sm font-medium text-foreground transition-colors hover:text-primary"
+                    >
+                      {APP_CONFIG.SUPPORT_PHONE}
+                    </a>
+                  </div>
                 </div>
 
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Sending..." : "Send Message"}
-                </Button>
-              </form>
+                {/* Address */}
+                <div className="flex items-start gap-4">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                    <MapPin className="h-4.5 w-4.5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Address</p>
+                    <a
+                      href={buildGoogleMapsUrl(SUPPORT_ADDRESS)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-0.5 inline-flex items-start gap-1.5 text-sm font-medium text-foreground transition-colors hover:text-primary"
+                    >
+                      <span className="leading-5">745, Burail, Ekta Market,<br />Sector 45, Chandigarh – 160047</span>
+                      <ExternalLink className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    </a>
+                  </div>
+                </div>
+
+                {/* Email */}
+                <div className="flex items-start gap-4">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                    <Mail className="h-4.5 w-4.5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Email</p>
+                    <a
+                      href={buildGmailComposeUrl(APP_CONFIG.SUPPORT_EMAIL)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-0.5 text-sm font-medium text-foreground transition-colors hover:text-primary"
+                    >
+                      {APP_CONFIG.SUPPORT_EMAIL}
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Business Hours card */}
+            <div className="rounded-2xl border border-border/60 bg-background p-6 shadow-[0_12px_40px_rgba(81,60,9,0.07)]">
+              <div className="mb-4 flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                  <Clock className="h-4 w-4 text-primary" />
+                </div>
+                <h2 className="text-xs font-semibold uppercase tracking-widest text-primary">Business Hours</h2>
+              </div>
+
+              <div className="space-y-0 divide-y divide-border/40">
+                {businessHours.map(({ day, hours }) => (
+                  <div key={day} className="flex items-center justify-between py-2.5">
+                    <span className="text-sm font-medium text-foreground">{day}</span>
+                    <span className="text-sm text-muted-foreground">{hours}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* ── Map full-width ── */}
+      
     </MainLayout>
   );
 };
