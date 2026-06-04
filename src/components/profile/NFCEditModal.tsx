@@ -14,6 +14,7 @@ import {
   generateUsernameSuggestions,
 } from "@/lib/publicNfcService";
 import { updatePrebookingNFCProfile, type PrebookingRecord } from "@/lib/prebookService";
+import { resolveNfcProfileDocId } from "@/lib/nfcCheckout";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -21,6 +22,8 @@ interface NFCEditModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   orderId: string | null;
+  lineKey?: string | null;
+  lineTitle?: string | null;
   profileDraft: NFCProfileData;
   setProfileDraft: (data: NFCProfileData) => void;
 }
@@ -29,6 +32,8 @@ export function NFCEditModal({
   open,
   onOpenChange,
   orderId,
+  lineKey,
+  lineTitle,
   profileDraft,
   setProfileDraft,
 }: NFCEditModalProps) {
@@ -70,13 +75,25 @@ export function NFCEditModal({
 
       const orders = queryClient.getQueryData<PrebookingRecord[]>(["userPrebookings", user.uid]) || [];
       const selectedOrder = orders.find((order) => order.id === orderId);
-      const profileId = selectedOrder?.payment?.orderId || orderId;
+      const paymentOrderId = selectedOrder?.payment?.orderId;
+      const hasStoredLineProfiles = Boolean(selectedOrder?.nfcLineProfiles?.length);
+      const effectiveLineKey = hasStoredLineProfiles ? lineKey : null;
+
+      const profileId = resolveNfcProfileDocId({
+        paymentOrderId,
+        bookingId: orderId,
+        lineKey: effectiveLineKey,
+        hasStoredLineProfiles,
+      });
 
       if (profileDraft.username) {
-        const isTaken = await checkUsernameUniqueness(
-          profileDraft.username,
-          profileId
-        );
+        const isTaken = await checkUsernameUniqueness(profileDraft.username, {
+          profileDocId: profileId,
+          paymentOrderId,
+          bookingId: orderId,
+          lineKey: effectiveLineKey,
+          hasStoredLineProfiles,
+        });
         if (isTaken) {
           const suggestions = await generateUsernameSuggestions(
             profileDraft.name || profileDraft.username
@@ -90,10 +107,11 @@ export function NFCEditModal({
       await updatePrebookingNFCProfile(
         orderId,
         profileDraft,
-        selectedOrder?.payment?.orderId
+        profileId,
+        effectiveLineKey || undefined
       );
 
-      return { orderId, profileDraft };
+      return { orderId, lineKey, profileDraft };
     },
     onSuccess: (data) => {
       toast.success("NFC profile updated successfully!");
@@ -101,11 +119,25 @@ export function NFCEditModal({
         queryClient.setQueryData<PrebookingRecord[]>(
           ["userPrebookings", user.uid],
           (old) =>
-            old?.map((order) =>
-              order.id === data.orderId
-                ? { ...order, nfcProfile: { ...data.profileDraft } }
-                : order
-            )
+            old?.map((order) => {
+              if (order.id !== data.orderId) return order;
+
+              if (data.lineKey && order.nfcLineProfiles?.length) {
+                return {
+                  ...order,
+                  nfcLineProfiles: order.nfcLineProfiles.map((line) =>
+                    line.lineKey === data.lineKey
+                      ? { ...line, nfcProfile: { ...data.profileDraft } }
+                      : line
+                  ),
+                  ...(order.nfcLineProfiles.length === 1
+                    ? { nfcProfile: { ...data.profileDraft } }
+                    : {}),
+                };
+              }
+
+              return { ...order, nfcProfile: { ...data.profileDraft } };
+            })
         );
       }
       setUnsavedChanges(false);
@@ -121,6 +153,10 @@ export function NFCEditModal({
       console.error("NFC profile save error:", error);
     },
   });
+
+  const modalTitle = lineTitle
+    ? `Edit NFC Profile — ${lineTitle}`
+    : "Edit NFC Profile";
 
   return (
     <Dialog open={open || showDiscardConfirm} onOpenChange={handleOpenChange}>
@@ -158,9 +194,10 @@ export function NFCEditModal({
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle>Edit NFC Profile</DialogTitle>
+              <DialogTitle>{modalTitle}</DialogTitle>
               <DialogDescription>
-                Update the NFC profile linked to your purchased NFC card.
+                Update the NFC profile linked to this card. Changes apply only to this
+                card&apos;s public link.
               </DialogDescription>
             </DialogHeader>
             <NFCProfileBuilder
@@ -169,7 +206,7 @@ export function NFCEditModal({
               onBack={() => handleOpenChange(false)}
               onContinue={() => updateNFCMutation.mutate()}
               isLoading={updateNFCMutation.isPending}
-              title="Edit Your NFC Profile"
+              title={lineTitle ? `Edit Profile — ${lineTitle}` : "Edit Your NFC Profile"}
               description="Keep your NFC card profile up to date from your account dashboard."
               infoText="These details power your public NFC page link as plzpingme.com/&lt;username&gt;. Username is globally unique and updates reflect on your live link."
               backLabel="Cancel"

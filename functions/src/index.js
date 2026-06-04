@@ -672,7 +672,20 @@ exports.verifyPayment = onRequest({
         legacyPrebookingRef.set(prebookingData, { merge: true }),
       ]);
 
-      if (prebooking?.nfcProfile) {
+      if (Array.isArray(prebooking?.nfcLineProfiles) && prebooking.nfcLineProfiles.length > 0) {
+        for (const line of prebooking.nfcLineProfiles) {
+          if (!line?.lineKey || !line?.nfcProfile) continue;
+          try {
+            await syncProfileToNfcProfilesCollection({
+              profileId: `${orderId}_${line.lineKey}`,
+              profile: line.nfcProfile,
+              source: "verifyPayment",
+            });
+          } catch (syncErr) {
+            console.error("verifyPayment nfc line sync error", line.lineKey, syncErr);
+          }
+        }
+      } else if (prebooking?.nfcProfile) {
         try {
           await syncProfileToNfcProfilesCollection({
             profileId: orderId,
@@ -850,22 +863,42 @@ exports.getPublicNfcProfile = onRequest({
   });
 });
 
+const syncBookingNfcProfilesFromDocument = async (after, bookingId) => {
+  const paymentOrderId = after?.payment?.orderId || bookingId;
+  if (!paymentOrderId) return;
+
+  if (Array.isArray(after?.nfcLineProfiles) && after.nfcLineProfiles.length > 0) {
+    for (const line of after.nfcLineProfiles) {
+      if (!line?.lineKey || !line?.nfcProfile) continue;
+      await syncProfileToNfcProfilesCollection({
+        profileId: `${paymentOrderId}_${line.lineKey}`,
+        profile: line.nfcProfile,
+        source: "bookingUpdateTrigger",
+      });
+    }
+    return;
+  }
+
+  if (after?.nfcProfile) {
+    await syncProfileToNfcProfilesCollection({
+      profileId: paymentOrderId,
+      profile: after.nfcProfile,
+      source: "bookingUpdateTrigger",
+    });
+  }
+};
+
 exports.syncBookingNfcProfileToNfcCard = onDocumentUpdated({
   document: "booking/{bookingId}",
   region: "asia-south1",
 }, async (event) => {
   const after = event.data?.after?.data();
-  if (!after?.nfcProfile) return;
-
-  const profileId = after?.payment?.orderId || event.params?.bookingId;
-  if (!profileId) return;
+  if (!after?.nfcProfile && !(Array.isArray(after?.nfcLineProfiles) && after.nfcLineProfiles.length > 0)) {
+    return;
+  }
 
   try {
-    await syncProfileToNfcProfilesCollection({
-      profileId,
-      profile: after.nfcProfile,
-      source: "bookingUpdateTrigger",
-    });
+    await syncBookingNfcProfilesFromDocument(after, event.params?.bookingId);
   } catch (error) {
     console.error("syncBookingNfcProfileToNfcCard error", error);
   }
@@ -876,17 +909,12 @@ exports.syncLegacyPrebookingNfcProfileToNfcCard = onDocumentUpdated({
   region: "asia-south1",
 }, async (event) => {
   const after = event.data?.after?.data();
-  if (!after?.nfcProfile) return;
-
-  const profileId = after?.payment?.orderId || event.params?.prebookingId;
-  if (!profileId) return;
+  if (!after?.nfcProfile && !(Array.isArray(after?.nfcLineProfiles) && after.nfcLineProfiles.length > 0)) {
+    return;
+  }
 
   try {
-    await syncProfileToNfcProfilesCollection({
-      profileId,
-      profile: after.nfcProfile,
-      source: "legacyPrebookingUpdateTrigger",
-    });
+    await syncBookingNfcProfilesFromDocument(after, event.params?.prebookingId);
   } catch (error) {
     console.error("syncLegacyPrebookingNfcProfileToNfcCard error", error);
   }

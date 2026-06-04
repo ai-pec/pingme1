@@ -10,11 +10,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import type { PrebookingRecord, CartItem } from "@/lib/prebookService";
+import { getNfcLineProfilesFromOrder, expandNfcCartUnits } from "@/lib/nfcCheckout";
 
 interface OrderHistoryProps {
   orders: PrebookingRecord[];
   ordersLoading: boolean;
-  onEditNFC: (order: PrebookingRecord) => void;
+  onEditNFC: (order: PrebookingRecord, lineKey?: string, lineTitle?: string) => void;
 }
 
 export function OrderHistory({ orders, ordersLoading, onEditNFC }: OrderHistoryProps) {
@@ -22,6 +23,15 @@ export function OrderHistory({ orders, ordersLoading, onEditNFC }: OrderHistoryP
     return !!order.items?.some(
       (item) => typeof item.id === "string" && item.id.startsWith("nfc-")
     );
+  };
+
+  const getLineDisplayTitle = (
+    line: { lineKey: string; title: string },
+    order: PrebookingRecord
+  ): string => {
+    const units = expandNfcCartUnits(order.items || []);
+    const unit = units.find((u) => u.lineKey === line.lineKey);
+    return unit?.displayTitle || line.title;
   };
 
   return (
@@ -57,39 +67,53 @@ export function OrderHistory({ orders, ordersLoading, onEditNFC }: OrderHistoryP
                 order.status === "pending" && order.payment?.paymentId
                   ? "confirmed"
                   : order.status;
+              const nfcLines = getNfcLineProfilesFromOrder(order);
 
               return (
                 <div
                   key={order.id}
                   className="border border-border rounded-xl p-4 bg-card"
                 >
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
                     <div className="flex items-center gap-2">
                       <Package className="w-4 h-4 text-primary" />
                       <span className="text-xs font-mono text-muted-foreground">
                         #{order.id.slice(0, 8).toUpperCase()}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {isNFCOrder(order) && displayStatus === "confirmed" && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          className="h-9 w-9 shrink-0 md:h-9 md:w-auto md:px-3 md:gap-2"
-                          onClick={() => onEditNFC(order)}
-                          aria-label="Edit NFC profile"
-                        >
-                          <Edit2 className="h-3.5 w-3.5" />
-                          <span className="hidden md:inline">Edit NFC</span>
-                        </Button>
-                      )}
+                    <div className="flex items-center gap-2 flex-wrap justify-end">
+                      {isNFCOrder(order) &&
+                        displayStatus === "confirmed" &&
+                        nfcLines.map((line) => (
+                          <Button
+                            key={line.lineKey}
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-9 shrink-0 md:px-3 md:gap-2"
+                            onClick={() =>
+                              onEditNFC(
+                                order,
+                                line.lineKey,
+                                getLineDisplayTitle(line, order)
+                              )
+                            }
+                            aria-label={`Edit NFC profile for ${line.title}`}
+                          >
+                            <Edit2 className="h-3.5 w-3.5" />
+                            <span className="hidden md:inline">
+                              {nfcLines.length > 1
+                                ? `Edit NFC — ${getLineDisplayTitle(line, order)}`
+                                : "Edit NFC"}
+                            </span>
+                          </Button>
+                        ))}
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
                         className="h-9 w-9 shrink-0 md:h-9 md:w-auto md:px-3 md:gap-2"
-                        onClick={() => downloadReceipt(order as any, order.email || "")}
+                        onClick={() => downloadReceipt(order as PrebookingRecord, order.email || "")}
                         disabled={!order.payment}
                         aria-label="Download Invoice"
                       >
@@ -131,7 +155,6 @@ export function OrderHistory({ orders, ordersLoading, onEditNFC }: OrderHistoryP
                     </div>
                   </div>
 
-                  {/* Items */}
                   <div className="space-y-2 mb-3">
                     {order.items?.map((item: CartItem, idx: number) => {
                       const itemImage = item.image;
@@ -181,7 +204,6 @@ export function OrderHistory({ orders, ordersLoading, onEditNFC }: OrderHistoryP
                     })}
                   </div>
 
-                  {/* Total & Address */}
                   <div className="pt-3 border-t border-border flex flex-col sm:flex-row sm:justify-between sm:items-end gap-2">
                     <div className="text-xs text-muted-foreground">
                       <MapPin className="inline w-3 h-3 mr-1" />

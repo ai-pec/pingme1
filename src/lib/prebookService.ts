@@ -5,6 +5,7 @@ import {
   query,
   where,
   getDocs,
+  getDoc,
   doc,
   updateDoc,
 } from 'firebase/firestore';
@@ -47,6 +48,13 @@ export interface NFCProfile {
   }>;
 }
 
+export interface NfcLineProfile {
+  lineKey: string;
+  itemId: string;
+  title: string;
+  nfcProfile: NFCProfile;
+}
+
 export interface PrebookingData {
   userId?: string;
   items: CartItem[];
@@ -60,6 +68,7 @@ export interface PrebookingData {
   pincode: string;
   status: 'pending' | 'confirmed' | 'cancelled';
   nfcProfile?: NFCProfile;
+  nfcLineProfiles?: NfcLineProfile[];
   payment?: {
     gateway: 'razorpay';
     orderId: string;
@@ -122,6 +131,15 @@ export const sanitizeText = (text: string): string => {
   const textarea = document.createElement('textarea');
   textarea.innerHTML = cleaned;
   return textarea.value.trim();
+};
+
+const sanitizeNfcLineProfiles = (lines: NfcLineProfile[]): NfcLineProfile[] => {
+  return lines.map((line) => ({
+    lineKey: sanitizeText(line.lineKey || ''),
+    itemId: sanitizeText(line.itemId || ''),
+    title: sanitizeText(line.title || 'NFC Card'),
+    nfcProfile: sanitizeNFCProfile(line.nfcProfile),
+  }));
 };
 
 const sanitizeNFCProfile = (profile: NFCProfile): NFCProfile => {
@@ -188,6 +206,11 @@ export const createPrebooking = async (data: PrebookingData): Promise<string> =>
     state: sanitizeText(data.state),
     pincode: sanitizeText(data.pincode),
     status: data.status,
+    ...(data.nfcLineProfiles && data.nfcLineProfiles.length > 0
+      ? {
+          nfcLineProfiles: sanitizeNfcLineProfiles(data.nfcLineProfiles),
+        }
+      : {}),
     ...(data.nfcProfile
       ? {
           nfcProfile: sanitizeNFCProfile(data.nfcProfile),
@@ -382,23 +405,73 @@ export const getUserPrebookings = async ({ userId, email }: GetUserPrebookingsPa
 export const updatePrebookingNFCProfile = async (
   orderId: string,
   nfcProfile: NFCProfile,
-  profileId?: string
+  profileId?: string,
+  lineKey?: string
 ): Promise<void> => {
   if (!orderId) {
     throw new Error('Order ID is required');
   }
 
   const sanitizedProfile = sanitizeNFCProfile(nfcProfile);
-  await ensureAtLeastOneWriteSucceeded([
-    updateDoc(doc(db, BOOKING_COLLECTION, orderId), {
-      nfcProfile: sanitizedProfile,
+
+  if (lineKey) {
+    const bookingRef = doc(db, BOOKING_COLLECTION, orderId);
+    const legacyRef = doc(db, LEGACY_PREBOOKINGS_COLLECTION, orderId);
+    const [bookingDoc, legacyDoc] = await Promise.all([
+      getDoc(bookingRef),
+      getDoc(legacyRef),
+    ]);
+
+    const existingData = bookingDoc.exists()
+      ? bookingDoc.data()
+      : legacyDoc.exists()
+        ? legacyDoc.data()
+        : null;
+
+    const existingLines = Array.isArray(existingData?.nfcLineProfiles)
+      ? (existingData.nfcLineProfiles as NfcLineProfile[])
+      : [];
+
+    const updatedLines = existingLines.length > 0
+      ? existingLines.map((line) =>
+          line.lineKey === lineKey
+            ? { ...line, nfcProfile: sanitizedProfile }
+            : line
+        )
+      : [
+          {
+            lineKey,
+            itemId: lineKey.split('__')[0] || 'nfc-legacy',
+            title: 'NFC Card',
+            nfcProfile: sanitizedProfile,
+          },
+        ];
+
+    const updatePayload: Record<string, unknown> = {
+      nfcLineProfiles: sanitizeNfcLineProfiles(updatedLines),
       updatedAt: serverTimestamp(),
-    }),
-    updateDoc(doc(db, LEGACY_PREBOOKINGS_COLLECTION, orderId), {
-      nfcProfile: sanitizedProfile,
-      updatedAt: serverTimestamp(),
-    }),
-  ], 'update prebooking NFC profile');
+    };
+
+    if (updatedLines.length === 1) {
+      updatePayload.nfcProfile = sanitizedProfile;
+    }
+
+    await ensureAtLeastOneWriteSucceeded([
+      updateDoc(bookingRef, updatePayload),
+      updateDoc(legacyRef, updatePayload),
+    ], 'update prebooking NFC profile');
+  } else {
+    await ensureAtLeastOneWriteSucceeded([
+      updateDoc(doc(db, BOOKING_COLLECTION, orderId), {
+        nfcProfile: sanitizedProfile,
+        updatedAt: serverTimestamp(),
+      }),
+      updateDoc(doc(db, LEGACY_PREBOOKINGS_COLLECTION, orderId), {
+        nfcProfile: sanitizedProfile,
+        updatedAt: serverTimestamp(),
+      }),
+    ], 'update prebooking NFC profile');
+  }
 
   await syncNfcProfileToPublicDomain(profileId || orderId, sanitizedProfile);
 };
