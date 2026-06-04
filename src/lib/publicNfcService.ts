@@ -31,6 +31,14 @@ const getPaymentApiBaseUrl = () => {
   return typeof base === "string" ? base.replace(/\/$/, "") : "";
 };
 
+/* ── In-memory profile cache (TTL: 5 minutes) ── */
+const CACHE_TTL_MS = 5 * 60 * 1000;
+interface CacheEntry {
+  profile: PublicNfcProfile;
+  expiresAt: number;
+}
+const profileCache = new Map<string, CacheEntry>();
+
 export const normalizeNfcUsername = (rawUsername: string): string => {
   return rawUsername.trim().toLowerCase();
 };
@@ -59,6 +67,12 @@ export const fetchPublicNfcProfile = async (username: string): Promise<PublicNfc
     throw new Error("Username is required.");
   }
 
+  // Return cached profile if still fresh
+  const cached = profileCache.get(normalizedUsername);
+  if (cached && Date.now() < cached.expiresAt) {
+    return cached.profile;
+  }
+
   const baseUrl = getPaymentApiBaseUrl();
   if (!baseUrl) {
     throw new Error("Public NFC profile API is not configured.");
@@ -70,6 +84,8 @@ export const fetchPublicNfcProfile = async (username: string): Promise<PublicNfc
 
   if (!response.ok) {
     if (response.status === 404) {
+      // Clear any stale cache entry on 404
+      profileCache.delete(normalizedUsername);
       throw new Error("Profile not found.");
     }
 
@@ -85,6 +101,12 @@ export const fetchPublicNfcProfile = async (username: string): Promise<PublicNfc
   if (isDraftNfcProfile(payload.profile)) {
     throw new Error("Profile not found.");
   }
+
+  // Store in cache with expiry
+  profileCache.set(normalizedUsername, {
+    profile: payload.profile,
+    expiresAt: Date.now() + CACHE_TTL_MS,
+  });
 
   return payload.profile;
 };
