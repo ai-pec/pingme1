@@ -115,26 +115,6 @@
     scroll-behavior: smooth;
   }
 
-  html.lenis, html.lenis body {
-    height: auto;
-  }
-
-  .lenis.lenis-smooth {
-    scroll-behavior: auto !important;
-  }
-
-  .lenis.lenis-smooth [data-lenis-prevent] {
-    overscroll-behavior: contain;
-  }
-
-  .lenis.lenis-stopped {
-    overflow: hidden;
-  }
-
-  .lenis.lenis-scrolling iframe {
-    pointer-events: none;
-  }
-
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Poppins', 'Space Grotesk', system-ui, sans-serif;
@@ -322,4 +302,315 @@
   .text-ink {
     color: hsl(var(--ping-ink));
   }
+}
+/* =============================================
+   PingME — LandingReviews styles (brand-matched)
+   reviews.css  —  matches plzpingme.com theme
+   ============================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
+
+/* ──────────────────────────────────────────────
+   Section wrapper
+   Uses same radial-gradient bg as site body
+────────────────────────────────────────────── */
+.pm-reviews-section {
+  position: relative;
+  overflow: hidden;
+  padding: 88px 0 72px;
+
+  background:
+    radial-gradient(circle at 15% 10%, rgba(255, 231, 170, 0.35), transparent 50%),
+    radial-gradient(circle at 85% 5%,  rgba(255, 248, 226, 0.40), transparent 45%),
+    hsl(0 0% 100%);
+}
+
+.dark .pm-reviews-section {
+  background: hsl(0 0% 5%);
+}
+
+/* ──────────────────────────────────────────────
+   Review card
+   Uses site CSS vars: --card, --border, --foreground, --muted-foreground
+────────────────────────────────────────────── */
+.pm-review-card {
+  flex-shrink: 0;
+  width: 320px;
+  border-radius: 16px;
+  background: hsl(var(--card));
+  border: 1.5px solid hsl(var(--border));
+  padding: 22px 22px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  cursor: default;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 16px rgba(81, 60, 9, 0.07);
+  transition:
+    transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.32s ease;
+}
+
+/* Yellow top-edge accent line */
+.pm-review-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 24px;
+  right: 24px;
+  height: 2px;
+  border-radius: 0 0 2px 2px;
+  background: linear-gradient(90deg, transparent, hsl(45 100% 48%) 30%, hsl(45 100% 48%) 70%, transparent);
+  opacity: 0.5;
+}
+
+.pm-review-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 18px 44px rgba(81, 60, 9, 0.14);
+}
+
+.dark .pm-review-card:hover {
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.5);
+}
+
+/* ──────────────────────────────────────────────
+   Review text
+────────────────────────────────────────────── */
+.pm-review-text {
+  font-size: 13.5px;
+  line-height: 1.8;
+  color: hsl(var(--foreground));
+  margin: 0;
+  flex: 1;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+  letter-spacing: -0.003em;
+}
+
+/* ──────────────────────────────────────────────
+   Tag pill — brand yellow tones
+────────────────────────────────────────────── */
+.pm-review-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px 3px 8px;
+  border-radius: 99px;
+  background: hsl(var(--ping-card));        /* warm amber-tinted card */
+  color: hsl(var(--ping-brown));
+  border: 1px solid hsl(var(--border));
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.015em;
+  align-self: flex-start;
+  font-family: 'Poppins', sans-serif;
+}
+
+.pm-review-tag-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: hsl(45 100% 48%);
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* ──────────────────────────────────────────────
+   Avatar
+────────────────────────────────────────────── */
+.pm-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #FEF3C7;
+  letter-spacing: 0.04em;
+  font-family: 'Poppins', sans-serif;
+  border: 2px solid rgba(244, 180, 0, 0.25);
+}
+
+/* ──────────────────────────────────────────────
+   Reviewer name & meta
+────────────────────────────────────────────── */
+.pm-reviewer-name {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: hsl(var(--foreground));
+  font-family: 'Poppins', sans-serif;
+  letter-spacing: -0.01em;
+}
+
+.pm-reviewer-meta {
+  margin: 0;
+  font-size: 11px;
+  color: hsl(var(--muted-foreground));
+  font-family: 'Poppins', sans-serif;
+}
+
+/* ──────────────────────────────────────────────
+   Marquee
+────────────────────────────────────────────── */
+.pm-marquee-wrap {
+  overflow: hidden;
+  width: 100%;
+  padding: 4px 0;
+}
+
+.pm-marquee-track {
+  display: flex;
+  gap: 16px;
+  width: max-content;
+  will-change: transform;
+}
+
+/* ──────────────────────────────────────────────
+   Edge fades — cream tone matching site bg
+────────────────────────────────────────────── */
+.pm-fade-left,
+.pm-fade-right {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 140px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.pm-fade-left {
+  left: 0;
+  background: linear-gradient(to right, hsl(42 100% 96%), transparent);
+}
+
+.pm-fade-right {
+  right: 0;
+  background: linear-gradient(to left, hsl(42 100% 96%), transparent);
+}
+
+.dark .pm-fade-left  { background: linear-gradient(to right,  hsl(0 0% 5%), transparent); }
+.dark .pm-fade-right { background: linear-gradient(to left, hsl(0 0% 5%), transparent); }
+
+/* ──────────────────────────────────────────────
+   Section header elements
+────────────────────────────────────────────── */
+.pm-eyebrow {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: hsl(var(--ping-brown));
+  margin-bottom: 16px;
+  font-family: 'Poppins', sans-serif;
+}
+
+.pm-section-heading {
+  font-size: clamp(26px, 4vw, 40px);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.035em;
+  color: hsl(var(--foreground));
+  margin: 0 0 8px;
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Yellow highlight accent — matches .highlight-underline::after in global CSS */
+.pm-highlight {
+  color: hsl(var(--primary));
+  position: relative;
+  display: inline-block;
+}
+
+.pm-highlight::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  left: 0;
+  right: 0;
+  height: 12px;
+  background: linear-gradient(90deg, hsl(45 100% 48%), hsl(45 100% 54%));
+  opacity: 0.3;
+  z-index: -1;
+  border-radius: 4px;
+}
+
+.pm-section-sub {
+  font-size: 15px;
+  line-height: 1.75;
+  color: hsl(var(--muted-foreground));
+  margin: 0 0 24px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+}
+
+/* ──────────────────────────────────────────────
+   Rating badge
+────────────────────────────────────────────── */
+.pm-rating-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  border-radius: 99px;
+  background: hsl(45 100% 92%);
+  color: hsl(var(--ping-brown));
+  border: 1.5px solid hsl(45 100% 80%);
+  font-size: 13px;
+  font-weight: 700;
+  font-family: 'Poppins', sans-serif;
+  letter-spacing: -0.01em;
+}
+
+.dark .pm-rating-badge {
+  background: #422006;
+  color: #FDE68A;
+  border-color: #92400E;
+}
+
+/* ──────────────────────────────────────────────
+   CTA button — matches .alert-button / brand style
+────────────────────────────────────────────── */
+.pm-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 24px;
+  border-radius: 12px;
+  background: hsl(45 100% 48%);
+  color: hsl(40 76% 7%);
+  font-size: 13.5px;
+  font-weight: 700;
+  font-family: 'Poppins', sans-serif;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(244, 180, 0, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pm-cta-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(244, 180, 0, 0.45);
+}
+
+/* ──────────────────────────────────────────────
+   Hazard-stripe decorative bar
+   Matches .hazard-stripe-thin in global CSS
+────────────────────────────────────────────── */
+.pm-hazard-bar {
+  height: 5px;
+  border-radius: 3px;
+  width: 48px;
+  background: repeating-linear-gradient(
+    -45deg,
+    hsl(45 100% 48%)   0px,  hsl(45 100% 48%)  5px,
+    hsl(40 76% 7%)     5px,  hsl(40 76% 7%)   10px
+  );
 }

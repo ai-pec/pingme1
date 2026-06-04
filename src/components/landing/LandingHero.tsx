@@ -34,6 +34,7 @@ import heroDemoVideoWebm from "@/assets/IMG_9847.webm";
 import { subscribeToProducts, type DbProduct } from "@/lib/productService";
 import { normalizeCategorySlug, buildProductImageUrl } from "@/lib/productCatalog";
 import LandingDownloadSection from "./LandingDownloadSection";
+import LandingReviews from "../LandingReviews";
 
 const heroImagePath = import.meta.env.VITE_HERO_IMAGE_PATH || "products/hero_i.PNG";
 const heroImageUrl = buildProductImageUrl(heroImagePath);
@@ -483,7 +484,7 @@ const LandingHero = () => {
             </ul>
           </div>
         </section>
-
+<LandingReviews />
         {/* Find Us block */}
         <div className="mx-auto max-w-6xl mt-6">
           <div className="bg-white rounded-2xl p-6 shadow-sm">
