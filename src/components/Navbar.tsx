@@ -40,8 +40,8 @@ const Navbar = () => {
   };
 
   return (
-    <header className="bg-background/95 backdrop-blur-md border-b border-border-light sticky top-0 z-50 py-2">
-      <div className="container">
+    <header className="bg-background/95 backdrop-blur-md border-b border-border-light sticky top-0 z-50 py-1">
+      <div className="w-full px-4 md:px-6 lg:px-8">
         <div className="flex items-center justify-between gap-6">
           {/* Logo */}
           <Link to="/" className="flex items-center transition-transform hover:scale-105">

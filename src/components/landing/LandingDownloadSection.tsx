@@ -158,6 +158,7 @@ const LandingDownloadSection: React.FC = () => {
           </button>
         </div>
       </div>
+      
     </div>
   );
 };

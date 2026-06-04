@@ -272,7 +272,7 @@ const LandingHero = () => {
         <div className="absolute bottom-0 left-[-5rem] h-80 w-80 rounded-full bg-orange-100/60 blur-3xl" />
       </div>
 
-      <div className="container relative pt-4 pb-10 md:pt-6 md:pb-14 lg:pt-4 lg:pb-12 space-y-16 lg:space-y-24">
+      <div className="w-full px-4 md:px-6 lg:px-8 relative pt-4 pb-10 md:pt-6 md:pb-14 lg:pt-4 lg:pb-12 space-y-16 lg:space-y-24">
         <section className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
           <div className="space-y-8">
             <div className="space-y-4 max-w-3xl">
@@ -340,12 +340,12 @@ const LandingHero = () => {
 
           <div className="relative flex items-start justify-center lg:justify-end">
             <div className="w-full max-w-[820px] overflow-hidden lg:max-w-[1040px]">
-              <div className="relative aspect-[3.5/6] w-full overflow-hidden rounded-3xl border border-white/20 bg-transparent">  
+              <div className="relative aspect-[6/7] w-full overflow-hidden rounded-3xl border border-white/20 bg-transparent">  
                 {heroImageUrl ? (
                   <img
                     src={heroImageUrl}
                     alt="PingME hero"
-                    className="h-full w-full object-contain"
+                    className="h-full w-full object-cover"
                     loading="eager"
                     decoding="async"
                   />
@@ -358,24 +358,34 @@ const LandingHero = () => {
               </div>
             </div>
           </div>
+          
+        
         </section>
 
         
+        
 
         <section id="what-we-offer" className="space-y-8">
-          <div className="max-w-3xl">
-            <p className="section-eyebrow text-left">What We Offer</p>
+          <div
+          className="h-0.5 mb-12"
+          style={{
+          background:
+          "linear-gradient(90deg, transparent, hsl(var(--ping-yellow) / 10.5), transparent)",
+  }}
+/>
+          <div className="max-w-3xl justify-self-center space-y-4 text-center">
+            <p className="section-eyebrow">What We Offer</p>
             <h2 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">
               Built for the everyday moments where privacy matters most.
             </h2>
-            <p className="mt-4 max-w-2xl text-lg leading-8 text-muted-foreground">
+            <p className="mt-4 mx-auto max-w-2xl text-lg leading-8 text-muted-foreground">
               PingME is designed around real-world scenarios where instant communication is useful, but direct exposure
-                is not. The homepage gives visitors a clear view of how PingME protects privacy while keeping contact fast
-                and simple.
+              is not. The homepage gives visitors a clear view of how PingME protects privacy while keeping contact fast
+              and simple.
             </p>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="mx-auto grid max-w-5xl gap-8 md:gap-20 lg:grid-cols-2">
             {offerings.map((item) => {
               const Icon = item.icon;
 
@@ -425,9 +435,18 @@ const LandingHero = () => {
               );
             })}
           </div>
+          <div
+  className="h-0.5 mb-12"
+  style={{
+    background:
+      "linear-gradient(90deg, transparent, hsl(var(--ping-yellow) / 10.5), transparent)",
+  }}
+/>
+          
         </section>
 
         <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+          
           <div className="rounded-[1.75rem] border border-border/60 bg-background/90 p-6 shadow-[0_18px_50px_rgba(81,60,9,0.08)]">
             <p className="section-eyebrow text-left">Why PingME Is Different</p>
             <h2 className="text-3xl font-bold tracking-tight text-foreground">Meaningful connection, on your terms.</h2>
@@ -483,10 +502,26 @@ const LandingHero = () => {
               <li>A scalable product system that can expand with partners and new use cases.</li>
             </ul>
           </div>
+          
         </section>
+        <div
+  className="h-0.5 mb-12"
+  style={{
+    background:
+      "linear-gradient(90deg, transparent, hsl(var(--ping-yellow) / 10.5), transparent)",
+  }}
+/>
 <LandingReviews />
         {/* Find Us block */}
         <div className="mx-auto max-w-6xl mt-6">
+          <div
+  className="h-0.5 mb-12"
+  style={{
+    background:
+      "linear-gradient(90deg, transparent, hsl(var(--ping-yellow) / 10.5), transparent)",
+  }}
+/>
+          
           <div className="bg-white rounded-2xl p-6 shadow-sm">
             <p className="text-xs font-semibold text-muted-foreground uppercase">Find us</p>
             <h3 className="font-bold text-2xl mt-2">Our Office</h3>
