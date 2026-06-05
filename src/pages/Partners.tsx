@@ -53,8 +53,9 @@ const Partners = () => {
               Building Safer Experiences Through Strategic Collaboration
             </h1>
             <p className="mx-auto max-w-3xl text-lg leading-8 text-stone-300">
-              PingME is proud to announce a pilot partnership with <span className="font-semibold text-amber-200">Pro Ultimate Gym Chain</span>, our
-              first collaborator. This program validates how privacy-first communication can improve member safety and day-to-day operations.
+              PingME is proud to announce a pilot partnership with{" "}
+              <span className="font-semibold text-amber-200">Pro Ultimate Gym Chain</span>, our first collaborator. This
+              program validates how privacy-first communication can improve member safety and day-to-day operations.
             </p>
           </div>
 
@@ -108,7 +109,7 @@ const Partners = () => {
                 <ul className="space-y-2">
                   {outcomes.map((item) => (
                     <li key={item} className="flex items-start gap-2 text-sm text-stone-300">
-                      <span className="mt-1 inline-block h-2 w-2 rounded-full bg-gradient-to-r from-red-400 to-amber-300 shadow-[0_0_10px_rgba(250,204,21,0.35)]" />
+                      <span className="mt-1 inline-block h-2 w-2 shrink-0 rounded-full bg-gradient-to-r from-red-400 to-amber-300 shadow-[0_0_10px_rgba(250,204,21,0.35)]" />
                       <span>{item}</span>
                     </li>
                   ))}
@@ -128,25 +129,75 @@ const Partners = () => {
               </div>
 
               <div className="overflow-hidden rounded-xl border border-white/10 bg-neutral-900/80">
-                <img
-                  src={collaborationCard}
-                  alt="PingME collaboration card"
-                  className="w-full object-cover"
-                />
+                <img src={collaborationCard} alt="PingME collaboration card" className="w-full object-cover" />
               </div>
 
               <p className="mt-4 text-sm leading-7 text-stone-300">
-                This pilot marks the beginning of PingME's partnership track. We are working closely with Pro Ultimate Gym Chain
-                to shape reliable, privacy-first communication at scale.
+                This pilot marks the beginning of PingME's partnership track. We are working closely with Pro Ultimate Gym
+                Chain to shape reliable, privacy-first communication at scale.
               </p>
               <p className="mt-4 text-sm leading-7 text-stone-300">
-                Want to collaborate with us?{' '}
+                Want to collaborate with us?{" "}
                 <Link to="/contact" className="font-semibold text-amber-200 hover:underline">
                   Contact us
                 </Link>
                 .
               </p>
             </aside>
+          </div>
+
+          {/* ── BECOME A PARTNER — dark-themed to match page ── */}
+          <div className="rounded-[1.75rem] border border-white/10 bg-black/70 p-6 shadow-[0_0_50px_rgba(250,204,21,0.08),0_0_80px_rgba(239,68,68,0.1)] backdrop-blur-xl md:p-8">
+            <div className="mb-5 flex items-center gap-3">
+              <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-red-500/20 to-amber-400/20 shadow-[0_0_20px_rgba(239,68,68,0.12)]">
+                <Handshake className="h-5 w-5 text-amber-200" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-200/80">Get Started</p>
+                <h2 className="text-xl font-bold text-white">Become a Partner</h2>
+              </div>
+            </div>
+
+            <p className="mb-6 text-sm leading-7 text-stone-300">
+              Interested in bringing PingME to your gym, society, or office? Reach out to us and let's build something
+              together.
+            </p>
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                { label: "Company", value: "Ping IFF LLP", href: undefined },
+                { label: "Address", value: "745, Burail, Ekta Market, Sector 45, Chandigarh – 160047", href: undefined },
+                { label: "Phone", value: "+91 73473 40007", href: "tel:+917347340007" },
+                { label: "Email", value: "contact@pingiff.ai", href: "mailto:contact@pingiff.ai" },
+              ].map(({ label, value, href }) => (
+                <div
+                  key={label}
+                  className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm"
+                >
+                  <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-amber-200/70">{label}</p>
+                  {href ? (
+                    <a
+                      href={href}
+                      className="break-all text-sm font-medium text-stone-200 transition-colors hover:text-amber-200"
+                    >
+                      {value}
+                    </a>
+                  ) : (
+                    <p className="text-sm font-medium leading-5 text-stone-200">{value}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6">
+              <Link
+                to="/contact"
+                className="inline-flex items-center gap-2 rounded-full border border-amber-300/25 bg-amber-200/8 px-6 py-2.5 text-sm font-semibold text-amber-100 transition-all hover:bg-amber-200/15 hover:text-amber-200"
+              >
+                Contact Us to Partner
+                <span className="text-amber-400">→</span>
+              </Link>
+            </div>
           </div>
         </div>
       </section>
