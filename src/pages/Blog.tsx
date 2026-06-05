@@ -232,31 +232,42 @@ const Blog = () => {
         </section>
 
         {/* ── CTA BAND ── */}
-        <div className="sr-item sr-from-below mt-20 container">
-          <div className="relative overflow-hidden rounded-[2rem] bg-foreground px-8 py-12 text-center md:py-16">
-            <div className="pointer-events-none absolute inset-0 dot-grid opacity-10" />
-            <div className="pointer-events-none absolute -top-16 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-primary/20 blur-3xl" />
-            <div className="relative">
-              <p className="mb-3 inline-block rounded-full border border-white/20 px-4 py-1 text-xs font-bold uppercase tracking-widest text-white/50">
+        {/* ── CTA BAND ── */}
+        <div className="sr-item sr-from-below mt-24 container">
+          <div className="relative overflow-hidden rounded-[2rem] border border-border/70 bg-background px-6 py-16 text-center shadow-[0_20px_50px_rgba(0,0,0,0.03)] md:py-20">
+            {/* Context-matching dot grid background element */}
+            <div className="pointer-events-none absolute inset-0 dot-grid opacity-60" />
+            
+            {/* Elegant warm ambient accent colors to frame layout matching the hero */}
+            <div className="pointer-events-none absolute -bottom-24 -left-20 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
+            <div className="pointer-events-none absolute -top-24 -right-20 h-72 w-72 rounded-full bg-amber-200/30 blur-3xl" />
+            
+            <div className="relative max-w-2xl mx-auto space-y-5">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-4 py-1 text-xs font-bold uppercase tracking-widest text-primary">
+                <Sparkles className="h-3 w-3" />
                 Explore our products
-              </p>
-              <h2 className="text-3xl font-extrabold text-white md:text-4xl">
-                Ready to protect what matters?
+              </span>
+              
+              <h2 className="text-3xl font-black tracking-tight text-foreground md:text-4xl leading-tight">
+                Ready to protect <br className="sm:hidden" /> what matters?
               </h2>
-              <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-white/50">
-                Browse our range of smart QR &amp; NFC tags — built for vehicles, pets, and everyday belongings.
+              
+              <p className="mx-auto max-w-md text-sm leading-7 text-muted-foreground">
+                Browse our range of smart QR &amp; NFC tags — beautifully designed for vehicles, pets, and everyday belongings.
               </p>
-              <Link
-                to="/products"
-                className="mt-7 inline-flex items-center gap-2 rounded-full bg-primary px-7 py-3 text-sm font-bold text-primary-foreground transition-transform hover:scale-105"
-              >
-                Browse Products
-                <ArrowRight className="h-4 w-4" />
-              </Link>
+              
+              <div className="pt-3">
+                <Link
+                  to="/products"
+                  className="inline-flex items-center gap-2.5 rounded-full bg-primary px-8 py-3.5 text-sm font-bold text-primary-foreground shadow-md transition-all hover:bg-primary/90 hover:shadow-lg hover:-translate-y-0.5"
+                >
+                  Browse Products
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
             </div>
           </div>
         </div>
-
       </main>
     </MainLayout>
   );
