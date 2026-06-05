@@ -335,45 +335,27 @@ const FooterNew = () => {
           <div className="flex items-center gap-6">
 
             {/* D&B DUNS Registered Seal */}
-            {/* ⚠️ Replace this placeholder div with your real D&B embed code once you have your Cid from dunsregistered.com */}
             <div
               style={{
-                width: "114px",
-                height: "97px",
                 border: "1.5px solid hsl(var(--ping-brown) / 0.4)",
                 borderRadius: "6px",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "4px",
+                overflow: "hidden",
                 flexShrink: 0,
+                lineHeight: 0,
               }}
             >
-              <span
+              <iframe
                 style={{
-                  fontSize: "9px",
-                  fontWeight: 700,
-                  letterSpacing: "0.08em",
-                  color: "hsl(var(--ping-brown))",
-                  fontFamily: "'Poppins', sans-serif",
-                  textAlign: "center",
-                  lineHeight: 1.3,
+                  width: "114px",
+                  height: "97px",
+                  border: "none",
+                  display: "block",
                 }}
-              >
-                D-U-N-S<br />REGISTERED™
-              </span>
-              <span
-                style={{
-                  fontSize: "8px",
-                  color: "hsl(var(--ping-ash))",
-                  fontFamily: "'Poppins', sans-serif",
-                  textAlign: "center",
-                  opacity: 0.7,
-                }}
-              >
-                Ping IFF LLP
-              </span>
+                src="https://dunsregistered.dnb.com/SealAuthentication.aspx?Cid=1"
+                frameBorder={0}
+                scrolling="no"
+                title="DnB Seal"
+              />
             </div>
 
             {/* Social icons */}
