@@ -45,6 +45,10 @@ function useScrollReveal(selector: string) {
 const Blog = () => {
   useScrollReveal(".sr-item");
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0 });
+  }, []);
+
   return (
     <MainLayout>
       <Seo
@@ -107,10 +111,10 @@ const Blog = () => {
                   <Sparkles className="h-3.5 w-3.5" />
                   PingME Blog
                 </span>
-                <h1 className="text-4xl font-extrabold tracking-tight text-foreground md:text-5xl lg:text-6xl">
-                  Smart tag stories,<br />
-                  <span className="text-primary">guides &amp; ideas.</span>
-                </h1>
+                <h1 className="text-4xl font-extrabold tracking-tight text-foreground md:text-5xl lg:text-6xl leading-normal md:leading-[1.45]">
+  Smart tag stories,<br />
+  <span className="text-primary">guides &amp; ideas.</span>
+</h1>
                 <p className="max-w-xl text-base leading-8 text-muted-foreground">
                   Everything you need to know about vehicle tags, pet tags, lost &amp; found tags, and privacy-first contact.
                 </p>

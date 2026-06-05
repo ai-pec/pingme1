@@ -43,6 +43,17 @@ const RefundPolicy = () => {
               call us at {APP_CONFIG.SUPPORT_PHONE}.
             </p>
           </div>
+
+            <div className="mt-10 rounded-2xl border border-border/60 bg-background/90 p-6">
+              <h2 className="text-lg font-bold mb-3">Contact Us</h2>
+              <address className="not-italic text-muted-foreground leading-7">
+                <strong className="text-foreground">Ping IFF LLP</strong><br />
+                745, Burail, Ekta Market, Burail Village,<br />
+                Sector 45, Chandigarh &ndash; 160047, India<br />
+                Phone: <a href="tel:+917347340007" className="hover:underline">+91 73473 40007</a><br />
+                Email: <a href="mailto:contact@pingiff.ai" className="hover:underline">contact@pingiff.ai</a>
+              </address>
+            </div>
         </div>
       </div>
     </MainLayout>

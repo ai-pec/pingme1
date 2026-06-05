@@ -13,7 +13,7 @@ const MAX_EMAIL_LENGTH = 255;
 const MAX_PHONE_LENGTH = 20;
 const MAX_MESSAGE_LENGTH = 1000;
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-const SUPPORT_ADDRESS = "745, Burail, Ekta Market, Burail Village, Sector 45, Chandigarh, 160047";
+const SUPPORT_ADDRESS = "Ping IFF LLP, 745, Burail, Ekta Market, Burail Village, Sector 45, Chandigarh, 160047";
 
 const buildGoogleMapsUrl = (address: string) =>
   `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;

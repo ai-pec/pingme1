@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, startTransition } from "react";
 import { useNavigate } from "react-router-dom";
-import { CheckCircle2, Copy, Eye, Loader2, MessageSquare, Save, Search, Shield, SlidersHorizontal, XCircle, Plus, Edit, Trash2 } from "lucide-react";
+import { CheckCircle2, Copy, Eye, Loader2, MessageSquare, Save, Search, Shield, SlidersHorizontal, XCircle, Plus, Edit, Trash2, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 import MainLayout from "@/layouts/MainLayout";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +21,7 @@ import { downloadReceipt } from "@/lib/paymentService";
 import { categoryDescriptionFromName, categoryNameFromSlug, normalizeCategorySlug } from "@/lib/productCatalog";
 import { subscribeToProducts, saveProduct, deleteProductDoc, uploadProductImage, DbProduct, renameCategory, moveProductsToCategory, subscribeToProductCategories, saveProductCategory, deleteCategory } from "@/lib/productService";
 import type { PrebookingRecord } from "@/lib/prebookService";
+import { subscribeToFAQs, saveFAQ, deleteFAQ, initializeDefaultFAQs, type FAQItem } from "@/lib/faqService";
 
 const formatDate = (value: unknown): string => {
   if (!value || typeof value !== "object") return "-";
@@ -107,6 +108,14 @@ export default function Admin() {
   const [messageSearch, setMessageSearch] = useState("");
   const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null);
 
+  const [faqs, setFaqs] = useState<FAQItem[]>([]);
+  const [loadingFaqs, setLoadingFaqs] = useState(true);
+  const [faqSearch, setFaqSearch] = useState("");
+  const [editingFaq, setEditingFaq] = useState<Omit<FAQItem, "createdAt" | "updatedAt"> | null>(null);
+  const [isFaqDialogOpen, setIsFaqDialogOpen] = useState(false);
+  const [savingFaqId, setSavingFaqId] = useState<string | null>(null);
+  const [isInitializingFaqs, setIsInitializingFaqs] = useState(false);
+
   useEffect(() => {
     setLoadingOrders(true);
     const unsubscribe = subscribeToOrders(
@@ -159,6 +168,22 @@ export default function Admin() {
     return unsub;
   }, []);
 
+  useEffect(() => {
+    setLoadingFaqs(true);
+    const unsubscribe = subscribeToFAQs(
+      (latest) => {
+        setFaqs(latest);
+        setLoadingFaqs(false);
+      },
+      (error) => {
+        console.error("Failed to sync FAQs", error);
+        toast.error("Failed to load FAQs from Firebase.");
+        setLoadingFaqs(false);
+      }
+    );
+    return unsubscribe;
+  }, []);
+
   const categorizedProducts = useMemo(() => {
     const groups = new Map<string, DbProduct[]>();
 
@@ -180,7 +205,7 @@ export default function Admin() {
         return {
           slug,
           name,
-          description: meta.description || categoryDescriptionFromName(name),
+          description: meta.description || categoryDescriptionFromName(slug, name),
           icon: meta.icon?.trim() || getCategoryIcon(products),
           products: products.sort((left, right) => left.title.localeCompare(right.title)),
         };
@@ -190,6 +215,11 @@ export default function Admin() {
   
 
   const categoryOptions = useMemo(() => categorizedProducts.map((category) => category.slug), [categorizedProducts]);
+
+  const faqCategories = useMemo(() => {
+    const cats = new Set(faqs.map((f) => f.category).filter(Boolean));
+    return Array.from(cats);
+  }, [faqs]);
 
   const defaultCategorySlug = categoryOptions[0] || DEFAULT_CATEGORY_SLUG;
 
@@ -405,6 +435,70 @@ export default function Admin() {
     }
   };
 
+  const handleEditFaq = (faq: FAQItem | null) => {
+    if (faq) {
+      setEditingFaq({
+        id: faq.id,
+        question: faq.question,
+        answer: faq.answer,
+        category: faq.category,
+        sortOrder: faq.sortOrder,
+      });
+    } else {
+      setEditingFaq({
+        id: "",
+        question: "",
+        answer: "",
+        category: "General Questions",
+        sortOrder: faqs.length + 1,
+      });
+    }
+    setIsFaqDialogOpen(true);
+  };
+
+  const handleSaveFaq = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingFaq) return;
+
+    try {
+      setSavingFaqId(editingFaq.id || "new");
+      await saveFAQ(editingFaq);
+      toast.success("FAQ saved successfully.");
+      setIsFaqDialogOpen(false);
+      setEditingFaq(null);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to save FAQ.");
+    } finally {
+      setSavingFaqId(null);
+    }
+  };
+
+  const handleDeleteFaq = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this FAQ item?")) return;
+    try {
+      await deleteFAQ(id);
+      toast.success("FAQ deleted.");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to delete FAQ.");
+    }
+  };
+
+  const handleInitializeDefaultFaqs = async () => {
+    if (!window.confirm("This will load the default FAQ questions into your database. Continue?")) return;
+    try {
+      setIsInitializingFaqs(true);
+      await initializeDefaultFAQs();
+      toast.success("Default FAQs loaded.");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load default FAQs.");
+    } finally {
+      setIsInitializingFaqs(false);
+    }
+  };
+
   return (
     <MainLayout>
       <div className="container py-8 space-y-6">
@@ -420,7 +514,7 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="orders" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 sm:w-[520px]">
+          <TabsList className="grid w-full grid-cols-4 sm:w-[640px]">
             <TabsTrigger value="orders">Order History</TabsTrigger>
             <TabsTrigger value="products">Products</TabsTrigger>
             <TabsTrigger value="messages" className="flex items-center gap-1.5">
@@ -431,6 +525,10 @@ export default function Admin() {
                   {contactMessages.length > 99 ? "99+" : contactMessages.length}
                 </span>
               )}
+            </TabsTrigger>
+            <TabsTrigger value="faqs" className="flex items-center gap-1.5">
+              <HelpCircle className="w-3.5 h-3.5" />
+              FAQ Manager
             </TabsTrigger>
           </TabsList>
 
@@ -837,6 +935,157 @@ export default function Admin() {
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="faqs" className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardDescription>Total FAQs</CardDescription>
+                  <CardTitle className="text-3xl">{faqs.length}</CardTitle>
+                </CardHeader>
+              </Card>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardDescription>Categories</CardDescription>
+                  <CardTitle className="text-3xl">{faqCategories.length}</CardTitle>
+                </CardHeader>
+              </Card>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardDescription>Status</CardDescription>
+                  <CardTitle className="text-xl">
+                    {faqs.length > 0 ? (
+                      <span className="text-green-600 flex items-center gap-1.5 font-semibold text-lg">
+                        <CheckCircle2 className="w-5 h-5" /> Active
+                      </span>
+                    ) : (
+                      <span className="text-amber-600 flex items-center gap-1.5 font-semibold text-lg">
+                        <XCircle className="w-5 h-5" /> Not Initialized
+                      </span>
+                    )}
+                  </CardTitle>
+                </CardHeader>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                <div>
+                  <CardTitle>FAQ Manager</CardTitle>
+                  <CardDescription>Manage and update FAQ entries shown on the website.</CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  {faqs.length === 0 && (
+                    <Button 
+                      variant="outline" 
+                      onClick={handleInitializeDefaultFaqs} 
+                      disabled={isInitializingFaqs}
+                    >
+                      {isInitializingFaqs ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Plus className="w-4 h-4 mr-2" />
+                      )}
+                      Load Default FAQs
+                    </Button>
+                  )}
+                  <Button onClick={() => handleEditFaq(null)}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add FAQ Item
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="relative mb-4 max-w-sm">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={faqSearch}
+                    onChange={(e) => setFaqSearch(e.target.value)}
+                    placeholder="Search FAQs by question or category..."
+                    className="pl-9"
+                  />
+                </div>
+
+                {loadingFaqs ? (
+                  <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <span>Loading FAQs...</span>
+                  </div>
+                ) : faqs.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
+                    <HelpCircle className="h-10 w-10 opacity-30" />
+                    <p className="text-sm">No FAQs found in Firestore.</p>
+                    <Button onClick={handleInitializeDefaultFaqs} disabled={isInitializingFaqs}>
+                      {isInitializingFaqs ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                      Load Default FAQs
+                    </Button>
+                  </div>
+                ) : (() => {
+                  const filtered = faqs.filter((faq) => {
+                    const q = faqSearch.toLowerCase();
+                    return (
+                      !q ||
+                      faq.question.toLowerCase().includes(q) ||
+                      faq.answer.toLowerCase().includes(q) ||
+                      faq.category.toLowerCase().includes(q)
+                    );
+                  });
+
+                  return filtered.length === 0 ? (
+                    <p className="py-8 text-center text-sm text-muted-foreground">No FAQs match your search.</p>
+                  ) : (
+                    <div className="rounded-md border overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-[80px]">Order</TableHead>
+                            <TableHead className="w-[180px]">Category</TableHead>
+                            <TableHead>Question / Answer</TableHead>
+                            <TableHead className="w-[100px] text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filtered.map((faq) => (
+                            <TableRow key={faq.id}>
+                              <TableCell className="font-mono text-xs">{faq.sortOrder}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline">{faq.category}</Badge>
+                              </TableCell>
+                              <TableCell className="max-w-md">
+                                <div className="font-semibold text-sm mb-1">{faq.question}</div>
+                                <div className="text-xs text-muted-foreground line-clamp-2">{faq.answer}</div>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleEditFaq(faq)}
+                                    title="Edit FAQ"
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="text-destructive hover:bg-destructive/10"
+                                    onClick={() => handleDeleteFaq(faq.id)}
+                                    title="Delete FAQ"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
                               </TableCell>
                             </TableRow>
                           ))}
@@ -1281,6 +1530,81 @@ export default function Admin() {
                 <Button type="submit">Create Category</Button>
               </div>
             </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* FAQ Dialog */}
+        <Dialog open={isFaqDialogOpen} onOpenChange={setIsFaqDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>{editingFaq?.id ? "Edit FAQ Item" : "Add FAQ Item"}</DialogTitle>
+              <DialogDescription>Create or update FAQ questions and answers. Changes update the public FAQ page.</DialogDescription>
+            </DialogHeader>
+            {editingFaq && (
+              <form onSubmit={handleSaveFaq} className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="faqQuestion">Question</Label>
+                  <Input 
+                    id="faqQuestion" 
+                    value={editingFaq.question} 
+                    onChange={(e) => setEditingFaq({ ...editingFaq, question: e.target.value })} 
+                    placeholder="Enter the question" 
+                    required 
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="faqAnswer">Answer</Label>
+                  <Textarea 
+                    id="faqAnswer" 
+                    rows={5}
+                    value={editingFaq.answer} 
+                    onChange={(e) => setEditingFaq({ ...editingFaq, answer: e.target.value })} 
+                    placeholder="Enter the answer" 
+                    required 
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="faqCategory">Category</Label>
+                    <Input 
+                      id="faqCategory" 
+                      value={editingFaq.category} 
+                      onChange={(e) => setEditingFaq({ ...editingFaq, category: e.target.value })} 
+                      placeholder="e.g. General Questions" 
+                      list="faq-category-options"
+                      required 
+                    />
+                    <datalist id="faq-category-options">
+                      {faqCategories.map((cat) => (
+                        <option key={cat} value={cat} />
+                      ))}
+                    </datalist>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="faqSortOrder">Sort Order</Label>
+                    <Input 
+                      id="faqSortOrder" 
+                      type="number"
+                      value={editingFaq.sortOrder} 
+                      onChange={(e) => setEditingFaq({ ...editingFaq, sortOrder: parseInt(e.target.value, 10) || 0 })} 
+                      placeholder="e.g. 1" 
+                      required 
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-4 border-t">
+                  <Button type="button" variant="outline" onClick={() => setIsFaqDialogOpen(false)}>Cancel</Button>
+                  <Button type="submit" disabled={savingFaqId !== null}>
+                    {savingFaqId ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                    Save FAQ
+                  </Button>
+                </div>
+              </form>
+            )}
           </DialogContent>
         </Dialog>
       </div>

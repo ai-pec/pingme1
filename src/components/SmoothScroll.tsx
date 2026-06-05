@@ -7,15 +7,24 @@ const SmoothScroll: React.FC = () => {
   const lenisRef = useRef<Lenis | null>(null);
 
   useEffect(() => {
+    // Respect reduced-motion and low-powered devices: skip Lenis if user prefers reduced motion
+    const prefersReduced = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const lowCore = typeof navigator !== "undefined" && typeof navigator.hardwareConcurrency === "number" && navigator.hardwareConcurrency < 3;
+
+    if (prefersReduced || lowCore) {
+      // Do not init smooth-scrolling on low-end devices or when user requests reduced motion
+      return;
+    }
+
     // Initialize Lenis for smooth kinetic/momentum scrolling
     const lenis = new Lenis({
-      duration: 1.1, // duration of the scroll animation in seconds
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // exponential ease-out
+      duration: 0.9, // shorter duration is snappier and less likely to feel laggy
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       orientation: "vertical",
       gestureOrientation: "vertical",
       smoothWheel: true,
-      wheelMultiplier: 1.0,
-      touchMultiplier: 1.2,
+      wheelMultiplier: 0.9,
+      touchMultiplier: 1.0,
       infinite: false,
     });
 
@@ -23,14 +32,17 @@ const SmoothScroll: React.FC = () => {
 
     let rafId: number;
     function raf(time: number) {
-      lenis.raf(time);
+      // Only call lenis.raf when the document is visible to avoid wasted work
+      if (document.visibilityState === "visible") {
+        lenis.raf(time);
+      }
       rafId = requestAnimationFrame(raf);
     }
 
     rafId = requestAnimationFrame(raf);
 
     return () => {
-      lenis.destroy();
+      try { lenis.destroy(); } catch (_) {}
       cancelAnimationFrame(rafId);
       lenisRef.current = null;
     };
