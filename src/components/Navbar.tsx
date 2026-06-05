@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, Trash2, Plus, Minus, ChevronRight, Sparkles } from "lucide-react";
+import { Menu, X, Trash2, Plus, Minus, ChevronRight, Sparkles, ShoppingCart } from "lucide-react";
 import CartButton from "@/components/CartButton";
 import logo from "@/assets/ping-me-logo.png";
 import { useAuth } from "@/contexts/AuthContext";
@@ -23,7 +23,7 @@ const navLinks = [
   { label: "About", to: "/about" },
   { label: "Blog", to: "/blog" },
   { label: "Contact", to: "/contact" },
-  
+
 ];
 
 const Navbar = () => {
