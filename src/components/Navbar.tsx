@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, Trash2, Plus, Minus, ChevronRight, Sparkles, ShoppingCart } from "lucide-react";
-import CartButton from "@/components/CartButton";
+import { Menu, X, ShoppingCart, Trash2, Plus, Minus, Sparkles, ChevronRight } from "lucide-react";
 import logo from "@/assets/ping-me-logo.png";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
@@ -15,6 +14,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { resolveProductImageUrl } from "@/lib/productCatalog";
+import CartButton from "./CartButton";
 
 const navLinks = [
   { label: "Home", to: "/" },
