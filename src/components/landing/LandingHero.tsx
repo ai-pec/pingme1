@@ -339,8 +339,8 @@ const LandingHero = () => {
           </div>
 
           <div className="relative flex items-start justify-center lg:justify-end">
-            <div className="w-full max-w-[820px] overflow-hidden lg:max-w-[1040px]">
-              <div className="relative aspect-[6/7] w-full overflow-hidden rounded-3xl border border-white/20 bg-transparent">  
+            <div className="w-full max-w-[560px] overflow-hidden lg:max-w-[680px]">
+              <div className="relative aspect-[3/4] w-full overflow-hidden rounded-3xl border border-white/20 bg-transparent">  
                 {heroImageUrl ? (
                   <img
                     src={heroImageUrl}

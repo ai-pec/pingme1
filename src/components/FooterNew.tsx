@@ -49,18 +49,18 @@ const FooterNew = () => {
         }}
       />
 
-      <div className="container mx-auto px-4 py-16 md:py-20">
+      <div className="container mx-auto px-4 py-10 md:py-16 lg:py-20">
         {/* MAIN GRID */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-12 md:mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 md:gap-12 mb-10 md:mb-16">
 
           {/* Brand Section */}
-          <div className="lg:col-span-1 flex flex-col space-y-6">
-            <div className="flex flex-col items-start space-y-4">
+          <div className="lg:col-span-1 flex flex-col space-y-4">
+            <div className="flex flex-col items-start space-y-3">
               <div className="flex items-center gap-3">
                 <img
                   src={logo}
                   alt="PingME"
-                  className="h-50 w-50 object-contain hover:scale-110 transition-transform duration-300"
+                  className="h-12 w-auto sm:h-16 md:h-20 object-contain hover:scale-110 transition-transform duration-300"
                 />
               </div>
               <p
@@ -76,7 +76,7 @@ const FooterNew = () => {
 
             {/* Contact Info */}
             <div
-              className="flex flex-col space-y-3 pt-6"
+              className="flex flex-col space-y-3 pt-4"
               style={{ borderTop: "1px solid hsl(var(--ping-brown) / 0.15)" }}
             >
               <a
@@ -87,7 +87,7 @@ const FooterNew = () => {
                   fontFamily: "'Poppins', sans-serif",
                 }}
               >
-                <Phone className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                <Phone className="w-4 h-4 flex-shrink-0 group-hover:scale-110 transition-transform" />
                 <span
                   style={{ color: "hsl(var(--ping-yellow))" }}
                   className="group-hover:underline"
@@ -104,10 +104,10 @@ const FooterNew = () => {
                   fontFamily: "'Poppins', sans-serif",
                 }}
               >
-                <Mail className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                <Mail className="w-4 h-4 flex-shrink-0 group-hover:scale-110 transition-transform" />
                 <span
                   style={{ color: "hsl(var(--ping-yellow))" }}
-                  className="group-hover:underline"
+                  className="group-hover:underline break-all"
                 >
                   contact@pingiff.ai
                 </span>
@@ -130,144 +130,149 @@ const FooterNew = () => {
             </div>
           </div>
 
-          {/* Products */}
-          <div className="flex flex-col space-y-5">
-            <h3
-              className="text-xs font-black uppercase"
-              style={{
-                color: "hsl(var(--ping-brown))",
-                fontFamily: "'Poppins', sans-serif",
-                letterSpacing: "0.14em",
-              }}
-            >
-              Products
-            </h3>
-            <nav className="flex flex-col space-y-3">
-              {footerSections.products.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className="text-sm transition-all duration-300 relative group"
-                  style={{
-                    color: "hsl(var(--ping-ash))",
-                    fontFamily: "'Poppins', sans-serif",
-                  }}
-                >
-                  <span className="relative inline-block">
-                    {item.name}
-                    <span
-                      className="absolute bottom-0 left-0 w-0 h-0.5 group-hover:w-full transition-all duration-300 rounded"
-                      style={{ background: "hsl(var(--ping-yellow))" }}
-                    />
-                  </span>
-                </Link>
-              ))}
-            </nav>
-          </div>
+          {/* Link columns — 2-col grid on small, individual cols on md+ */}
+          <div className="col-span-1 md:col-span-1 lg:col-span-4 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
 
-          {/* Company */}
-          <div className="flex flex-col space-y-5">
-            <h3
-              className="text-xs font-black uppercase"
-              style={{
-                color: "hsl(var(--ping-brown))",
-                fontFamily: "'Poppins', sans-serif",
-                letterSpacing: "0.14em",
-              }}
-            >
-              Company
-            </h3>
-            <nav className="flex flex-col space-y-3">
-              {footerSections.company.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className="text-sm transition-all duration-300 relative group"
-                  style={{
-                    color: "hsl(var(--ping-ash))",
-                    fontFamily: "'Poppins', sans-serif",
-                  }}
-                >
-                  <span className="relative inline-block">
-                    {item.name}
-                    <span
-                      className="absolute bottom-0 left-0 w-0 h-0.5 group-hover:w-full transition-all duration-300 rounded"
-                      style={{ background: "hsl(var(--ping-yellow))" }}
-                    />
-                  </span>
-                </Link>
-              ))}
-            </nav>
-          </div>
+            {/* Products */}
+            <div className="flex flex-col space-y-4">
+              <h3
+                className="text-xs font-black uppercase"
+                style={{
+                  color: "hsl(var(--ping-brown))",
+                  fontFamily: "'Poppins', sans-serif",
+                  letterSpacing: "0.14em",
+                }}
+              >
+                Products
+              </h3>
+              <nav className="flex flex-col space-y-2.5">
+                {footerSections.products.map((item) => (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className="text-sm transition-all duration-300 relative group"
+                    style={{
+                      color: "hsl(var(--ping-ash))",
+                      fontFamily: "'Poppins', sans-serif",
+                    }}
+                  >
+                    <span className="relative inline-block">
+                      {item.name}
+                      <span
+                        className="absolute bottom-0 left-0 w-0 h-0.5 group-hover:w-full transition-all duration-300 rounded"
+                        style={{ background: "hsl(var(--ping-yellow))" }}
+                      />
+                    </span>
+                  </Link>
+                ))}
+              </nav>
+            </div>
 
-          {/* Legal */}
-          <div className="flex flex-col space-y-5">
-            <h3
-              className="text-xs font-black uppercase"
-              style={{
-                color: "hsl(var(--ping-brown))",
-                fontFamily: "'Poppins', sans-serif",
-                letterSpacing: "0.14em",
-              }}
-            >
-              Legal
-            </h3>
-            <nav className="flex flex-col space-y-3">
-              {footerSections.legal.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className="text-sm transition-all duration-300 relative group"
-                  style={{
-                    color: "hsl(var(--ping-ash))",
-                    fontFamily: "'Poppins', sans-serif",
-                  }}
-                >
-                  <span className="relative inline-block">
-                    {item.name}
-                    <span
-                      className="absolute bottom-0 left-0 w-0 h-0.5 group-hover:w-full transition-all duration-300 rounded"
-                      style={{ background: "hsl(var(--ping-yellow))" }}
-                    />
-                  </span>
-                </Link>
-              ))}
-            </nav>
-          </div>
+            {/* Company */}
+            <div className="flex flex-col space-y-4">
+              <h3
+                className="text-xs font-black uppercase"
+                style={{
+                  color: "hsl(var(--ping-brown))",
+                  fontFamily: "'Poppins', sans-serif",
+                  letterSpacing: "0.14em",
+                }}
+              >
+                Company
+              </h3>
+              <nav className="flex flex-col space-y-2.5">
+                {footerSections.company.map((item) => (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className="text-sm transition-all duration-300 relative group"
+                    style={{
+                      color: "hsl(var(--ping-ash))",
+                      fontFamily: "'Poppins', sans-serif",
+                    }}
+                  >
+                    <span className="relative inline-block">
+                      {item.name}
+                      <span
+                        className="absolute bottom-0 left-0 w-0 h-0.5 group-hover:w-full transition-all duration-300 rounded"
+                        style={{ background: "hsl(var(--ping-yellow))" }}
+                      />
+                    </span>
+                  </Link>
+                ))}
+              </nav>
+            </div>
 
-          {/* Support */}
-          <div className="flex flex-col space-y-5">
-            <h3
-              className="text-xs font-black uppercase"
-              style={{
-                color: "hsl(var(--ping-brown))",
-                fontFamily: "'Poppins', sans-serif",
-                letterSpacing: "0.14em",
-              }}
-            >
-              Support
-            </h3>
-            <nav className="flex flex-col space-y-3">
-              {footerSections.support.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className="text-sm transition-all duration-300 relative group"
-                  style={{
-                    color: "hsl(var(--ping-ash))",
-                    fontFamily: "'Poppins', sans-serif",
-                  }}
-                >
-                  <span className="relative inline-block">
-                    {item.name}
-                    <span
-                      className="absolute bottom-0 left-0 w-0 h-0.5 group-hover:w-full transition-all duration-300 rounded"
-                      style={{ background: "hsl(var(--ping-yellow))" }}
-                    />
-                  </span>
-                </Link>
-              ))}
-            </nav>
+            {/* Legal */}
+            <div className="flex flex-col space-y-4">
+              <h3
+                className="text-xs font-black uppercase"
+                style={{
+                  color: "hsl(var(--ping-brown))",
+                  fontFamily: "'Poppins', sans-serif",
+                  letterSpacing: "0.14em",
+                }}
+              >
+                Legal
+              </h3>
+              <nav className="flex flex-col space-y-2.5">
+                {footerSections.legal.map((item) => (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className="text-sm transition-all duration-300 relative group"
+                    style={{
+                      color: "hsl(var(--ping-ash))",
+                      fontFamily: "'Poppins', sans-serif",
+                    }}
+                  >
+                    <span className="relative inline-block">
+                      {item.name}
+                      <span
+                        className="absolute bottom-0 left-0 w-0 h-0.5 group-hover:w-full transition-all duration-300 rounded"
+                        style={{ background: "hsl(var(--ping-yellow))" }}
+                      />
+                    </span>
+                  </Link>
+                ))}
+              </nav>
+            </div>
+
+            {/* Support */}
+            <div className="flex flex-col space-y-4">
+              <h3
+                className="text-xs font-black uppercase"
+                style={{
+                  color: "hsl(var(--ping-brown))",
+                  fontFamily: "'Poppins', sans-serif",
+                  letterSpacing: "0.14em",
+                }}
+              >
+                Support
+              </h3>
+              <nav className="flex flex-col space-y-2.5">
+                {footerSections.support.map((item) => (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className="text-sm transition-all duration-300 relative group"
+                    style={{
+                      color: "hsl(var(--ping-ash))",
+                      fontFamily: "'Poppins', sans-serif",
+                    }}
+                  >
+                    <span className="relative inline-block">
+                      {item.name}
+                      <span
+                        className="absolute bottom-0 left-0 w-0 h-0.5 group-hover:w-full transition-all duration-300 rounded"
+                        style={{ background: "hsl(var(--ping-yellow))" }}
+                      />
+                    </span>
+                  </Link>
+                ))}
+              </nav>
+            </div>
+
           </div>
         </div>
 
@@ -302,7 +307,7 @@ const FooterNew = () => {
         />
 
         {/* BOTTOM */}
-        <div className="flex flex-col md:flex-row justify-between items-center gap-8">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-6 md:gap-8">
           <div className="flex flex-col space-y-2 text-center md:text-left">
             <p
               className="text-sm"
@@ -321,7 +326,7 @@ const FooterNew = () => {
               {". All rights reserved."}
             </p>
             <p
-              className="text-sm"
+              className="text-xs sm:text-sm"
               style={{
                 color: "hsl(var(--ping-ash) / 0.7)",
                 fontFamily: "'Poppins', sans-serif",
@@ -332,7 +337,7 @@ const FooterNew = () => {
           </div>
 
           {/* Social Links + D&B DUNS Seal */}
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4 sm:gap-6 flex-wrap justify-center">
 
             {/* D&B DUNS Registered Seal */}
             <div

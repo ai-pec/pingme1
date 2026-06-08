@@ -2,23 +2,27 @@ import React, { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import Lenis from "lenis";
 
+// Expose lenis instance globally so pages can trigger scroll-to-top after mount
+declare global {
+  interface Window {
+    __lenis?: Lenis;
+  }
+}
+
 const SmoothScroll: React.FC = () => {
   const { pathname } = useLocation();
   const lenisRef = useRef<Lenis | null>(null);
 
   useEffect(() => {
-    // Respect reduced-motion and low-powered devices: skip Lenis if user prefers reduced motion
     const prefersReduced = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const lowCore = typeof navigator !== "undefined" && typeof navigator.hardwareConcurrency === "number" && navigator.hardwareConcurrency < 3;
 
     if (prefersReduced || lowCore) {
-      // Do not init smooth-scrolling on low-end devices or when user requests reduced motion
       return;
     }
 
-    // Initialize Lenis for smooth kinetic/momentum scrolling
     const lenis = new Lenis({
-      duration: 0.9, // shorter duration is snappier and less likely to feel laggy
+      duration: 0.9,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       orientation: "vertical",
       gestureOrientation: "vertical",
@@ -31,10 +35,10 @@ const SmoothScroll: React.FC = () => {
     });
 
     lenisRef.current = lenis;
+    window.__lenis = lenis;
 
     let rafId: number;
     function raf(time: number) {
-      // Only call lenis.raf when the document is visible to avoid wasted work
       if (document.visibilityState === "visible") {
         lenis.raf(time);
       }
@@ -47,23 +51,29 @@ const SmoothScroll: React.FC = () => {
       try { lenis.destroy(); } catch (_) {}
       cancelAnimationFrame(rafId);
       lenisRef.current = null;
+      window.__lenis = undefined;
     };
   }, []);
 
   useEffect(() => {
-    // Scroll to top after route/pathname changes, with a small delay to allow
-    // lazy-loaded (Suspense) pages to finish rendering before scrolling
-    const id = setTimeout(() => {
-      if (lenisRef.current) {
-        lenisRef.current.scrollTo(0, { immediate: true });
-      } else {
-        window.scrollTo(0, 0);
-      }
-    }, 50);
-    return () => clearTimeout(id);
+    // Immediately stop any in-progress scroll and jump to top on route change.
+    // Pages that are lazy-loaded should call scrollToTop() after their own mount.
+    if (lenisRef.current) {
+      lenisRef.current.scrollTo(0, { immediate: true });
+    } else {
+      window.scrollTo(0, 0);
+    }
   }, [pathname]);
 
   return null;
+};
+
+export const scrollToTop = () => {
+  if (window.__lenis) {
+    window.__lenis.scrollTo(0, { immediate: true });
+  } else {
+    window.scrollTo(0, 0);
+  }
 };
 
 export default SmoothScroll;

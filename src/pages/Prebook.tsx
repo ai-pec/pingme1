@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
+import { scrollToTop } from "@/components/SmoothScroll";
 import MainLayout from "@/layouts/MainLayout";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -595,6 +596,9 @@ function CheckToggle({ checked, onChange, label, icon: Icon }) {
 const Prebook = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Ensure page starts at top — fires after lazy-load render completes
+  useEffect(() => { scrollToTop(); }, []);
   const { items, cartTotal, clearCart, updateQuantity, removeFromCart } = useCart();
   const { user, profile } = useAuth();
 

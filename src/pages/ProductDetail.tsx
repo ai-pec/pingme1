@@ -224,7 +224,7 @@ const ImageGallery = ({
 
       {/* Thumbnails */}
       {images.length > 1 && (
-        <div style={{ display: "flex", gap: 10 }}>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           {images.map((img, i) => (
             <button
               key={i}
@@ -362,7 +362,7 @@ const RelatedProducts = ({
       style={{
         maxWidth: 1200,
         margin: "0 auto",
-        padding: "60px 24px 80px",
+        padding: "clamp(32px,5vw,60px) clamp(12px,4vw,24px) clamp(40px,6vw,80px)",
         borderTop: `1px solid ${MIST}`,
       }}
     >
@@ -381,8 +381,8 @@ const RelatedProducts = ({
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
-          gap: 20,
+          gridTemplateColumns: "repeat(auto-fill, minmax(min(180px, 100%), 1fr))",
+          gap: 16,
         }}
       >
         {related.map((prod) => (
@@ -811,27 +811,38 @@ const ProductDetail = () => {
         .pm-detail-layout {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: clamp(32px, 5vw, 72px);
+          gap: clamp(24px, 4vw, 72px);
           max-width: 1200px;
           margin: 0 auto;
-          padding: 48px 24px 72px;
+          padding: clamp(24px, 5vw, 48px) clamp(16px, 4vw, 32px) clamp(40px, 6vw, 72px);
           align-items: start;
         }
-        @media (max-width: 768px) {
-          .pm-detail-layout { grid-template-columns: 1fr !important; }
-          .pm-sticky-col { position: static !important; }
+        @media (max-width: 900px) {
+          .pm-detail-layout { grid-template-columns: 1fr !important; padding: 20px 16px 48px; }
+          .pm-sticky-col { position: static !important; top: auto !important; }
+        }
+        @media (max-width: 480px) {
+          .pm-detail-layout { padding: 14px 12px 36px; gap: 20px; }
         }
 
-        /* Tab bar */
-        .pm-tab-bar { display: flex; border-bottom: 1px solid ${MIST}; gap: 0; margin-bottom: 20px; }
+        /* Tab bar — scrollable on small screens */
+        .pm-tab-bar {
+          display: flex; border-bottom: 1px solid ${MIST}; gap: 0; margin-bottom: 20px;
+          overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+        }
+        .pm-tab-bar::-webkit-scrollbar { display: none; }
         .pm-tab {
-          border: none; background: none; padding: 12px 18px; cursor: pointer;
+          border: none; background: none; padding: 12px 16px; cursor: pointer;
           font-family: 'DM Sans', system-ui, sans-serif; font-size: 13px; font-weight: 700;
           color: ${TEXT_MUTED}; letter-spacing: 0.01em; border-bottom: 2px solid transparent;
-          transition: color 0.2s, border-color 0.2s; white-space: nowrap;
+          transition: color 0.2s, border-color 0.2s; white-space: nowrap; flex-shrink: 0;
+          -webkit-tap-highlight-color: transparent; touch-action: manipulation;
         }
         .pm-tab:hover { color: ${INK}; }
         .pm-tab-active { color: ${INK} !important; border-bottom-color: ${GOLD_DEEP} !important; }
+        @media (max-width: 480px) {
+          .pm-tab { padding: 10px 14px; font-size: 12px; }
+        }
 
         /* Feature list item */
         .pm-feature-item {
@@ -847,13 +858,38 @@ const ProductDetail = () => {
           padding: 28px 20px; gap: 12px;
         }
 
-        /* CTA Buttons */
+        /* Specs table responsive */
+        .pm-spec-row {
+          display: grid;
+          grid-template-columns: 140px 1fr;
+          gap: 12px;
+          padding: 12px 0;
+          border-bottom: 1px solid ${MIST};
+          align-items: baseline;
+        }
+        @media (max-width: 480px) {
+          .pm-spec-row { grid-template-columns: 1fr; gap: 4px; }
+        }
+
+        /* Trust perks responsive */
+        .pm-perks-grid {
+          max-width: 1100px;
+          margin: 0 auto;
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+        }
+        @media (max-width: 640px) {
+          .pm-perks-grid { grid-template-columns: 1fr !important; }
+          .pm-perk { border-right: none !important; border-bottom: 1px solid ${MIST}; }
+          .pm-perk:last-child { border-bottom: none; }
+        }
         .pm-btn-buy {
           flex: 1; background: ${INK}; color: ${GOLD}; border: none; border-radius: 12px;
           padding: 16px 20px; font-family: 'DM Sans', system-ui, sans-serif; font-size: 15px; font-weight: 800;
-          cursor: pointer; letter-spacing: 0.01em;
+          cursor: pointer; letter-spacing: 0.01em; min-height: 52px;
           transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
           box-shadow: 0 4px 16px rgba(26,20,16,0.15);
+          -webkit-tap-highlight-color: transparent; touch-action: manipulation;
         }
         .pm-btn-buy:hover { background: ${INK_SOFT}; transform: translateY(-2px); box-shadow: 0 8px 28px rgba(26,20,16,0.2); }
         .pm-btn-buy:active { transform: translateY(0); }
@@ -861,16 +897,13 @@ const ProductDetail = () => {
         .pm-btn-cart {
           flex: 1; background: transparent; color: ${INK}; border: 1.5px solid ${MIST}; border-radius: 12px;
           padding: 16px 20px; font-family: 'DM Sans', system-ui, sans-serif; font-size: 15px; font-weight: 800;
-          cursor: pointer; letter-spacing: 0.01em;
+          cursor: pointer; letter-spacing: 0.01em; min-height: 52px;
           transition: border-color 0.2s, background 0.2s, transform 0.15s;
+          -webkit-tap-highlight-color: transparent; touch-action: manipulation;
         }
         .pm-btn-cart:hover { border-color: ${GOLD_DEEP}; background: ${GOLD_LIGHT}; transform: translateY(-2px); }
         .pm-btn-cart-added { background: ${SUCCESS} !important; color: #fff !important; border-color: ${SUCCESS} !important; }
-      `}</style>
-
-      <div className="pm-detail-page">
-
-        {/* ── Announcement Bar ── */}
+      `}</style>   {/* ── Announcement Bar ── */}
         <div
           style={{
             background: INK,
@@ -1350,14 +1383,7 @@ const ProductDetail = () => {
                   ].map((spec) => (
                     <div
                       key={spec.label}
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "160px 1fr",
-                        gap: 12,
-                        padding: "12px 0",
-                        borderBottom: `1px solid ${MIST}`,
-                        alignItems: "baseline",
-                      }}
+                      className="pm-spec-row"
                     >
                       <span
                         style={{
@@ -1441,14 +1467,7 @@ const ProductDetail = () => {
             borderBottom: `1px solid ${MIST}`,
           }}
         >
-          <div
-            style={{
-              maxWidth: 1100,
-              margin: "0 auto",
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-            }}
-          >
+          <div className="pm-perks-grid">
             {TRUST_PERKS.map((perk, i) => (
               <div
                 key={i}
@@ -1499,7 +1518,7 @@ const ProductDetail = () => {
           />
         )}
 
-      </div>
+      
     </MainLayout>
   );
 };
