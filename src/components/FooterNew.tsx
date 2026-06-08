@@ -277,7 +277,7 @@ const FooterNew = () => {
         </div>
 
         {/* PING ME — letters justified across full width */}
-        <div className="mb-[6px] mt-[-50px]">
+        <div className="mb-[6px] mt-[-50px] pt-7">
           <div
             className="flex justify-between items-baseline w-full"
             style={{
