@@ -32,6 +32,7 @@ export interface NFCProfile {
   email: string;
   phone: string;
   bio?: string;
+  businessOverview?: string;
   businessTags?: string;
   website?: string;
   address?: string;
@@ -43,11 +44,20 @@ export interface NFCProfile {
   profilePhoto?: string;
   companyAddress?: string;
   googleMapsLink?: string;
+  upiId?: string;
+  razorpayLink?: string;
+  appointmentBookingLink?: string;
   projects?: Array<{
     name: string;
     description?: string;
     link?: string;
     photo?: string;
+    type?: string;
+  }>;
+  documents?: Array<{
+    title: string;
+    url: string;
+    type?: string;
   }>;
 }
 
@@ -154,6 +164,7 @@ const sanitizeNFCProfile = (profile: NFCProfile): NFCProfile => {
     email: sanitizeText(profile.email || ''),
     phone: sanitizeText(profile.phone || ''),
     ...(profile.bio ? { bio: sanitizeText(profile.bio) } : {}),
+    ...(profile.businessOverview ? { businessOverview: sanitizeText(profile.businessOverview) } : {}),
     ...(profile.businessTags ? { businessTags: sanitizeText(profile.businessTags) } : {}),
     ...(profile.website ? { website: sanitizeText(profile.website) } : {}),
     ...(profile.address ? { address: sanitizeText(profile.address) } : {}),
@@ -165,6 +176,9 @@ const sanitizeNFCProfile = (profile: NFCProfile): NFCProfile => {
     ...(profile.profilePhoto ? { profilePhoto: sanitizeText(profile.profilePhoto) } : {}),
     ...(profile.companyAddress ? { companyAddress: sanitizeText(profile.companyAddress) } : {}),
     ...(profile.googleMapsLink ? { googleMapsLink: sanitizeText(profile.googleMapsLink) } : {}),
+    ...(profile.upiId ? { upiId: sanitizeText(profile.upiId) } : {}),
+    ...(profile.razorpayLink ? { razorpayLink: sanitizeText(profile.razorpayLink) } : {}),
+    ...(profile.appointmentBookingLink ? { appointmentBookingLink: sanitizeText(profile.appointmentBookingLink) } : {}),
     ...(profile.projects && profile.projects.length > 0
       ? {
           projects: profile.projects.map((project) => ({
@@ -172,6 +186,16 @@ const sanitizeNFCProfile = (profile: NFCProfile): NFCProfile => {
             ...(project.description ? { description: sanitizeText(project.description) } : {}),
             ...(project.link ? { link: sanitizeText(project.link) } : {}),
             ...(project.photo ? { photo: sanitizeText(project.photo) } : {}),
+            ...(project.type ? { type: sanitizeText(project.type) } : {}),
+          })),
+        }
+      : {}),
+    ...(profile.documents && profile.documents.length > 0
+      ? {
+          documents: profile.documents.map((doc) => ({
+            title: sanitizeText(doc.title || ''),
+            url: sanitizeText(doc.url || ''),
+            ...(doc.type ? { type: sanitizeText(doc.type) } : {}),
           })),
         }
       : {}),

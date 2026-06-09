@@ -123,11 +123,37 @@ const mapProjects = (projectsValue) => {
         description: asOptionalText(project.description),
         link: asOptionalText(project.link),
         photo: asOptionalText(project.photo),
+        type: asOptionalText(project.type),
       };
     })
     .filter(Boolean);
 
   return projects.length > 0 ? projects : undefined;
+};
+
+const mapDocuments = (documentsValue) => {
+  if (!Array.isArray(documentsValue)) {
+    return undefined;
+  }
+
+  const documents = documentsValue
+    .filter((doc) => doc && typeof doc === "object")
+    .map((doc) => {
+      const title = asOptionalText(doc.title);
+      const url = asOptionalText(doc.url);
+      if (!title || !url) {
+        return null;
+      }
+
+      return {
+        title,
+        url,
+        type: asOptionalText(doc.type),
+      };
+    })
+    .filter(Boolean);
+
+  return documents.length > 0 ? documents : undefined;
 };
 
 const mapDocToPublicProfileCandidate = (docSnap) => {
@@ -151,16 +177,23 @@ const mapDocToPublicProfileCandidate = (docSnap) => {
     email: asOptionalText(nfcProfile.email) || asOptionalText(data.email),
     phone: asOptionalText(nfcProfile.phone) || asOptionalText(data.phone),
     bio: asOptionalText(nfcProfile.bio),
+    businessOverview: asOptionalText(nfcProfile.businessOverview),
     businessTags: asOptionalText(nfcProfile.businessTags),
     website: asOptionalText(nfcProfile.website),
     address: asOptionalText(nfcProfile.address),
+    companyAddress: asOptionalText(nfcProfile.companyAddress),
+    googleMapsLink: asOptionalText(nfcProfile.googleMapsLink),
     linkedin: asOptionalText(nfcProfile.linkedin),
     twitter: asOptionalText(nfcProfile.twitter),
     instagram: asOptionalText(nfcProfile.instagram),
     youtube: asOptionalText(nfcProfile.youtube),
     facebook: asOptionalText(nfcProfile.facebook),
     profilePhoto: asOptionalText(nfcProfile.profilePhoto),
+    upiId: asOptionalText(nfcProfile.upiId),
+    razorpayLink: asOptionalText(nfcProfile.razorpayLink),
+    appointmentBookingLink: asOptionalText(nfcProfile.appointmentBookingLink),
     projects: mapProjects(nfcProfile.projects),
+    documents: mapDocuments(nfcProfile.documents),
   };
 
   return {
@@ -298,15 +331,21 @@ const buildPublicNfcProfilePayload = ({ profileId, profile }) => {
     ...(profile?.email ? { email: sanitizeText(profile.email) } : {}),
     ...(profile?.phone ? { phone: sanitizeText(profile.phone) } : {}),
     ...(profile?.bio ? { bio: sanitizeText(profile.bio) } : {}),
+    ...(profile?.businessOverview ? { businessOverview: sanitizeText(profile.businessOverview) } : {}),
     ...(profile?.businessTags ? { businessTags: sanitizeText(profile.businessTags) } : {}),
     ...(profile?.website ? { website: sanitizeText(profile.website) } : {}),
     ...(profile?.address ? { address: sanitizeText(profile.address) } : {}),
+    ...(profile?.companyAddress ? { companyAddress: sanitizeText(profile.companyAddress) } : {}),
+    ...(profile?.googleMapsLink ? { googleMapsLink: sanitizeText(profile.googleMapsLink) } : {}),
     ...(profile?.linkedin ? { linkedin: sanitizeText(profile.linkedin) } : {}),
     ...(profile?.twitter ? { twitter: sanitizeText(profile.twitter) } : {}),
     ...(profile?.instagram ? { instagram: sanitizeText(profile.instagram) } : {}),
     ...(profile?.youtube ? { youtube: sanitizeText(profile.youtube) } : {}),
     ...(profile?.facebook ? { facebook: sanitizeText(profile.facebook) } : {}),
     ...(profile?.profilePhoto ? { profilePhoto: sanitizeText(profile.profilePhoto) } : {}),
+    ...(profile?.upiId ? { upiId: sanitizeText(profile.upiId) } : {}),
+    ...(profile?.razorpayLink ? { razorpayLink: sanitizeText(profile.razorpayLink) } : {}),
+    ...(profile?.appointmentBookingLink ? { appointmentBookingLink: sanitizeText(profile.appointmentBookingLink) } : {}),
     ...(Array.isArray(profile?.projects)
       ? {
           projects: profile.projects
@@ -316,6 +355,18 @@ const buildPublicNfcProfilePayload = ({ profileId, profile }) => {
               ...(project.description ? { description: sanitizeText(project.description) } : {}),
               ...(project.link ? { link: sanitizeText(project.link) } : {}),
               ...(project.photo ? { photo: sanitizeText(project.photo) } : {}),
+              ...(project.type ? { type: sanitizeText(project.type) } : {}),
+            })),
+        }
+      : {}),
+    ...(Array.isArray(profile?.documents)
+      ? {
+          documents: profile.documents
+            .filter((doc) => doc && sanitizeText(doc.title) && sanitizeText(doc.url))
+            .map((doc) => ({
+              title: sanitizeText(doc.title),
+              url: sanitizeText(doc.url),
+              ...(doc.type ? { type: sanitizeText(doc.type) } : {}),
             })),
         }
       : {}),
