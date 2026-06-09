@@ -1,0 +1,10 @@
+plzpingme.com 
+firebase rules import 
+firebase storage bucket
+pages 
+inside pages buttons
+redirection
+payment gateway 
+razorpay
+ workflow (user come to the website then what is workflow from first come to the last buy feature )
+plzpingme.com -> registration -> user find the product which he want to buy -> payment -> confirmation email come to user 

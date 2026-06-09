@@ -455,8 +455,8 @@ const About = () => {
 
         .story-block{background:white;border-radius:20px;border-left:4px solid hsl(var(--primary));padding:28px 28px 28px 32px;box-shadow:0 4px 24px rgba(0,0,0,.05)}
 
-        .stats-bg{background:linear-gradient(135deg,#1a1a0a 0%,#2d1f00 100%);border-radius:28px;padding:52px 36px;position:relative;overflow:hidden}
-        .stats-bg::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 30% 50%,hsl(var(--primary)/.2) 0%,transparent 60%);pointer-events:none}
+        .stats-bg{background:linear-gradient(135deg,hsl(var(--ping-brown)) 0%,hsl(30 75% 18%) 100%);border-radius:28px;padding:52px 36px;position:relative;overflow:hidden}
+        .stats-bg::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 30% 50%,hsl(var(--primary)/.35) 0%,transparent 60%);pointer-events:none}
 
         .cta-bg{background:linear-gradient(135deg,#FFF8E3 0%,#FFF0C0 100%);border-radius:28px;padding:72px 44px;text-align:center;position:relative;overflow:hidden}
         .cta-bg::before{content:'';position:absolute;top:-70px;right:-70px;width:240px;height:240px;border-radius:50%;background:hsl(var(--primary)/.12);filter:blur(40px)}
@@ -668,7 +668,7 @@ const About = () => {
           {/* STATS ──────────────────────────────────────────────────────── */}
           <section ref={statsV.ref} className="pm-sec">
             <div className="stats-bg" style={{ opacity: statsV.inView ? 1 : 0, transform: statsV.inView ? "none" : "translateY(28px)", transition: "opacity .65s ease, transform .65s ease" }}>
-              <p style={{ textAlign:"center",fontSize:10,fontWeight:800,letterSpacing:"0.2em",textTransform:"uppercase",color:"rgba(255,248,227,0.4)",marginBottom:40 }}>By The Numbers</p>
+              <p style={{ textAlign:"center",fontSize:10,fontWeight:800,letterSpacing:"0.2em",textTransform:"uppercase",color:"rgba(255, 242, 0, 0.4)",marginBottom:40 }}>By The Numbers</p>
               <div className="stats-grid" style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,textAlign:"center" }}>
                 <StatCard value={customers} label="Happy Customers" delay={0} inView={statsV.inView} />
                 <StatCard value={vehicles} label="Vehicles Protected" delay={150} inView={statsV.inView} />

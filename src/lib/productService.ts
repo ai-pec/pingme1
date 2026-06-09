@@ -34,7 +34,7 @@ const mapToDbProduct = (id: string, value: Record<string, unknown>): DbProduct =
     id,
     categorySlug,
     title: typeof value.title === "string" ? value.title : "",
-    price: formatPrice(value.price),
+    price: formatPrice(value.price), 
     originalPrice: ((): string | undefined => {
       const op = formatPrice(value.originalPrice);
       return op ? op : undefined;
