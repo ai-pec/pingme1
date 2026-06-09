@@ -16,6 +16,25 @@ import { Button } from "@/components/ui/button";
 import { resolveProductImageUrl } from "@/lib/productCatalog";
 import CartButton from "./CartButton";
 
+const MAIN_SITE = "https://plzpingme.com";
+const isNfcSubdomain =
+  typeof window !== "undefined" && window.location.hostname.startsWith("nfc.");
+
+// On localhost (dev), resolve cross-domain links relative to the same host
+// so nfc.localhost:8080 → localhost:8080 instead of plzpingme.com
+const isLocalhost =
+  typeof window !== "undefined" &&
+  (window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1" ||
+    window.location.hostname.endsWith(".localhost"));
+
+const mainSiteUrl = (path: string) => {
+  if (isLocalhost) {
+    return `http://localhost:${window.location.port || 8080}${path}`;
+  }
+  return `${MAIN_SITE}${path}`;
+};
+
 const navLinks = [
   { label: "Home", to: "/" },
   { label: "Products", to: "/products" },
@@ -23,7 +42,6 @@ const navLinks = [
   { label: "About", to: "/about" },
   { label: "Blog", to: "/blog" },
   { label: "Contact", to: "/contact" },
-
 ];
 
 const Navbar = () => {
@@ -401,26 +419,45 @@ const Navbar = () => {
           <div className="flex items-center justify-between gap-6 py-3 md:py-4">
 
             {/* Logo */}
-            <Link to="/" className="logo-wrapper flex-shrink-0">
-              <img
-                src={logo}
-                alt="PingME"
-                className="logo-image h-12 md:h-14 w-auto object-contain"
-              />
-            </Link>
+            {isNfcSubdomain ? (
+              <a href={mainSiteUrl("/")} className="logo-wrapper flex-shrink-0">
+                <img
+                  src={logo}
+                  alt="PingME"
+                  className="logo-image h-12 md:h-14 w-auto object-contain"
+                />
+              </a>
+            ) : (
+              <Link to="/" className="logo-wrapper flex-shrink-0">
+                <img
+                  src={logo}
+                  alt="PingME"
+                  className="logo-image h-12 md:h-14 w-auto object-contain"
+                />
+              </Link>
+            )}
 
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center gap-2">
               {navLinks.map((link, idx) => (
                 <div key={link.label} style={{ animationDelay: `${0.06 + idx * 0.05}s` }}>
-                  <Link
-                    to={link.to}
-                    className={`nav-link-wrapper ${isActive(link) ? "active" : ""}`}
-                    onMouseEnter={() => setActiveLink(link.label)}
-                    onMouseLeave={() => setActiveLink(null)}
-                  >
-                    <span className="nav-link">{link.label}</span>
-                  </Link>
+                  {isNfcSubdomain ? (
+                    <a
+                      href={mainSiteUrl(link.to)}
+                      className="nav-link-wrapper"
+                    >
+                      <span className="nav-link">{link.label}</span>
+                    </a>
+                  ) : (
+                    <Link
+                      to={link.to}
+                      className={`nav-link-wrapper ${isActive(link) ? "active" : ""}`}
+                      onMouseEnter={() => setActiveLink(link.label)}
+                      onMouseLeave={() => setActiveLink(null)}
+                    >
+                      <span className="nav-link">{link.label}</span>
+                    </Link>
+                  )}
                 </div>
               ))}
             </nav>
@@ -508,10 +545,17 @@ const Navbar = () => {
                 user ? (
                   <UserAvatar />
                 ) : (
-                  <Link to="/login" className="login-button">
-                    <Sparkles className="w-4 h-4" />
-                    Login
-                  </Link>
+                  isNfcSubdomain ? (
+                    <a href={mainSiteUrl("/login")} className="login-button">
+                      <Sparkles className="w-4 h-4" />
+                      Login
+                    </a>
+                  ) : (
+                    <Link to="/login" className="login-button">
+                      <Sparkles className="w-4 h-4" />
+                      Login
+                    </Link>
+                  )
                 )
               )}
             </div>
@@ -611,31 +655,56 @@ const Navbar = () => {
             <div className="px-4 py-6 space-y-4">
               <nav className="flex flex-col gap-2 pb-4">
                 {navLinks.map((link, idx) => (
-                  <Link
-                    key={link.label}
-                    to={link.to}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="mobile-menu-item px-4 py-3 rounded-lg font-semibold text-gray-700 hover:bg-yellow-50 hover:text-yellow-600 transition-all relative group"
-                    style={{ animationDelay: `${idx * 0.06}s` }}
-                  >
-                    <div className="flex items-center justify-between">
-                      {link.label}
-                      <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity transform group-hover:translate-x-1" />
-                    </div>
-                    {isActive(link) && <div className="accent-line absolute left-4 bottom-0" />}
-                  </Link>
+                  isNfcSubdomain ? (
+                    <a
+                      key={link.label}
+                      href={mainSiteUrl(link.to)}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="mobile-menu-item px-4 py-3 rounded-lg font-semibold text-gray-700 hover:bg-yellow-50 hover:text-yellow-600 transition-all relative group"
+                      style={{ animationDelay: `${idx * 0.06}s` }}
+                    >
+                      <div className="flex items-center justify-between">
+                        {link.label}
+                        <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity transform group-hover:translate-x-1" />
+                      </div>
+                    </a>
+                  ) : (
+                    <Link
+                      key={link.label}
+                      to={link.to}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="mobile-menu-item px-4 py-3 rounded-lg font-semibold text-gray-700 hover:bg-yellow-50 hover:text-yellow-600 transition-all relative group"
+                      style={{ animationDelay: `${idx * 0.06}s` }}
+                    >
+                      <div className="flex items-center justify-between">
+                        {link.label}
+                        <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity transform group-hover:translate-x-1" />
+                      </div>
+                      {isActive(link) && <div className="accent-line absolute left-4 bottom-0" />}
+                    </Link>
+                  )
                 ))}
               </nav>
 
               <div className="border-t border-gray-200 pt-4 space-y-3">
                 {!loading && !user && (
-                  <Link
-                    to="/login"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="mobile-menu-item block py-3 px-4 rounded-lg bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 font-bold text-center hover:shadow-lg transition-all"
-                  >
-                    Login
-                  </Link>
+                  isNfcSubdomain ? (
+                    <a
+                      href={mainSiteUrl("/login")}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="mobile-menu-item block py-3 px-4 rounded-lg bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 font-bold text-center hover:shadow-lg transition-all"
+                    >
+                      Login
+                    </a>
+                  ) : (
+                    <Link
+                      to="/login"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="mobile-menu-item block py-3 px-4 rounded-lg bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 font-bold text-center hover:shadow-lg transition-all"
+                    >
+                      Login
+                    </Link>
+                  )
                 )}
                 {!loading && user && (
                   <>

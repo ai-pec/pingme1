@@ -24,10 +24,14 @@ const db = admin.firestore();
 const ALLOWED_ORIGINS = [
   "https://plzpingme.com",
   "https://www.plzpingme.com",
+  "https://nfc.plzpingme.com",
+  "http://plzpingme.com",
+  "http://nfc.plzpingme.com",
   "http://localhost:5173",
   "http://localhost:3000",
   "http://localhost:8080",
   "http://localhost:8081",
+  "http://nfc.localhost:8080",
 ];
 
 const isPrivateNetworkIP = (origin) => {
@@ -36,7 +40,7 @@ const isPrivateNetworkIP = (origin) => {
     const url = new URL(origin);
     const hostname = url.hostname;
     // Allow localhost and 127.0.0.1
-    if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]") {
+    if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]" || hostname.endsWith(".localhost")) {
       return true;
     }
     // Allow private network IPs: 192.168.*, 10.*, 172.16-31.*
@@ -54,12 +58,11 @@ const corsHandler = cors({
     // Allow requests with no origin (like mobile apps or curl)
     if (!origin) return callback(null, true);
 
-    if (
-      ALLOWED_ORIGINS.indexOf(origin) !== -1 || 
-      origin.endsWith(".web.app") || 
-      origin.endsWith(".firebaseapp.com") ||
-      isPrivateNetworkIP(origin)
-    ) {
+    const isAllowedOrigin = ALLOWED_ORIGINS.indexOf(origin) !== -1;
+    const isFirebaseDomain = origin.endsWith(".web.app") || origin.endsWith(".firebaseapp.com");
+    const isProjectDomain = origin.endsWith(".plzpingme.com") || origin === "https://plzpingme.com" || origin === "http://plzpingme.com";
+
+    if (isAllowedOrigin || isFirebaseDomain || isProjectDomain || isPrivateNetworkIP(origin)) {
       callback(null, true);
     } else {
       callback(new Error("Not allowed by CORS"));

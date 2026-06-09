@@ -3,6 +3,39 @@ import logo from "@/assets/ping-me-logo.png";
 import type { MouseEvent } from "react";
 import { Mail, Phone, MapPin, Linkedin, Instagram } from "lucide-react";
 
+const MAIN_SITE = "https://plzpingme.com";
+const isNfcSubdomain =
+  typeof window !== "undefined" && window.location.hostname.startsWith("nfc.");
+
+const mainSiteUrl = (path: string) => `${MAIN_SITE}${path}`;
+
+const FooterNavLink = ({ item }: { item: { name: string; href: string } }) => {
+  const className = "text-sm transition-all duration-300 relative group";
+  const style = {
+    color: "hsl(var(--ping-ash))",
+    fontFamily: "'Poppins', sans-serif",
+  };
+  const content = (
+    <span className="relative inline-block">
+      {item.name}
+      <span
+        className="absolute bottom-0 left-0 w-0 h-0.5 group-hover:w-full transition-all duration-300 rounded"
+        style={{ background: "hsl(var(--ping-yellow))" }}
+      />
+    </span>
+  );
+
+  return isNfcSubdomain ? (
+    <a href={mainSiteUrl(item.href)} className={className} style={style}>
+      {content}
+    </a>
+  ) : (
+    <Link to={item.href} className={className} style={style}>
+      {content}
+    </Link>
+  );
+};
+
 const FooterNew = () => {
   const currentYear = new Date().getFullYear();
 
@@ -147,23 +180,7 @@ const FooterNew = () => {
               </h3>
               <nav className="flex flex-col space-y-2.5">
                 {footerSections.products.map((item) => (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    className="text-sm transition-all duration-300 relative group"
-                    style={{
-                      color: "hsl(var(--ping-ash))",
-                      fontFamily: "'Poppins', sans-serif",
-                    }}
-                  >
-                    <span className="relative inline-block">
-                      {item.name}
-                      <span
-                        className="absolute bottom-0 left-0 w-0 h-0.5 group-hover:w-full transition-all duration-300 rounded"
-                        style={{ background: "hsl(var(--ping-yellow))" }}
-                      />
-                    </span>
-                  </Link>
+                  <FooterNavLink key={item.name} item={item} />
                 ))}
               </nav>
             </div>
@@ -182,23 +199,7 @@ const FooterNew = () => {
               </h3>
               <nav className="flex flex-col space-y-2.5">
                 {footerSections.company.map((item) => (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    className="text-sm transition-all duration-300 relative group"
-                    style={{
-                      color: "hsl(var(--ping-ash))",
-                      fontFamily: "'Poppins', sans-serif",
-                    }}
-                  >
-                    <span className="relative inline-block">
-                      {item.name}
-                      <span
-                        className="absolute bottom-0 left-0 w-0 h-0.5 group-hover:w-full transition-all duration-300 rounded"
-                        style={{ background: "hsl(var(--ping-yellow))" }}
-                      />
-                    </span>
-                  </Link>
+                  <FooterNavLink key={item.name} item={item} />
                 ))}
               </nav>
             </div>
@@ -217,23 +218,7 @@ const FooterNew = () => {
               </h3>
               <nav className="flex flex-col space-y-2.5">
                 {footerSections.legal.map((item) => (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    className="text-sm transition-all duration-300 relative group"
-                    style={{
-                      color: "hsl(var(--ping-ash))",
-                      fontFamily: "'Poppins', sans-serif",
-                    }}
-                  >
-                    <span className="relative inline-block">
-                      {item.name}
-                      <span
-                        className="absolute bottom-0 left-0 w-0 h-0.5 group-hover:w-full transition-all duration-300 rounded"
-                        style={{ background: "hsl(var(--ping-yellow))" }}
-                      />
-                    </span>
-                  </Link>
+                  <FooterNavLink key={item.name} item={item} />
                 ))}
               </nav>
             </div>
@@ -252,23 +237,7 @@ const FooterNew = () => {
               </h3>
               <nav className="flex flex-col space-y-2.5">
                 {footerSections.support.map((item) => (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    className="text-sm transition-all duration-300 relative group"
-                    style={{
-                      color: "hsl(var(--ping-ash))",
-                      fontFamily: "'Poppins', sans-serif",
-                    }}
-                  >
-                    <span className="relative inline-block">
-                      {item.name}
-                      <span
-                        className="absolute bottom-0 left-0 w-0 h-0.5 group-hover:w-full transition-all duration-300 rounded"
-                        style={{ background: "hsl(var(--ping-yellow))" }}
-                      />
-                    </span>
-                  </Link>
+                  <FooterNavLink key={item.name} item={item} />
                 ))}
               </nav>
             </div>

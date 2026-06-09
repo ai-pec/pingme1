@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import {
   Linkedin, Twitter, Instagram, Youtube, Facebook,
   Link as LinkIcon, Mail, Phone, Globe, MapPin,
@@ -274,10 +274,15 @@ function ShareSheet({ url, name, onClose }: ShareSheetProps) {
    Main Component
 ═══════════════════════════════════════════════════════════════════════════ */
 export default function PublicNFCProfile() {
-  const location           = useLocation();
-  const usernameWithHash   = location.pathname.slice(1);
-  const username           = usernameWithHash.replace("#", "");
-  const normalizedUsername = useMemo(() => normalizeNfcUsername(username), [username]);
+  const { username: routeUsername } = useParams();
+  const location = useLocation();
+
+  // Robust username extraction: prioritize useParams, then fallback to pathname if needed
+  const normalizedUsername = useMemo(() => {
+    const raw = routeUsername || location.pathname.split('/').filter(Boolean).pop() || "";
+    // Remove any hash if it somehow ended up in the path
+    return normalizeNfcUsername(raw.replace("#", ""));
+  }, [routeUsername, location.pathname]);
 
   const [loading,        setLoading]        = useState(true);
   const [error,          setError]          = useState<string>("");

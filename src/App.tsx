@@ -40,6 +40,7 @@ const CompletePhone = lazy(() => import("./pages/auth/CompletePhone"));
 const Profile = lazy(() => import("./pages/Profile"));
 const Admin = lazy(() => import("./pages/Admin"));
 const PublicNFCProfile = lazy(() => import("./pages/PublicNFCProfile"));
+const NFCLanding = lazy(() => import("./pages/NFCLanding"));
 
 const PageLoader = () => (
   <div className="flex h-[100dvh] w-full flex-col items-center justify-center bg-background gap-6">
@@ -93,6 +94,11 @@ class ChunkErrorBoundary extends Component<{children: ReactNode}, {hasError: boo
 
 const queryClient = new QueryClient();
 
+const isNfcSubdomain = typeof window !== "undefined" && (
+  window.location.hostname.startsWith("nfc.") ||
+  window.location.hostname.includes(".nfc.")
+);
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -105,6 +111,14 @@ const App = () => (
             <ChunkErrorBoundary>
               <Suspense fallback={<PageLoader />}>
               <Routes>
+                {isNfcSubdomain ? (
+                  <>
+                    <Route path="/" element={<NFCLanding />} />
+                    <Route path="/:username" element={<PublicNFCProfile />} />
+                    <Route path="*" element={<NFCLanding />} />
+                  </>
+                ) : (
+                  <>
                 {/* Public Routes */}
                 <Route path="/" element={<Landing />} />
                 <Route path="/products" element={<Products />} />
@@ -158,9 +172,15 @@ const App = () => (
                 <Route path="/terms-conditions" element={<TermsConditions />} />
                 <Route path="/faq" element={<FAQ />} />
                 <Route path="/docs" element={<DocsPage />} />
+                
+                {/* 
+                   Render the profile directly on the main domain as well.
+                   This satisfies the requirement that plzpingme.com/<username> also works.
+                */}
                 <Route path="/:username" element={<PublicNFCProfile />} />
-                <Route path="/:username#" element={<PublicNFCProfile />} />
                 <Route path="*" element={<NotFound />} />
+                  </>
+                )}
               </Routes>
               </Suspense>
             </ChunkErrorBoundary>

@@ -54,7 +54,7 @@ interface CacheEntry {
 const profileCache = new Map<string, CacheEntry>();
 
 export const normalizeNfcUsername = (rawUsername: string): string => {
-  return rawUsername.trim().toLowerCase();
+  return rawUsername.trim().toLowerCase().replace(/\/+$/, "");
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
