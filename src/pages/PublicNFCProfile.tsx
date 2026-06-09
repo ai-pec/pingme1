@@ -611,7 +611,16 @@ export default function PublicNFCProfile() {
                         </div>
                         <div className="nfc-detail-body">
                           <div className="nfc-detail-label">UPI</div>
-                          <span className="nfc-detail-value">{profile.upiId}</span>
+                          {/Android|iPhone|iPad|iPod/i.test(typeof navigator !== "undefined" ? navigator.userAgent : "") ? (
+                            <a
+                              href={`upi://pay?pa=${encodeURIComponent(profile.upiId)}&pn=${encodeURIComponent(profile.name || "")}`}
+                              className="nfc-detail-value"
+                            >
+                              Pay Now
+                            </a>
+                          ) : (
+                            <span className="nfc-detail-value">{profile.upiId}</span>
+                          )}
                         </div>
                       </li>
                     )}
