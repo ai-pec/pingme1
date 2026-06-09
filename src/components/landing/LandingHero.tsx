@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import React from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { motion, useInView } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
@@ -22,6 +24,9 @@ import {
   Volume2,
   VolumeX,
   Zap,
+  Lock,
+  TrendingUp,
+  ChevronRight,
 } from "lucide-react";
 
 import carcardFront from "@/assets/product-card.png";
@@ -149,23 +154,86 @@ const differentiators = [
     icon: Shield,
     title: "Privacy First",
     text: "Your phone number is never the public entry point.",
+    color: "from-amber-400/20 to-yellow-200/5",
+    iconBg: "bg-amber-400/20",
+    num: "01",
   },
   {
     icon: Zap,
     title: "Effortless Experience",
     text: "No downloads or setup for the person reaching you.",
+    color: "from-sky-400/20 to-blue-200/5",
+    iconBg: "bg-sky-400/20",
+    num: "02",
   },
   {
     icon: Fingerprint,
     title: "Contextual Communication",
     text: "Predefined alerts keep every interaction clear and purposeful.",
+    color: "from-violet-400/20 to-purple-200/5",
+    iconBg: "bg-violet-400/20",
+    num: "03",
   },
   {
     icon: Globe2,
     title: "Built for Scale",
     text: "A platform shaped for everyday use across multiple product lines.",
+    color: "from-emerald-400/20 to-teal-200/5",
+    iconBg: "bg-emerald-400/20",
+    num: "04",
   },
 ];
+
+const standForItems = [
+  {
+    icon: Lock,
+    text: "Privacy-first contact experiences for real-world use cases.",
+  },
+  {
+    icon: Zap,
+    text: "Flexible QR and NFC products that work across vehicle and non-vehicle scenarios.",
+  },
+  {
+    icon: TrendingUp,
+    text: "A scalable product system that can expand with partners and new use cases.",
+  },
+];
+
+/* ── Reusable scroll-reveal wrapper ── */
+const FadeUp: React.FC<{
+  children: React.ReactNode;
+  delay?: number;
+  className?: string;
+}> = ({ children, delay = 0, className }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-80px" });
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 32 }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1], delay }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+};
+
+/* ── Animated mission bar ── */
+const MissionBar: React.FC<{ pct: number; delay: number }> = ({ pct, delay }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-60px" });
+  return (
+    <motion.div
+      ref={ref}
+      className="h-full rounded-full bg-primary"
+      initial={{ width: "0%" }}
+      animate={inView ? { width: `${pct}%` } : {}}
+      transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1], delay: delay + 0.2 }}
+    />
+  );
+};
 
 const LandingHero = () => {
   const navigate = useNavigate();
@@ -276,7 +344,7 @@ const LandingHero = () => {
         <section className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
           <div className="space-y-8">
             <div className="space-y-4 max-w-3xl">
-              <p className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-background/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.17em] text-brown shadow-sm">
+              <p className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-background/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-brown shadow-sm">
                 Privacy-first contact ecosystem
               </p>
               <h1 className="text-balance text-4xl font-extrabold tracking-tight text-foreground md:text-5xl lg:text-6xl">
@@ -339,8 +407,8 @@ const LandingHero = () => {
           </div>
 
           <div className="relative flex items-start justify-center lg:justify-end">
-            <div className="w-full max-w-[560px] overflow-hidden lg:max-w-[680px]">
-              <div className="relative aspect-[3/4] w-full overflow-hidden rounded-3xl border border-white/20 bg-transparent">  
+            <div className="w-full max-w-[820px] overflow-hidden lg:max-w-[1040px]">
+              <div className="relative aspect-[6/7] w-full overflow-hidden rounded-3xl border border-white/20 bg-transparent">  
                 {heroImageUrl ? (
                   <img
                     src={heroImageUrl}
@@ -447,80 +515,165 @@ const LandingHero = () => {
 
         <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
           
-          <div className="rounded-[1.75rem] border border-border/60 bg-background/90 p-6 shadow-[0_18px_50px_rgba(81,60,9,0.08)]">
-            <p className="section-eyebrow text-left">Why PingME Is Different</p>
-            <h2 className="text-3xl font-bold tracking-tight text-foreground">Meaningful connection, on your terms.</h2>
-            <p className="mt-4 text-lg leading-8 text-muted-foreground">
-              PingME was built around a simple question: why should accessibility require exposure? The answer is a
-              contact system that keeps communication secure, relevant, and private.
-            </p>
-
-            <div className="mt-6 space-y-4 rounded-3xl bg-primary/10 p-5">
-              <div className="flex items-center gap-3 text-sm font-semibold uppercase tracking-[0.2em] text-brown">
-                <Shield className="h-4 w-4" />
-                No friction, no unnecessary access
-              </div>
-              <p className="text-sm leading-7 text-foreground/80">
-                A user can scan or tap, choose the relevant action, and connect through the secure system without ever
-                seeing personal contact details.
+          {/* ── Why PingME Is Different ── */}
+          <FadeUp>
+            <motion.div
+              whileHover={{ scale: 1.015 }}
+              transition={{ type: "spring", stiffness: 260, damping: 24 }}
+              className="relative h-full overflow-hidden rounded-[1.75rem] border border-border/60 bg-background/90 p-6 shadow-[0_18px_50px_rgba(81,60,9,0.08)]"
+            >
+              <div className="pointer-events-none absolute -top-10 -right-10 h-40 w-40 rounded-full bg-primary/10 blur-2xl" />
+              <p className="section-eyebrow text-left mb-3">Why PingME Is Different</p>
+              <h2 className="text-3xl font-extrabold tracking-tight text-foreground">
+                Meaningful connection,{" "}
+                <span className="text-primary">on your terms.</span>
+              </h2>
+              <p className="mt-4 text-base leading-8 text-muted-foreground">
+                PingME was built around a simple question: why should accessibility require exposure? The answer is a
+                contact system that keeps communication secure, relevant, and private.
               </p>
-            </div>
-          </div>
 
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.2, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+                className="mt-6 space-y-4 rounded-2xl bg-primary/10 p-5"
+              >
+                <div className="flex items-center gap-3 text-sm font-bold uppercase tracking-[0.2em] text-brown">
+                  {/* animated shield pulse */}
+                  <span className="relative flex h-8 w-8 items-center justify-center">
+                    <motion.span
+                      animate={{ scale: [1, 1.55], opacity: [0.4, 0] }}
+                      transition={{ duration: 1.6, repeat: Infinity, ease: "easeOut" }}
+                      className="absolute inset-0 rounded-full bg-primary/30"
+                    />
+                    <Shield className="relative h-4 w-4 text-primary" />
+                  </span>
+                  No friction, no unnecessary access
+                </div>
+                <p className="text-sm leading-7 text-foreground/80">
+                  A user can scan or tap, choose the relevant action, and connect through the secure system without ever
+                  seeing personal contact details.
+                </p>
+              </motion.div>
+            </motion.div>
+          </FadeUp>
+
+          {/* ── 4 differentiator cards ── */}
           <div className="grid gap-4 sm:grid-cols-2">
-            {differentiators.map((item) => {
+            {differentiators.map((item, i) => {
               const Icon = item.icon;
-
               return (
-                <article key={item.title} className="rounded-[1.5rem] border border-border/60 bg-background/85 p-5 shadow-sm">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15">
-                    <Icon className="h-6 w-6 text-primary" />
-                  </div>
-                  <h3 className="mt-4 text-lg font-bold text-foreground">{item.title}</h3>
-                  <p className="mt-2 text-sm leading-7 text-muted-foreground">{item.text}</p>
-                </article>
+                <FadeUp key={item.title} delay={0.08 + i * 0.07}>
+                  <motion.article
+                    whileHover={{ y: -5, boxShadow: "0 20px 44px rgba(81,60,9,0.12)" }}
+                    transition={{ type: "spring", stiffness: 300, damping: 22 }}
+                    className={`relative h-full overflow-hidden rounded-[1.5rem] border border-border/60 bg-gradient-to-br ${item.color} bg-background/85 p-5 shadow-sm`}
+                  >
+                    <span className="absolute right-3 top-2 text-5xl font-black text-foreground/5 select-none leading-none">{item.num}</span>
+                    <div className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl ${item.iconBg}`}>
+                      <Icon className="h-6 w-6 text-primary" />
+                    </div>
+                    <h3 className="mt-4 text-base font-bold text-foreground">{item.title}</h3>
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.text}</p>
+                  </motion.article>
+                </FadeUp>
               );
             })}
           </div>
         </section>
 
+        {/* ── Mission + What We Stand For ── */}
         <section className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-stretch">
-          <div className="rounded-[1.75rem] border border-border/60 bg-background/90 p-6 shadow-[0_18px_50px_rgba(81,60,9,0.08)] md:p-8">
-            <p className="section-eyebrow text-left">Our Mission</p>
-            <h2 className="text-3xl font-bold tracking-tight text-foreground">To make everyday interactions safer, simpler, and private.</h2>
-            <p className="mt-4 text-lg leading-8 text-muted-foreground">
-              We are building PingME to be the layer that helps people communicate when it matters most, without asking
-              them to trade away personal privacy in the process.
-            </p>
-          </div>
+          {/* Mission */}
+          <FadeUp delay={0}>
+            <motion.div
+              whileHover={{ scale: 1.012 }}
+              transition={{ type: "spring", stiffness: 260, damping: 24 }}
+              className="relative h-full overflow-hidden rounded-[1.75rem] border border-border/60 bg-background/90 p-6 shadow-[0_18px_50px_rgba(81,60,9,0.08)] md:p-8"
+            >
+              <div className="pointer-events-none absolute -top-10 -right-10 h-40 w-40 rounded-full bg-primary/10 blur-2xl" />
+              <p className="section-eyebrow text-left mb-3">Our Mission</p>
+              <h2 className="text-2xl font-extrabold leading-tight tracking-tight text-foreground md:text-3xl">
+                To make everyday interactions{" "}
+                <span className="text-primary">safer, simpler,</span> and private.
+              </h2>
+              <p className="mt-4 text-base leading-8 text-muted-foreground">
+                We are building PingME to be the layer that helps people communicate when it matters most, without asking
+                them to trade away personal privacy in the process.
+              </p>
 
-          <div className="rounded-[1.75rem] border border-border/60 bg-background/90 p-6 shadow-[0_18px_50px_rgba(81,60,9,0.08)] md:p-8">
-            <p className="section-eyebrow text-left">What We Stand For</p>
-            <ul className="space-y-3 text-sm leading-7 text-muted-foreground">
-              <li>Privacy-first contact experiences for real-world use cases.</li>
-              <li>Flexible QR and NFC products that work across vehicle and non-vehicle scenarios.</li>
-              <li>A scalable product system that can expand with partners and new use cases.</li>
-            </ul>
-          </div>
-          
+              {/* animated progress bars */}
+              <div className="mt-8 space-y-3">
+                {[
+                  { label: "Privacy protection", pct: 100 },
+                  { label: "Ease of use", pct: 95 },
+                  { label: "Real-world reliability", pct: 90 },
+                ].map((bar, i) => (
+                  <div key={bar.label}>
+                    <div className="mb-1 flex justify-between text-xs font-semibold text-muted-foreground">
+                      <span>{bar.label}</span><span>{bar.pct}%</span>
+                    </div>
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-muted/50">
+                      <MissionBar pct={bar.pct} delay={i * 0.18} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </FadeUp>
+
+          {/* What We Stand For */}
+          <FadeUp delay={0.12}>
+            <motion.div
+              whileHover={{ scale: 1.012 }}
+              transition={{ type: "spring", stiffness: 260, damping: 24 }}
+              className="relative h-full overflow-hidden rounded-[1.75rem] border border-border/60 bg-background/90 p-6 shadow-[0_18px_50px_rgba(81,60,9,0.08)] md:p-8"
+            >
+              <div className="pointer-events-none absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-amber-300/10 blur-2xl" />
+              <p className="section-eyebrow text-left mb-3">What We Stand For</p>
+              <h2 className="text-2xl font-extrabold leading-tight tracking-tight text-foreground md:text-3xl">
+                Values that drive{" "}
+                <span className="text-primary">every decision.</span>
+              </h2>
+
+              <ul className="mt-7 space-y-4">
+                {standForItems.map((item, i) => {
+                  const Icon = item.icon;
+                  return (
+                    <motion.li
+                      key={i}
+                      initial={{ opacity: 0, x: -16 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.5, delay: 0.14 + i * 0.1, ease: [0.22, 1, 0.36, 1] }}
+                      className="flex items-start gap-4 rounded-2xl border border-border/40 bg-muted/30 p-4"
+                    >
+                      <div className="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-primary/15">
+                        <Icon className="h-4 w-4 text-primary" />
+                      </div>
+                      <p className="text-sm leading-7 text-foreground/80">{item.text}</p>
+                    </motion.li>
+                  );
+                })}
+              </ul>
+
+              <motion.div whileHover={{ x: 4 }} transition={{ type: "spring", stiffness: 400 }} className="mt-7">
+                <Link to="/about" className="inline-flex items-center gap-2 text-sm font-semibold text-primary">
+                  Learn more about us <ChevronRight className="h-4 w-4" />
+                </Link>
+              </motion.div>
+            </motion.div>
+          </FadeUp>
         </section>
-        <div
-  className="h-0.5 mb-12"
-  style={{
-    background:
-      "linear-gradient(90deg, transparent, hsl(var(--ping-yellow) / 10.5), transparent)",
-  }}
-/>
-<LandingReviews />
+
+        <div className="h-0.5 mb-12" style={{ background: "linear-gradient(90deg, transparent, hsl(var(--ping-yellow) / 10.5), transparent)" }} />
+        <LandingReviews />
+
         {/* Find Us block */}
         <div className="mx-auto max-w-6xl mt-6">
-          <div
-  className="h-0.5 mb-12"
-  style={{
-    background:
-      "linear-gradient(90deg, transparent, hsl(var(--ping-yellow) / 10.5), transparent)",
-  }}
-/>
+          <div className="h-0.5 mb-12" style={{ background: "linear-gradient(90deg, transparent, hsl(var(--ping-yellow) / 10.5), transparent)" }} />
           
           <div className="bg-white rounded-2xl p-6 shadow-sm">
             <p className="text-xs font-semibold text-muted-foreground uppercase">Find us</p>
@@ -537,18 +690,8 @@ const LandingHero = () => {
               Chandigarh – 160047
             </a>
             <div className="mt-3 text-sm font-light text-muted-foreground space-y-1">
-              <div>
-                Phone:{" "}
-                <a href="tel:+917347340007" className="text-muted-foreground">
-                  +91 73473 40007
-                </a>
-              </div>
-              <div>
-                Email:{" "}
-                <a href="mailto:contact@pingiff.ai" className="text-muted-foreground">
-                  contact@pingiff.ai
-                </a>
-              </div>
+              <div>Phone: <a href="tel:+917347340007" className="text-muted-foreground">+91 73473 40007</a></div>
+              <div>Email: <a href="mailto:contact@pingiff.ai" className="text-muted-foreground">contact@pingiff.ai</a></div>
             </div>
           </div>
         </div>
