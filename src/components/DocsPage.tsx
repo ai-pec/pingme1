@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import logo from "@/assets/ping-me-logo.png";
 import { Link } from "react-router-dom";
 import {
@@ -26,6 +26,14 @@ import {
   Lock,
   Phone,
   Mail,
+  Menu,
+  X,
+  ArrowUp,
+  ChevronLeft,
+  Link as LinkIcon,
+  Clock,
+  Sun,
+  Moon,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -43,7 +51,23 @@ interface Section {
   badge?: string;
   badgeColor?: string;
   content: React.ReactNode;
+  readingTime?: number; // minutes
 }
+
+// ─── useMediaQuery hook ───────────────────────────────────────────────────────
+
+const useMediaQuery = (query: string) => {
+  const [matches, setMatches] = useState(() =>
+    typeof window !== "undefined" ? window.matchMedia(query).matches : false
+  );
+  useEffect(() => {
+    const mql = window.matchMedia(query);
+    const handler = (e: MediaQueryListEvent) => setMatches(e.matches);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, [query]);
+  return matches;
+};
 
 // ─── Nav Structure ─────────────────────────────────────────────────────────────
 
@@ -137,9 +161,7 @@ const Callout = ({
       iconColor: "#1e8c50",
     },
   }[type];
-
   const Icon = config.icon;
-
   return (
     <div
       style={{
@@ -153,10 +175,7 @@ const Callout = ({
         margin: "20px 0",
       }}
     >
-      <Icon
-        style={{ color: config.iconColor, flexShrink: 0, marginTop: "2px" }}
-        size={16}
-      />
+      <Icon style={{ color: config.iconColor, flexShrink: 0, marginTop: "2px" }} size={16} />
       <span
         style={{
           fontSize: "14px",
@@ -314,20 +333,62 @@ const ProductCard = ({
   </div>
 );
 
-const SectionHeading = ({ children }: { children: React.ReactNode }) => (
-  <h2
-    style={{
-      fontFamily: "'Poppins', sans-serif",
-      fontWeight: 800,
-      fontSize: "22px",
-      color: "hsl(var(--ping-dark))",
-      marginBottom: "8px",
-      marginTop: "0",
-    }}
-  >
-    {children}
-  </h2>
-);
+const SectionHeading = ({
+  children,
+  id,
+  onCopyLink,
+}: {
+  children: React.ReactNode;
+  id?: string;
+  onCopyLink?: (id: string) => void;
+}) => {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    if (id && onCopyLink) {
+      onCopyLink(id);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+      <h2
+        style={{
+          fontFamily: "'Poppins', sans-serif",
+          fontWeight: 800,
+          fontSize: "clamp(18px, 4vw, 22px)",
+          color: "hsl(var(--ping-dark))",
+          margin: 0,
+        }}
+      >
+        {children}
+      </h2>
+      {id && (
+        <button
+          onClick={handleCopy}
+          title="Copy link to section"
+          style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: "4px",
+            borderRadius: "6px",
+            display: "flex",
+            alignItems: "center",
+            color: copied ? "#1e8c50" : "hsl(var(--ping-ash))",
+            opacity: 0.6,
+            transition: "opacity 0.2s, color 0.2s",
+            flexShrink: 0,
+          }}
+          onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.opacity = "1")}
+          onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.opacity = "0.6")}
+        >
+          {copied ? <CheckCircle size={14} /> : <LinkIcon size={14} />}
+        </button>
+      )}
+    </div>
+  );
+};
 
 const SubHeading = ({ children }: { children: React.ReactNode }) => (
   <h3
@@ -370,12 +431,14 @@ const Divider = () => (
 
 // ─── All Section Content ────────────────────────────────────────────────────────
 
-const SECTIONS: Section[] = [
+const buildSections = (
+  onCopyLink: (id: string) => void
+): Section[] => [
   {
     id: "what-is-pingme",
     title: "What is PingME?",
     badge: "Intro",
-    badgeColor: "hsl(var(--ping-yellow))",
+    readingTime: 1,
     content: (
       <>
         <Body>
@@ -401,25 +464,10 @@ const SECTIONS: Section[] = [
         ].map(([title, desc]) => (
           <div
             key={title as string}
-            style={{
-              display: "flex",
-              gap: "10px",
-              marginBottom: "12px",
-              alignItems: "flex-start",
-            }}
+            style={{ display: "flex", gap: "10px", marginBottom: "12px", alignItems: "flex-start" }}
           >
-            <ArrowRight
-              size={14}
-              style={{ color: "hsl(var(--ping-yellow))", marginTop: "4px", flexShrink: 0 }}
-            />
-            <span
-              style={{
-                fontFamily: "'Poppins', sans-serif",
-                fontSize: "14px",
-                color: "hsl(var(--ping-ash))",
-                lineHeight: "1.6",
-              }}
-            >
+            <ArrowRight size={14} style={{ color: "hsl(var(--ping-yellow))", marginTop: "4px", flexShrink: 0 }} />
+            <span style={{ fontFamily: "'Poppins', sans-serif", fontSize: "14px", color: "hsl(var(--ping-ash))", lineHeight: "1.6" }}>
               <strong style={{ color: "hsl(var(--ping-dark))" }}>{title as string}</strong>
               {" — "}
               {desc as string}
@@ -433,27 +481,16 @@ const SECTIONS: Section[] = [
     id: "how-it-works",
     title: "How It Works",
     badge: "Overview",
+    readingTime: 1,
     content: (
       <>
         <Body>
           PingME works in three simple steps. Each tag contains either an NFC chip, a QR code,
           or both — linked to your private profile on our servers.
         </Body>
-        <StepCard
-          number={1}
-          title="You attach a PingME tag"
-          description="Stick or attach your tag to your vehicle, bag, wallet, or pet collar. Register it to your account via the PingME App or website."
-        />
-        <StepCard
-          number={2}
-          title="Someone scans it"
-          description="The finder taps their phone on the NFC tag or scans the QR code. They land on a secure app ."
-        />
-        <StepCard
-          number={3}
-          title="You get pinged"
-          description="You receive a notification via Call or SMS on your phone."
-        />
+        <StepCard number={1} title="You attach a PingME tag" description="Stick or attach your tag to your vehicle, bag, wallet, or pet collar. Register it to your account via the PingME App or website." />
+        <StepCard number={2} title="Someone scans it" description="The finder taps their phone on the NFC tag or scans the QR code. They land on a secure contact page." />
+        <StepCard number={3} title="You get pinged" description="You receive a notification via Call or SMS on your phone." />
         <Callout type="success">
           The entire process takes under 10 seconds for the finder — no registration, no app install required.
         </Callout>
@@ -464,32 +501,14 @@ const SECTIONS: Section[] = [
     id: "quick-setup",
     title: "Quick Setup",
     badge: "Setup",
+    readingTime: 2,
     content: (
       <>
-        <Body>
-          Getting started with PingME takes less than 5 minutes. Follow these steps to activate
-          your first tag.
-        </Body>
-        <StepCard
-          number={1}
-          title="Create your account"
-          description="Sign up at plzpingme.com with your email. No personal details are publicly visible."
-        />
-        <StepCard
-          number={2}
-          title="Order your tag"
-          description="Visit plzpingme.com/products and choose the tag type that fits your need — vehicle, pet, or belongings."
-        />
-        <StepCard
-          number={3}
-          title="Register your tag"
-          description="Scan the QR code on your tag packaging using the PingME app to link it to your profile."
-        />
-        <StepCard
-          number={4}
-          title="Attach your tag"
-          description="Stick, tie, or clip the tag to your item. Your item is now protected and contactable 24/7."
-        />
+        <Body>Getting started with PingME takes less than 5 minutes. Follow these steps to activate your first tag.</Body>
+        <StepCard number={1} title="Create your account" description="Sign up at plzpingme.com with your email. No personal details are publicly visible." />
+        <StepCard number={2} title="Order your tag" description="Visit plzpingme.com/products and choose the tag type that fits your need — vehicle, pet, or belongings." />
+        <StepCard number={3} title="Register your tag" description="Scan the QR code on your tag packaging using the PingME app to link it to your profile." />
+        <StepCard number={4} title="Attach your tag" description="Stick, tie, or clip the tag to your item. Your item is now protected and contactable 24/7." />
         <Callout type="warning">
           Make sure your notification preferences are set correctly — without them, you won't receive pings when someone scans your tag.
         </Callout>
@@ -500,6 +519,7 @@ const SECTIONS: Section[] = [
     id: "vehicle-tags",
     title: "Vehicle Tags",
     badge: "Product",
+    readingTime: 2,
     content: (
       <>
         <Body>
@@ -511,11 +531,7 @@ const SECTIONS: Section[] = [
           icon={Tag}
           title="QR Tag"
           description="Weatherproof, UV-resistant tag designed for windshields and bumpers. Works in rain, dust, and direct sunlight."
-          features={[
-            "UV & waterproof coating",
-            "Instant relay notification to owner",
-            "Anonymous contact option",
-          ]}
+          features={["UV & waterproof coating", "Instant relay notification to owner", "Anonymous contact option"]}
         />
         <SubHeading>Use Cases</SubHeading>
         {[
@@ -526,9 +542,7 @@ const SECTIONS: Section[] = [
         ].map((item) => (
           <div key={item} style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
             <ChevronRight size={14} style={{ color: "hsl(var(--ping-yellow))", marginTop: "4px", flexShrink: 0 }} />
-            <span style={{ fontFamily: "'Poppins', sans-serif", fontSize: "14px", color: "hsl(var(--ping-ash))" }}>
-              {item}
-            </span>
+            <span style={{ fontFamily: "'Poppins', sans-serif", fontSize: "14px", color: "hsl(var(--ping-ash))" }}>{item}</span>
           </div>
         ))}
       </>
@@ -538,22 +552,18 @@ const SECTIONS: Section[] = [
     id: "lost-found-tags",
     title: "Lost & Found Tags",
     badge: "Product",
+    readingTime: 1,
     content: (
       <>
         <Body>
           Attach PingME Lost and Found tags to wallets, bags, keys, luggage, and electronics.
-          If lost, anyone who finds the item can contact you immediately — without your details
-          being printed on the tag.
+          If lost, anyone who finds the item can contact you immediately — without your details being printed on the tag.
         </Body>
         <ProductCard
           icon={Package}
           title="Lost & Found Mini Tag"
           description="Compact, lightweight tags designed for everyday carry items. Available in sticker, keyring, and card formats."
-          features={[
-            "Compact sticker, keyring & card formats",
-            "No personal info on the tag",
-            "Works without internet for the finder",
-          ]}
+          features={["Compact sticker, keyring & card formats", "No personal info on the tag", "Works without internet for the finder"]}
         />
       </>
     ),
@@ -562,29 +572,23 @@ const SECTIONS: Section[] = [
     id: "pet-safety-tags",
     title: "Pet Safety Tags",
     badge: "Product",
+    readingTime: 1,
     content: (
       <>
         <Body>
           Keep your pet safe with a PingME Pet Safety Tag on their collar. If your pet gets
-          lost, anyone who finds them can immediately contact you — even if they don't have
-          a smartphone with an NFC reader.
+          lost, anyone who finds them can immediately contact you — even if they don't have a smartphone with an NFC reader.
         </Body>
         <ProductCard
           icon={PawPrint}
           title="Pet Safety Tag"
           description="Durable, pet-safe collar tag with QR. Scratch-resistant printing with rounded edges for pet comfort."
-          features={[
-            "Scratch and waterproof",
-            "Rounded edges — safe for pets",
-            "Lightweight (under 5g)",
-            "Works with any smartphone camera",
-          ]}
+          features={["Scratch and waterproof", "Rounded edges — safe for pets", "Lightweight (under 5g)", "Works with any smartphone camera"]}
         />
         <SubHeading>Recommended Setup for Pets</SubHeading>
         <Body>
           Enable the "Emergency Contact" option in your pet profile — this lets the finder
-          see a single trusted contact number (like a vet or family member) directly on the
-          finder page without needing your approval.
+          see a single trusted contact number (like a vet or family member) directly on the finder page without needing your approval.
         </Body>
       </>
     ),
@@ -593,24 +597,18 @@ const SECTIONS: Section[] = [
     id: "nfc-smart-cards",
     title: "NFC Smart Cards",
     badge: "Product",
+    readingTime: 1,
     content: (
       <>
         <Body>
           PingME NFC Smart Cards replace traditional visiting cards. Tap your card on someone's
-          phone to instantly share your contact details, portfolio, or any link — fully
-          customizable.
+          phone to instantly share your contact details, portfolio, or any link — fully customizable.
         </Body>
         <ProductCard
           icon={CreditCard}
           title="NFC Smart Card"
           description="Premium PVC card with embedded NFC chip. Tap-to-share your digital profile, social links, and contact info instantly."
-          features={[
-            "Tap-to-share digital profile",
-            "Unlimited profile updates",
-            "Custom branding available",
-            "Works with Android & iPhone",
-            "No app needed for receiver",
-          ]}
+          features={["Tap-to-share digital profile", "Unlimited profile updates", "Custom branding available", "Works with Android & iPhone", "No app needed for receiver"]}
         />
         <Callout type="info">
           Unlike regular NFC cards, PingME Smart Cards link to a dynamic profile — meaning you can update your details anytime without replacing the card.
@@ -622,29 +620,17 @@ const SECTIONS: Section[] = [
     id: "nfc-scanning",
     title: "NFC Scanning",
     badge: "Technology",
+    readingTime: 2,
     content: (
       <>
         <Body>
           NFC (Near Field Communication) allows a smartphone to read your tag by simply being
-          held close to it — no camera needed. The phone automatically opens the PingME
-          contact page.
+          held close to it — no camera needed. The phone automatically opens the PingME contact page.
         </Body>
         <SubHeading>How to Scan via NFC</SubHeading>
-        <StepCard
-          number={1}
-          title="Enable NFC on the phone"
-          description="On Android: Settings > Connected Devices > NFC. On iPhone: NFC is always on for iOS 13+ and does not need to be enabled manually."
-        />
-        <StepCard
-          number={2}
-          title="Hold phone near the tag"
-          description="Bring the top back of the phone (where NFC antenna usually is) within 2–4 cm of the tag."
-        />
-        <StepCard
-          number={3}
-          title="Tap the notification"
-          description="A system notification appears. Tap it to open the PingME contact page in the browser."
-        />
+        <StepCard number={1} title="Enable NFC on the phone" description="On Android: Settings > Connected Devices > NFC. On iPhone: NFC is always on for iOS 13+ and does not need to be enabled manually." />
+        <StepCard number={2} title="Hold phone near the tag" description="Bring the top back of the phone (where NFC antenna usually is) within 2–4 cm of the tag." />
+        <StepCard number={3} title="Tap the notification" description="A system notification appears. Tap it to open the PingME contact page in the browser." />
         <Callout type="warning">
           Some phone cases with metal plates or magnetic wallets can block NFC signals. Remove the case if scanning fails.
         </Callout>
@@ -655,6 +641,7 @@ const SECTIONS: Section[] = [
     id: "qr-scanning",
     title: "QR Code Scanning",
     badge: "Technology",
+    readingTime: 1,
     content: (
       <>
         <Body>
@@ -662,21 +649,9 @@ const SECTIONS: Section[] = [
           with all smartphones, even those without NFC support.
         </Body>
         <SubHeading>How to Scan via QR Code</SubHeading>
-        <StepCard
-          number={1}
-          title="Open camera app"
-          description="Use the built-in camera app on iPhone or Android. No third-party QR scanner needed."
-        />
-        <StepCard
-          number={2}
-          title="Point at the QR code"
-          description="Center the QR code in the camera viewfinder. A link notification will appear at the top."
-        />
-        <StepCard
-          number={3}
-          title="Tap the link"
-          description="Tap the notification to open the PingME contact page in your browser."
-        />
+        <StepCard number={1} title="Open camera app" description="Use the built-in camera app on iPhone or Android. No third-party QR scanner needed." />
+        <StepCard number={2} title="Point at the QR code" description="Center the QR code in the camera viewfinder. A link notification will appear at the top." />
+        <StepCard number={3} title="Tap the link" description="Tap the notification to open the PingME contact page in your browser." />
       </>
     ),
   },
@@ -684,6 +659,7 @@ const SECTIONS: Section[] = [
     id: "compatibility",
     title: "Device Compatibility",
     badge: "Technology",
+    readingTime: 1,
     content: (
       <>
         <SubHeading>NFC Support</SubHeading>
@@ -694,20 +670,10 @@ const SECTIONS: Section[] = [
         ].map(([device, info]) => (
           <div
             key={device as string}
-            style={{
-              padding: "14px 18px",
-              background: "rgba(255,255,255,0.7)",
-              border: "1px solid rgba(180,130,0,0.12)",
-              borderRadius: "10px",
-              marginBottom: "10px",
-            }}
+            style={{ padding: "14px 18px", background: "rgba(255,255,255,0.7)", border: "1px solid rgba(180,130,0,0.12)", borderRadius: "10px", marginBottom: "10px" }}
           >
-            <div style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: "14px", color: "hsl(var(--ping-dark))", marginBottom: "4px" }}>
-              {device as string}
-            </div>
-            <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: "13px", color: "hsl(var(--ping-ash))", lineHeight: "1.6" }}>
-              {info as string}
-            </div>
+            <div style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: "14px", color: "hsl(var(--ping-dark))", marginBottom: "4px" }}>{device as string}</div>
+            <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: "13px", color: "hsl(var(--ping-ash))", lineHeight: "1.6" }}>{info as string}</div>
           </div>
         ))}
         <Callout type="info">
@@ -720,6 +686,7 @@ const SECTIONS: Section[] = [
     id: "privacy-model",
     title: "Privacy Model",
     badge: "Privacy",
+    readingTime: 2,
     content: (
       <>
         <Body>
@@ -749,6 +716,7 @@ const SECTIONS: Section[] = [
     id: "data-protection",
     title: "Data Protection",
     badge: "Privacy",
+    readingTime: 2,
     content: (
       <>
         <Body>
@@ -763,19 +731,7 @@ const SECTIONS: Section[] = [
         ].map(([Icon, title, desc]) => {
           const I = Icon as React.ElementType;
           return (
-            <div
-              key={title as string}
-              style={{
-                display: "flex",
-                gap: "14px",
-                padding: "16px 18px",
-                background: "rgba(255,255,255,0.7)",
-                border: "1px solid rgba(180,130,0,0.12)",
-                borderRadius: "10px",
-                marginBottom: "10px",
-                alignItems: "flex-start",
-              }}
-            >
+            <div key={title as string} style={{ display: "flex", gap: "14px", padding: "16px 18px", background: "rgba(255,255,255,0.7)", border: "1px solid rgba(180,130,0,0.12)", borderRadius: "10px", marginBottom: "10px", alignItems: "flex-start" }}>
               <div style={{ width: "34px", height: "34px", borderRadius: "8px", background: "hsl(var(--ping-yellow))", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <I size={16} color="hsl(var(--ping-dark))" />
               </div>
@@ -793,6 +749,7 @@ const SECTIONS: Section[] = [
     id: "profile-setup",
     title: "Profile Setup",
     badge: "Account",
+    readingTime: 2,
     content: (
       <>
         <Body>
@@ -808,13 +765,7 @@ const SECTIONS: Section[] = [
         ].map(([field, desc]) => (
           <div
             key={field as string}
-            style={{
-              padding: "12px 16px",
-              borderLeft: "3px solid hsl(var(--ping-yellow))",
-              background: "rgba(255,255,255,0.5)",
-              borderRadius: "0 8px 8px 0",
-              marginBottom: "10px",
-            }}
+            style={{ padding: "12px 16px", borderLeft: "3px solid hsl(var(--ping-yellow))", background: "rgba(255,255,255,0.5)", borderRadius: "0 8px 8px 0", marginBottom: "10px" }}
           >
             <div style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: "13px", color: "hsl(var(--ping-dark))", marginBottom: "2px" }}>{field as string}</div>
             <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: "13px", color: "hsl(var(--ping-ash))" }}>{desc as string}</div>
@@ -827,6 +778,7 @@ const SECTIONS: Section[] = [
     id: "managing-tags",
     title: "Managing Tags",
     badge: "Account",
+    readingTime: 2,
     content: (
       <>
         <Body>
@@ -840,15 +792,7 @@ const SECTIONS: Section[] = [
           ["Rename", "Give tags friendly names like 'Honda City' or 'Bruno's Collar'."],
           ["Delete", "Permanently removes the tag from your account. The tag becomes inactive."],
         ].map(([action, desc]) => (
-          <div
-            key={action as string}
-            style={{
-              display: "flex",
-              gap: "10px",
-              marginBottom: "10px",
-              alignItems: "flex-start",
-            }}
-          >
+          <div key={action as string} style={{ display: "flex", gap: "10px", marginBottom: "10px", alignItems: "flex-start" }}>
             <ArrowRight size={13} style={{ color: "hsl(var(--ping-yellow))", marginTop: "4px", flexShrink: 0 }} />
             <span style={{ fontFamily: "'Poppins', sans-serif", fontSize: "14px", color: "hsl(var(--ping-ash))", lineHeight: "1.6" }}>
               <strong style={{ color: "hsl(var(--ping-dark))" }}>{action as string}</strong>
@@ -867,6 +811,7 @@ const SECTIONS: Section[] = [
     id: "faq",
     title: "Frequently Asked Questions",
     badge: "Support",
+    readingTime: 3,
     content: (
       <>
         {[
@@ -878,22 +823,7 @@ const SECTIONS: Section[] = [
           ["Is my data safe?", "Yes. All data is encrypted, stored in India, and never sold to third parties. See our Privacy Policy for details."],
           ["My NFC tag isn't scanning. What do I do?", "Try removing your phone case, enable NFC in settings, and try again. If issues persist, contact support — we'll replace defective tags."],
         ].map(([q, a]) => (
-          <div
-            key={q as string}
-            style={{
-              borderBottom: "1px solid rgba(180,130,0,0.12)",
-              paddingBottom: "18px",
-              marginBottom: "18px",
-            }}
-          >
-            <div style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: "14px", color: "hsl(var(--ping-dark))", marginBottom: "6px", display: "flex", gap: "8px" }}>
-              <span style={{ color: "hsl(var(--ping-yellow))" }}>Q.</span>
-              {q as string}
-            </div>
-            <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: "13px", color: "hsl(var(--ping-ash))", lineHeight: "1.7", paddingLeft: "20px" }}>
-              {a as string}
-            </div>
-          </div>
+          <FAQItem key={q as string} question={q as string} answer={a as string} />
         ))}
       </>
     ),
@@ -902,11 +832,11 @@ const SECTIONS: Section[] = [
     id: "contact",
     title: "Contact Support",
     badge: "Support",
+    readingTime: 1,
     content: (
       <>
         <Body>
-          Our support team is available Monday–Saturday, 10 AM – 6 PM IST. We typically respond
-          within 4 business hours.
+          Our support team is available Monday–Saturday, 10 AM – 6 PM IST. We typically respond within 4 business hours.
         </Body>
         {[
           [Phone, "Phone", "+91 73473 40007", "tel:+917347340007"],
@@ -917,45 +847,20 @@ const SECTIONS: Section[] = [
             <a
               key={label as string}
               href={href as string}
-              style={{
-                display: "flex",
-                gap: "14px",
-                padding: "18px 20px",
-                background: "rgba(255,255,255,0.7)",
-                border: "1px solid rgba(180,130,0,0.15)",
-                borderRadius: "12px",
-                marginBottom: "12px",
-                textDecoration: "none",
-                alignItems: "center",
-                transition: "border-color 0.2s",
-              }}
+              style={{ display: "flex", gap: "14px", padding: "18px 20px", background: "rgba(255,255,255,0.7)", border: "1px solid rgba(180,130,0,0.15)", borderRadius: "12px", marginBottom: "12px", textDecoration: "none", alignItems: "center", transition: "border-color 0.2s" }}
             >
               <div style={{ width: "38px", height: "38px", borderRadius: "9px", background: "hsl(var(--ping-yellow))", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <I size={18} color="hsl(var(--ping-dark))" />
               </div>
               <div>
-                <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "hsl(var(--ping-brown))", marginBottom: "2px" }}>
-                  {label as string}
-                </div>
-                <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: "14px", fontWeight: 600, color: "hsl(var(--ping-yellow))" }}>
-                  {value as string}
-                </div>
+                <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "hsl(var(--ping-brown))", marginBottom: "2px" }}>{label as string}</div>
+                <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: "14px", fontWeight: 600, color: "hsl(var(--ping-yellow))" }}>{value as string}</div>
               </div>
             </a>
           );
         })}
-        <div
-          style={{
-            marginTop: "24px",
-            padding: "20px",
-            background: "rgba(180,130,0,0.05)",
-            border: "1px solid rgba(180,130,0,0.15)",
-            borderRadius: "12px",
-          }}
-        >
-          <div style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: "14px", color: "hsl(var(--ping-dark))", marginBottom: "4px" }}>
-            Office Address
-          </div>
+        <div style={{ marginTop: "24px", padding: "20px", background: "rgba(180,130,0,0.05)", border: "1px solid rgba(180,130,0,0.15)", borderRadius: "12px" }}>
+          <div style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: "14px", color: "hsl(var(--ping-dark))", marginBottom: "4px" }}>Office Address</div>
           <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: "13px", color: "hsl(var(--ping-ash))", lineHeight: "1.8" }}>
             745, Burail, Ekta Market,<br />
             Burail Village, Sector 45,<br />
@@ -967,9 +872,212 @@ const SECTIONS: Section[] = [
   },
 ];
 
+// ─── Accordion FAQ Item ────────────────────────────────────────────────────────
+
+const FAQItem = ({ question, answer }: { question: string; answer: string }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div
+      style={{
+        borderBottom: "1px solid rgba(180,130,0,0.12)",
+        marginBottom: "4px",
+      }}
+    >
+      <button
+        onClick={() => setOpen((p) => !p)}
+        style={{
+          width: "100%",
+          textAlign: "left",
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          padding: "16px 0",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          gap: "12px",
+        }}
+      >
+        <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+          <span style={{ color: "hsl(var(--ping-yellow))", fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: "14px", flexShrink: 0 }}>Q.</span>
+          <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: "14px", color: "hsl(var(--ping-dark))", lineHeight: "1.5" }}>{question}</span>
+        </div>
+        <ChevronRight
+          size={16}
+          style={{
+            color: "hsl(var(--ping-yellow))",
+            flexShrink: 0,
+            transform: open ? "rotate(90deg)" : "rotate(0deg)",
+            transition: "transform 0.2s",
+            marginTop: "2px",
+          }}
+        />
+      </button>
+      {open && (
+        <div
+          style={{
+            fontFamily: "'Poppins', sans-serif",
+            fontSize: "13px",
+            color: "hsl(var(--ping-ash))",
+            lineHeight: "1.7",
+            paddingLeft: "24px",
+            paddingBottom: "16px",
+          }}
+        >
+          {answer}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Sidebar Nav Tree ────────────────────────────────────────────────────────
+
+const SidebarContent = ({
+  activeSection,
+  expandedGroups,
+  searchQuery,
+  setSearchQuery,
+  filteredSections,
+  toggleGroup,
+  scrollToSection,
+  onClose,
+}: {
+  activeSection: string;
+  expandedGroups: Record<string, boolean>;
+  searchQuery: string;
+  setSearchQuery: (v: string) => void;
+  filteredSections: Section[] | null;
+  toggleGroup: (id: string) => void;
+  scrollToSection: (id: string) => void;
+  onClose?: () => void;
+}) => (
+  <div style={{ height: "100%", overflowY: "auto", padding: "24px 16px", scrollBehavior: "smooth" }}>
+    {/* Search */}
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "8px",
+        padding: "8px 12px",
+        background: "rgba(255,255,255,0.7)",
+        border: "1px solid rgba(180,130,0,0.2)",
+        borderRadius: "8px",
+        marginBottom: "24px",
+      }}
+    >
+      <Search size={13} style={{ color: "hsl(var(--ping-ash))", flexShrink: 0 }} />
+      <input
+        type="text"
+        placeholder="Search docs..."
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        style={{
+          border: "none",
+          background: "transparent",
+          outline: "none",
+          fontFamily: "'Poppins', sans-serif",
+          fontSize: "13px",
+          color: "hsl(var(--ping-dark))",
+          width: "100%",
+        }}
+      />
+      {searchQuery && (
+        <button
+          onClick={() => setSearchQuery("")}
+          style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center" }}
+        >
+          <X size={13} style={{ color: "hsl(var(--ping-ash))" }} />
+        </button>
+      )}
+    </div>
+
+    {filteredSections ? (
+      <div>
+        <div style={{ fontSize: "11px", fontWeight: 700, color: "hsl(var(--ping-brown))", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "10px", paddingLeft: "8px" }}>
+          {filteredSections.length} result{filteredSections.length !== 1 ? "s" : ""}
+        </div>
+        {filteredSections.map((s) => (
+          <button
+            key={s.id}
+            data-section-id={s.id}
+            onClick={() => { setSearchQuery(""); scrollToSection(s.id); onClose?.(); }}
+            style={{
+              display: "block", width: "100%", textAlign: "left", padding: "8px 12px", borderRadius: "7px", border: "none",
+              background: activeSection === s.id ? "rgba(180,130,0,0.1)" : "transparent",
+              cursor: "pointer", fontFamily: "'Poppins', sans-serif", fontSize: "13px",
+              color: activeSection === s.id ? "hsl(var(--ping-dark))" : "hsl(var(--ping-ash))",
+              fontWeight: activeSection === s.id ? 600 : 400, marginBottom: "2px",
+            }}
+          >
+            {s.title}
+          </button>
+        ))}
+      </div>
+    ) : (
+      NAV.map((group) => {
+        const Icon = group.icon;
+        const isOpen = expandedGroups[group.id];
+        const groupHasActive = group.children?.some((c) => c.id === activeSection);
+        return (
+          <div key={group.id} style={{ marginBottom: "4px" }}>
+            <button
+              onClick={() => toggleGroup(group.id)}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                width: "100%", padding: "8px 10px", borderRadius: "8px", border: "none",
+                background: groupHasActive ? "rgba(180,130,0,0.05)" : "transparent", cursor: "pointer",
+                fontFamily: "'Poppins', sans-serif", fontSize: "12px", fontWeight: 700,
+                color: groupHasActive ? "hsl(var(--ping-yellow))" : "hsl(var(--ping-brown))",
+                textTransform: "uppercase", letterSpacing: "0.1em", transition: "color 0.2s, background 0.2s",
+              }}
+            >
+              <span style={{ display: "flex", alignItems: "center", gap: "7px" }}>
+                <Icon size={13} />
+                {group.label}
+              </span>
+              <ChevronRight size={12} style={{ transform: isOpen ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
+            </button>
+            {isOpen && group.children && (
+              <div style={{ paddingLeft: "8px", marginTop: "2px", marginBottom: "8px" }}>
+                {group.children.map((child) => {
+                  const isActive = activeSection === child.id;
+                  return (
+                    <button
+                      key={child.id}
+                      data-section-id={child.id}
+                      onClick={() => { scrollToSection(child.id); onClose?.(); }}
+                      style={{
+                        display: "block", width: "100%", textAlign: "left", padding: "7px 12px",
+                        borderRadius: "7px", border: "none",
+                        background: isActive ? "rgba(180,130,0,0.12)" : "transparent",
+                        cursor: "pointer", fontFamily: "'Poppins', sans-serif", fontSize: "13px",
+                        color: isActive ? "hsl(var(--ping-dark))" : "hsl(var(--ping-ash))",
+                        fontWeight: isActive ? 700 : 400, marginBottom: "1px",
+                        borderLeft: isActive ? "2px solid hsl(var(--ping-yellow))" : "2px solid transparent",
+                        boxShadow: isActive ? "0 0 0 1px rgba(180,130,0,0.15), inset 0 0 8px rgba(180,130,0,0.08)" : "none",
+                        transition: "all 0.25s ease",
+                      }}
+                    >
+                      {child.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })
+    )}
+  </div>
+);
+
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 const DocsPage = () => {
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  const isTablet = useMediaQuery("(max-width: 1024px)");
+
   const [activeSection, setActiveSection] = useState("what-is-pingme");
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
     "getting-started": true,
@@ -980,27 +1088,49 @@ const DocsPage = () => {
     support: false,
   });
   const [searchQuery, setSearchQuery] = useState("");
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [copyToast, setCopyToast] = useState(false);
 
-  // Ref for the sidebar so we can scroll the active item into view
   const sidebarRef = useRef<HTMLDivElement>(null);
-  // Ref to track if a manual click scroll is in progress (to avoid observer fighting it)
   const isManualScrollRef = useRef(false);
+  const mainRef = useRef<HTMLDivElement>(null);
 
-  // ── IntersectionObserver: update activeSection on scroll ──────────────────
+  // ── Copy anchor link ──────────────────────────────────────────────────────
+  const handleCopyLink = useCallback((id: string) => {
+    const url = `${window.location.origin}${window.location.pathname}#${id}`;
+    navigator.clipboard.writeText(url).catch(() => {});
+    setCopyToast(true);
+    setTimeout(() => setCopyToast(false), 2000);
+  }, []);
+
+  // Build sections with copy handler
+  const SECTIONS = buildSections(handleCopyLink);
+
+  // ── Scroll progress + back-to-top ─────────────────────────────────────────
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      setScrollProgress(docHeight > 0 ? (scrollTop / docHeight) * 100 : 0);
+      setShowBackToTop(scrollTop > 400);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // ── IntersectionObserver ──────────────────────────────────────────────────
   useEffect(() => {
     const observers: IntersectionObserver[] = [];
-
-    // We track which sections are currently intersecting and pick the topmost one
     const visibleSections = new Set<string>();
 
     const pickActive = () => {
-      // Among all currently visible sections, pick the one that appears first in SECTIONS order
       for (const section of SECTIONS) {
         if (visibleSections.has(section.id)) {
-          setActiveSection((prev) => {
-            if (prev !== section.id) return section.id;
-            return prev;
-          });
+          if (!isManualScrollRef.current) {
+            setActiveSection((prev) => (prev !== section.id ? section.id : prev));
+          }
           return;
         }
       }
@@ -1009,75 +1139,57 @@ const DocsPage = () => {
     SECTIONS.forEach((section) => {
       const el = document.getElementById(section.id);
       if (!el) return;
-
       const observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              visibleSections.add(section.id);
-            } else {
-              visibleSections.delete(section.id);
-            }
+            if (entry.isIntersecting) visibleSections.add(section.id);
+            else visibleSections.delete(section.id);
           });
           pickActive();
         },
-        {
-          // Fire when section top enters within the top 30% of the viewport
-          rootMargin: "-10% 0px -60% 0px",
-          threshold: 0,
-        }
+        { rootMargin: "-10% 0px -60% 0px", threshold: 0 }
       );
-
       observer.observe(el);
       observers.push(observer);
     });
 
-    return () => {
-      observers.forEach((o) => o.disconnect());
-    };
+    return () => observers.forEach((o) => o.disconnect());
   }, []);
 
-  // ── Auto-expand the group that contains the activeSection ─────────────────
+  // ── Auto-expand group ─────────────────────────────────────────────────────
   useEffect(() => {
     const group = NAV.find((g) => g.children?.some((c) => c.id === activeSection));
     if (group) {
-      setExpandedGroups((prev) => {
-        if (prev[group.id]) return prev; // already open, no update
-        return { ...prev, [group.id]: true };
-      });
+      setExpandedGroups((prev) => (prev[group.id] ? prev : { ...prev, [group.id]: true }));
     }
   }, [activeSection]);
 
-  // ── Scroll the sidebar so the active nav item is visible ──────────────────
+  // ── Sidebar scroll active into view ──────────────────────────────────────
   useEffect(() => {
     if (!sidebarRef.current) return;
-    // Find the active button inside the sidebar
-    const activeBtn = sidebarRef.current.querySelector(
-      `[data-section-id="${activeSection}"]`
-    ) as HTMLElement | null;
-    if (activeBtn) {
-      activeBtn.scrollIntoView({ block: "nearest", behavior: "smooth" });
-    }
+    const btn = sidebarRef.current.querySelector(`[data-section-id="${activeSection}"]`) as HTMLElement | null;
+    if (btn) btn.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }, [activeSection]);
 
-  const toggleGroup = (id: string) => {
-    setExpandedGroups((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
+  // ── Lock body scroll when drawer open ────────────────────────────────────
+  useEffect(() => {
+    document.body.style.overflow = drawerOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [drawerOpen]);
+
+  const toggleGroup = (id: string) => setExpandedGroups((prev) => ({ ...prev, [id]: !prev[id] }));
 
   const scrollToSection = (id: string) => {
-    // Expand the group
     const group = NAV.find((g) => g.children?.some((c) => c.id === id));
     if (group) setExpandedGroups((prev) => ({ ...prev, [group.id]: true }));
-
     setActiveSection(id);
     isManualScrollRef.current = true;
     const el = document.getElementById(id);
     if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-      // Give scroll time to finish before re-enabling observer updates
-      setTimeout(() => {
-        isManualScrollRef.current = false;
-      }, 800);
+      const topbarHeight = 60;
+      const y = el.getBoundingClientRect().top + window.scrollY - topbarHeight - 16;
+      window.scrollTo({ top: y, behavior: "smooth" });
+      setTimeout(() => { isManualScrollRef.current = false; }, 900);
     }
   };
 
@@ -1089,6 +1201,12 @@ const DocsPage = () => {
       )
     : null;
 
+  // ── Prev / Next section ───────────────────────────────────────────────────
+  const flatSections = SECTIONS;
+  const currentIdx = flatSections.findIndex((s) => s.id === activeSection);
+  const prevSection = currentIdx > 0 ? flatSections[currentIdx - 1] : null;
+  const nextSection = currentIdx < flatSections.length - 1 ? flatSections[currentIdx + 1] : null;
+
   return (
     <div
       style={{
@@ -1097,263 +1215,224 @@ const DocsPage = () => {
         fontFamily: "'Poppins', sans-serif",
       }}
     >
+      {/* ── Reading Progress Bar ─────────────────────────────────────────── */}
+      <div
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: `${scrollProgress}%`,
+          height: "3px",
+          background: "hsl(var(--ping-yellow))",
+          zIndex: 200,
+          transition: "width 0.1s linear",
+          borderRadius: "0 2px 2px 0",
+        }}
+      />
+
       {/* ── Top Bar ─────────────────────────────────────────────────────────── */}
       <div
         style={{
           position: "sticky",
           top: 0,
-          zIndex: 50,
-          backgroundColor: "#FFF9EB",
+          zIndex: 100,
+          backgroundColor: "rgba(255,249,235,0.95)",
           borderBottom: "1px solid rgba(180,130,0,0.15)",
-          padding: "0 24px",
+          padding: isMobile ? "0 16px" : "0 24px",
           height: "60px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          backdropFilter: "blur(8px)",
+          backdropFilter: "blur(10px)",
+          gap: "12px",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-
-
-<Link to="/">
-  <img
-    src={logo}
-    alt="PingME"
-    className="h-10 w-auto"
-  />
-</Link>
-          <span style={{ color: "rgba(180,130,0,0.4)", fontSize: "18px" }}>/</span>
-          <span
-            style={{
-              fontFamily: "'Poppins', sans-serif",
-              fontSize: "14px",
-              color: "hsl(var(--ping-ash))",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-            }}
-          >
-            <BookOpen size={14} />
-            Documentation
-          </span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <Link
-            to="/contact"
-            style={{
-              fontFamily: "'Poppins', sans-serif",
-              fontSize: "13px",
-              color: "hsl(var(--ping-ash))",
-              textDecoration: "none",
-            }}
-          >
-            Support
+        {/* Left: hamburger (mobile) + logo */}
+        <div style={{ display: "flex", alignItems: "center", gap: isMobile ? "10px" : "10px", minWidth: 0 }}>
+          {isMobile && (
+            <button
+              onClick={() => setDrawerOpen(true)}
+              style={{
+                background: "none", border: "none", cursor: "pointer", padding: "6px",
+                borderRadius: "8px", display: "flex", alignItems: "center",
+                color: "hsl(var(--ping-dark))", flexShrink: 0,
+              }}
+              aria-label="Open navigation"
+            >
+              <Menu size={20} />
+            </button>
+          )}
+          <Link to="/" style={{ flexShrink: 0 }}>
+            <img src={logo} alt="PingME" className="h-8 w-auto" style={{ height: isMobile ? "32px" : "40px", width: "auto" }} />
           </Link>
+          {!isMobile && (
+            <>
+              <span style={{ color: "rgba(180,130,0,0.4)", fontSize: "18px" }}>/</span>
+              <span style={{ fontFamily: "'Poppins', sans-serif", fontSize: "14px", color: "hsl(var(--ping-ash))", display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }}>
+                <BookOpen size={14} />
+                Documentation
+              </span>
+            </>
+          )}
+          {/* Mobile: active section breadcrumb */}
+          {isMobile && (
+            <span style={{ fontFamily: "'Poppins', sans-serif", fontSize: "12px", color: "hsl(var(--ping-ash))", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {SECTIONS.find((s) => s.id === activeSection)?.title ?? "Docs"}
+            </span>
+          )}
+        </div>
+
+        {/* Right */}
+        <div style={{ display: "flex", alignItems: "center", gap: isMobile ? "8px" : "12px", flexShrink: 0 }}>
+          {!isMobile && (
+            <Link to="/contact" style={{ fontFamily: "'Poppins', sans-serif", fontSize: "13px", color: "hsl(var(--ping-ash))", textDecoration: "none", whiteSpace: "nowrap" }}>
+              Support
+            </Link>
+          )}
           <Link
             to="/products"
             style={{
               fontFamily: "'Poppins', sans-serif",
-              fontSize: "13px",
+              fontSize: isMobile ? "12px" : "13px",
               fontWeight: 700,
               color: "hsl(var(--ping-dark))",
               textDecoration: "none",
-              padding: "6px 16px",
+              padding: isMobile ? "6px 12px" : "6px 16px",
               background: "hsl(var(--ping-yellow))",
               borderRadius: "8px",
+              whiteSpace: "nowrap",
             }}
           >
-            Shop Tags
+            {isMobile ? "Shop" : "Shop Tags"}
           </Link>
         </div>
       </div>
 
-      <div style={{ display: "flex", maxWidth: "1100px", margin: "0 auto" }}>
-        {/* ── Sidebar ──────────────────────────────────────────────────────── */}
-        <aside
-          ref={sidebarRef}
-          style={{
-            width: "260px",
-            flexShrink: 0,
-            position: "sticky",
-            top: "60px",
-            height: "calc(100vh - 60px)",
-            overflowY: "auto",
-            borderRight: "1px solid rgba(180,130,0,0.12)",
-            padding: "24px 16px",
-            scrollBehavior: "smooth",
-          }}
-        >
-          {/* Search */}
+      {/* ── Mobile Drawer Overlay ─────────────────────────────────────────── */}
+      {isMobile && (
+        <>
+          {/* Backdrop */}
+          <div
+            onClick={() => setDrawerOpen(false)}
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 150,
+              background: "rgba(0,0,0,0.4)",
+              opacity: drawerOpen ? 1 : 0,
+              pointerEvents: drawerOpen ? "all" : "none",
+              transition: "opacity 0.25s ease",
+              backdropFilter: drawerOpen ? "blur(2px)" : "none",
+            }}
+          />
+          {/* Drawer panel */}
           <div
             style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              bottom: 0,
+              width: "82vw",
+              maxWidth: "320px",
+              zIndex: 160,
+              background: "#FFF9EB",
+              transform: drawerOpen ? "translateX(0)" : "translateX(-100%)",
+              transition: "transform 0.28s cubic-bezier(0.4, 0, 0.2, 1)",
               display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              padding: "8px 12px",
-              background: "rgba(255,255,255,0.7)",
-              border: "1px solid rgba(180,130,0,0.2)",
-              borderRadius: "8px",
-              marginBottom: "24px",
+              flexDirection: "column",
+              boxShadow: "4px 0 24px rgba(0,0,0,0.12)",
             }}
           >
-            <Search size={13} style={{ color: "hsl(var(--ping-ash))", flexShrink: 0 }} />
-            <input
-              type="text"
-              placeholder="Search docs..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+            {/* Drawer header */}
+            <div
               style={{
-                border: "none",
-                background: "transparent",
-                outline: "none",
-                fontFamily: "'Poppins', sans-serif",
-                fontSize: "13px",
-                color: "hsl(var(--ping-dark))",
-                width: "100%",
+                height: "60px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "0 16px",
+                borderBottom: "1px solid rgba(180,130,0,0.15)",
+                flexShrink: 0,
               }}
-            />
-          </div>
-
-          {/* Search results */}
-          {filteredSections ? (
-            <div>
-              <div
-                style={{
-                  fontSize: "11px",
-                  fontWeight: 700,
-                  color: "hsl(var(--ping-brown))",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                  marginBottom: "10px",
-                  paddingLeft: "8px",
-                }}
-              >
-                {filteredSections.length} result{filteredSections.length !== 1 ? "s" : ""}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <BookOpen size={16} style={{ color: "hsl(var(--ping-yellow))" }} />
+                <span style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: "14px", color: "hsl(var(--ping-dark))" }}>
+                  Documentation
+                </span>
               </div>
-              {filteredSections.map((s) => (
-                <button
-                  key={s.id}
-                  data-section-id={s.id}
-                  onClick={() => {
-                    setSearchQuery("");
-                    scrollToSection(s.id);
-                  }}
-                  style={{
-                    display: "block",
-                    width: "100%",
-                    textAlign: "left",
-                    padding: "8px 12px",
-                    borderRadius: "7px",
-                    border: "none",
-                    background: activeSection === s.id ? "rgba(180,130,0,0.1)" : "transparent",
-                    cursor: "pointer",
-                    fontFamily: "'Poppins', sans-serif",
-                    fontSize: "13px",
-                    color: activeSection === s.id ? "hsl(var(--ping-dark))" : "hsl(var(--ping-ash))",
-                    fontWeight: activeSection === s.id ? 600 : 400,
-                    marginBottom: "2px",
-                  }}
-                >
-                  {s.title}
-                </button>
-              ))}
+              <button
+                onClick={() => setDrawerOpen(false)}
+                style={{ background: "none", border: "none", cursor: "pointer", padding: "6px", borderRadius: "8px", display: "flex", alignItems: "center" }}
+                aria-label="Close navigation"
+              >
+                <X size={18} style={{ color: "hsl(var(--ping-ash))" }} />
+              </button>
             </div>
-          ) : (
-            NAV.map((group) => {
-              const Icon = group.icon;
-              const isOpen = expandedGroups[group.id];
-              // Check if any child in this group is active
-              const groupHasActive = group.children?.some((c) => c.id === activeSection);
+            {/* Drawer nav */}
+            <div style={{ flex: 1, overflow: "hidden" }}>
+              <SidebarContent
+                activeSection={activeSection}
+                expandedGroups={expandedGroups}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                filteredSections={filteredSections}
+                toggleGroup={toggleGroup}
+                scrollToSection={scrollToSection}
+                onClose={() => setDrawerOpen(false)}
+              />
+            </div>
+          </div>
+        </>
+      )}
 
-              return (
-                <div key={group.id} style={{ marginBottom: "4px" }}>
-                  <button
-                    onClick={() => toggleGroup(group.id)}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      width: "100%",
-                      padding: "8px 10px",
-                      borderRadius: "8px",
-                      border: "none",
-                      background: groupHasActive ? "rgba(180,130,0,0.05)" : "transparent",
-                      cursor: "pointer",
-                      fontFamily: "'Poppins', sans-serif",
-                      fontSize: "12px",
-                      fontWeight: 700,
-                      color: groupHasActive ? "hsl(var(--ping-yellow))" : "hsl(var(--ping-brown))",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.1em",
-                      transition: "color 0.2s, background 0.2s",
-                    }}
-                  >
-                    <span style={{ display: "flex", alignItems: "center", gap: "7px" }}>
-                      <Icon size={13} />
-                      {group.label}
-                    </span>
-                    <ChevronRight
-                      size={12}
-                      style={{
-                        transform: isOpen ? "rotate(90deg)" : "rotate(0deg)",
-                        transition: "transform 0.2s",
-                      }}
-                    />
-                  </button>
-                  {isOpen && group.children && (
-                    <div style={{ paddingLeft: "8px", marginTop: "2px", marginBottom: "8px" }}>
-                      {group.children.map((child) => {
-                        const isActive = activeSection === child.id;
-                        return (
-                          <button
-                            key={child.id}
-                            data-section-id={child.id}
-                            onClick={() => scrollToSection(child.id)}
-                            style={{
-                              display: "block",
-                              width: "100%",
-                              textAlign: "left",
-                              padding: "7px 12px",
-                              borderRadius: "7px",
-                              border: "none",
-                              background: isActive
-                                ? "rgba(180,130,0,0.12)"
-                                : "transparent",
-                              cursor: "pointer",
-                              fontFamily: "'Poppins', sans-serif",
-                              fontSize: "13px",
-                              color: isActive
-                                ? "hsl(var(--ping-dark))"
-                                : "hsl(var(--ping-ash))",
-                              fontWeight: isActive ? 700 : 400,
-                              marginBottom: "1px",
-                              borderLeft: isActive
-                                ? "2px solid hsl(var(--ping-yellow))"
-                                : "2px solid transparent",
-                              // Glow effect for active item
-                              boxShadow: isActive
-                                ? "0 0 0 1px rgba(180,130,0,0.15), inset 0 0 8px rgba(180,130,0,0.08)"
-                                : "none",
-                              transition: "all 0.25s ease",
-                            }}
-                          >
-                            {child.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })
-          )}
-        </aside>
+      {/* ── Page Body ────────────────────────────────────────────────────────── */}
+      <div
+        style={{
+          display: "flex",
+          maxWidth: isMobile ? "100%" : "1140px",
+          margin: "0 auto",
+        }}
+      >
+        {/* ── Desktop Sidebar ──────────────────────────────────────────────── */}
+        {!isMobile && (
+          <aside
+            ref={sidebarRef}
+            style={{
+              width: isTablet ? "220px" : "260px",
+              flexShrink: 0,
+              position: "sticky",
+              top: "60px",
+              height: "calc(100vh - 60px)",
+              overflowY: "auto",
+              borderRight: "1px solid rgba(180,130,0,0.12)",
+              scrollBehavior: "smooth",
+            }}
+          >
+            <SidebarContent
+              activeSection={activeSection}
+              expandedGroups={expandedGroups}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              filteredSections={filteredSections}
+              toggleGroup={toggleGroup}
+              scrollToSection={scrollToSection}
+            />
+          </aside>
+        )}
 
-        {/* ── Main Content ────────────────────────────────────────────────── */}
-        <main style={{ flex: 1, padding: "48px 56px", maxWidth: "800px" }}>
+        {/* ── Main Content ─────────────────────────────────────────────────── */}
+        <main
+          ref={mainRef}
+          style={{
+            flex: 1,
+            padding: isMobile ? "28px 16px 80px" : isTablet ? "40px 32px" : "48px 56px",
+            maxWidth: "800px",
+            minWidth: 0,
+          }}
+        >
           {/* Hero */}
-          <div style={{ marginBottom: "48px" }}>
+          <div style={{ marginBottom: isMobile ? "32px" : "48px" }}>
             <div
               style={{
                 display: "inline-flex",
@@ -1367,15 +1446,7 @@ const DocsPage = () => {
               }}
             >
               <BookOpen size={12} style={{ color: "hsl(var(--ping-yellow))" }} />
-              <span
-                style={{
-                  fontFamily: "'Poppins', sans-serif",
-                  fontSize: "12px",
-                  fontWeight: 700,
-                  color: "hsl(var(--ping-brown))",
-                  letterSpacing: "0.05em",
-                }}
-              >
+              <span style={{ fontFamily: "'Poppins', sans-serif", fontSize: "12px", fontWeight: 700, color: "hsl(var(--ping-brown))", letterSpacing: "0.05em" }}>
                 DOCUMENTATION
               </span>
             </div>
@@ -1383,7 +1454,7 @@ const DocsPage = () => {
               style={{
                 fontFamily: "'Poppins', sans-serif",
                 fontWeight: 900,
-                fontSize: "36px",
+                fontSize: isMobile ? "28px" : "36px",
                 color: "hsl(var(--ping-dark))",
                 margin: "0 0 12px 0",
                 letterSpacing: "-0.03em",
@@ -1395,32 +1466,24 @@ const DocsPage = () => {
             <p
               style={{
                 fontFamily: "'Poppins', sans-serif",
-                fontSize: "15px",
+                fontSize: isMobile ? "14px" : "15px",
                 color: "hsl(var(--ping-ash))",
                 lineHeight: "1.7",
                 margin: 0,
               }}
             >
-              Everything you need to know about setting up, using, and managing your
-              PingME tags and account.
+              Everything you need to know about setting up, using, and managing your PingME tags and account.
             </p>
-            <div
-              style={{
-                height: "1px",
-                background:
-                  "linear-gradient(90deg, rgba(180,130,0,0.3), transparent)",
-                marginTop: "32px",
-              }}
-            />
+            <div style={{ height: "1px", background: "linear-gradient(90deg, rgba(180,130,0,0.3), transparent)", marginTop: "32px" }} />
           </div>
 
           {/* Quick nav cards */}
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(3, 1fr)",
-              gap: "12px",
-              marginBottom: "56px",
+              gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(3, 1fr)",
+              gap: isMobile ? "8px" : "12px",
+              marginBottom: isMobile ? "40px" : "56px",
             }}
           >
             {[
@@ -1439,59 +1502,71 @@ const DocsPage = () => {
                   flexDirection: "column",
                   alignItems: "flex-start",
                   gap: "8px",
-                  padding: "16px",
+                  padding: isMobile ? "14px" : "16px",
                   background: "rgba(255,255,255,0.6)",
                   border: "1px solid rgba(180,130,0,0.15)",
                   borderRadius: "12px",
                   cursor: "pointer",
                   textAlign: "left",
-                  transition: "border-color 0.2s, background 0.2s",
+                  transition: "border-color 0.2s, background 0.2s, transform 0.15s",
                 }}
                 onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.borderColor = "hsl(var(--ping-yellow))";
-                  (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.9)";
+                  const b = e.currentTarget as HTMLButtonElement;
+                  b.style.borderColor = "hsl(var(--ping-yellow))";
+                  b.style.background = "rgba(255,255,255,0.9)";
+                  b.style.transform = "translateY(-1px)";
                 }}
                 onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(180,130,0,0.15)";
-                  (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.6)";
+                  const b = e.currentTarget as HTMLButtonElement;
+                  b.style.borderColor = "rgba(180,130,0,0.15)";
+                  b.style.background = "rgba(255,255,255,0.6)";
+                  b.style.transform = "translateY(0)";
                 }}
               >
                 <Icon size={18} style={{ color: "hsl(var(--ping-yellow))" }} />
-                <span
-                  style={{
-                    fontFamily: "'Poppins', sans-serif",
-                    fontSize: "13px",
-                    fontWeight: 600,
-                    color: "hsl(var(--ping-dark))",
-                  }}
-                >
+                <span style={{ fontFamily: "'Poppins', sans-serif", fontSize: isMobile ? "12px" : "13px", fontWeight: 600, color: "hsl(var(--ping-dark))" }}>
                   {label}
                 </span>
               </button>
             ))}
           </div>
 
-          {/* All Sections rendered */}
+          {/* All Sections */}
           {SECTIONS.map((section, idx) => (
-            <div key={section.id} id={section.id} style={{ marginBottom: "64px" }}>
-              {/* Section header */}
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
-                <SectionHeading>{section.title}</SectionHeading>
+            <div key={section.id} id={section.id} style={{ marginBottom: isMobile ? "48px" : "64px", scrollMarginTop: "76px" }}>
+              {/* Section header row */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  marginBottom: "16px",
+                  flexWrap: "wrap",
+                }}
+              >
+                <SectionHeading id={section.id} onCopyLink={handleCopyLink}>
+                  {section.title}
+                </SectionHeading>
                 {section.badge && (
                   <span
                     style={{
-                      fontFamily: "'Poppins', sans-serif",
-                      fontSize: "11px",
-                      fontWeight: 700,
-                      padding: "3px 10px",
-                      borderRadius: "20px",
-                      background: "rgba(180,130,0,0.1)",
-                      color: "hsl(var(--ping-brown))",
-                      letterSpacing: "0.05em",
-                      textTransform: "uppercase",
+                      fontFamily: "'Poppins', sans-serif", fontSize: "11px", fontWeight: 700,
+                      padding: "3px 10px", borderRadius: "20px", background: "rgba(180,130,0,0.1)",
+                      color: "hsl(var(--ping-brown))", letterSpacing: "0.05em", textTransform: "uppercase",
                     }}
                   >
                     {section.badge}
+                  </span>
+                )}
+                {section.readingTime && (
+                  <span
+                    style={{
+                      display: "flex", alignItems: "center", gap: "4px",
+                      fontFamily: "'Poppins', sans-serif", fontSize: "11px", color: "hsl(var(--ping-ash))",
+                    }}
+                  >
+                    <Clock size={11} />
+                    {section.readingTime} min read
                   </span>
                 )}
               </div>
@@ -1499,7 +1574,115 @@ const DocsPage = () => {
               {idx < SECTIONS.length - 1 && <Divider />}
             </div>
           ))}
+
+          {/* ── Prev / Next Navigation ──────────────────────────────────── */}
+          <div
+            style={{
+              display: "flex",
+              gap: "12px",
+              marginTop: "16px",
+              flexDirection: isMobile ? "column" : "row",
+            }}
+          >
+            {prevSection ? (
+              <button
+                onClick={() => scrollToSection(prevSection.id)}
+                style={{
+                  flex: 1, display: "flex", alignItems: "center", gap: "12px", padding: "16px 20px",
+                  background: "rgba(255,255,255,0.6)", border: "1px solid rgba(180,130,0,0.15)",
+                  borderRadius: "12px", cursor: "pointer", textAlign: "left", transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor = "hsl(var(--ping-yellow))"; b.style.background = "rgba(255,255,255,0.9)"; }}
+                onMouseLeave={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor = "rgba(180,130,0,0.15)"; b.style.background = "rgba(255,255,255,0.6)"; }}
+              >
+                <ChevronLeft size={16} style={{ color: "hsl(var(--ping-yellow))", flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: "11px", color: "hsl(var(--ping-ash))", marginBottom: "2px" }}>Previous</div>
+                  <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: "13px", fontWeight: 700, color: "hsl(var(--ping-dark))" }}>{prevSection.title}</div>
+                </div>
+              </button>
+            ) : <div style={{ flex: 1 }} />}
+
+            {nextSection ? (
+              <button
+                onClick={() => scrollToSection(nextSection.id)}
+                style={{
+                  flex: 1, display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "12px",
+                  padding: "16px 20px", background: "rgba(255,255,255,0.6)", border: "1px solid rgba(180,130,0,0.15)",
+                  borderRadius: "12px", cursor: "pointer", textAlign: "right", transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor = "hsl(var(--ping-yellow))"; b.style.background = "rgba(255,255,255,0.9)"; }}
+                onMouseLeave={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor = "rgba(180,130,0,0.15)"; b.style.background = "rgba(255,255,255,0.6)"; }}
+              >
+                <div>
+                  <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: "11px", color: "hsl(var(--ping-ash))", marginBottom: "2px" }}>Next</div>
+                  <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: "13px", fontWeight: 700, color: "hsl(var(--ping-dark))" }}>{nextSection.title}</div>
+                </div>
+                <ChevronRight size={16} style={{ color: "hsl(var(--ping-yellow))", flexShrink: 0 }} />
+              </button>
+            ) : <div style={{ flex: 1 }} />}
+          </div>
+
+          {/* Spacer at bottom */}
+          <div style={{ height: "48px" }} />
         </main>
+      </div>
+
+      {/* ── Back to Top Button ───────────────────────────────────────────────── */}
+      <button
+        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        aria-label="Back to top"
+        style={{
+          position: "fixed",
+          bottom: isMobile ? "24px" : "32px",
+          right: isMobile ? "16px" : "32px",
+          zIndex: 90,
+          width: "44px",
+          height: "44px",
+          borderRadius: "50%",
+          background: "hsl(var(--ping-yellow))",
+          border: "none",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          boxShadow: "0 4px 16px rgba(180,130,0,0.35)",
+          opacity: showBackToTop ? 1 : 0,
+          transform: showBackToTop ? "translateY(0) scale(1)" : "translateY(12px) scale(0.85)",
+          transition: "opacity 0.25s ease, transform 0.25s ease",
+          pointerEvents: showBackToTop ? "all" : "none",
+        }}
+      >
+        <ArrowUp size={18} color="hsl(var(--ping-dark))" />
+      </button>
+
+      {/* ── Copy Link Toast ──────────────────────────────────────────────────── */}
+      <div
+        style={{
+          position: "fixed",
+          bottom: "80px",
+          left: "50%",
+          transform: `translateX(-50%) translateY(${copyToast ? "0" : "12px"})`,
+          zIndex: 300,
+          background: "hsl(var(--ping-dark))",
+          color: "#FFF9EB",
+          fontFamily: "'Poppins', sans-serif",
+          fontSize: "13px",
+          fontWeight: 600,
+          padding: "10px 20px",
+          borderRadius: "24px",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
+          opacity: copyToast ? 1 : 0,
+          transition: "opacity 0.2s ease, transform 0.2s ease",
+          pointerEvents: "none",
+          whiteSpace: "nowrap",
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+        }}
+      >
+        <CheckCircle size={14} color="hsl(var(--ping-yellow))" />
+        Link copied!
       </div>
     </div>
   );
