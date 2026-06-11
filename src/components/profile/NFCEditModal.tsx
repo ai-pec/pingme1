@@ -216,7 +216,7 @@ export function NFCEditModal({
               isLoading={updateNFCMutation.isPending}
               title={lineTitle ? `Edit Profile — ${lineTitle}` : "Edit Your NFC Profile"}
               description="Keep your NFC card profile up to date from your account dashboard."
-              infoText="These details power your public NFC page link. Username is globally unique and updates reflect on your live link."
+              infoText="These details power your public NFC page link. Your username is permanent and cannot be changed — all other fields can be updated anytime."
               backLabel="Cancel"
               continueLabel="Save NFC Profile"
               variant="edit"

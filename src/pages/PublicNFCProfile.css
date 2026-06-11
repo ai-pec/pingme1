@@ -896,3 +896,227 @@ a.nfc-detail-value:hover {
   background: var(--c-border);
   margin: 0 20px 16px;
 }
+
+/* ─── Privacy Consent Modal ──────────────────────────────────────────────── */
+.nfc-consent-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 22, 18, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.25s ease forwards;
+}
+
+.nfc-consent-sheet {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 24px;
+  box-shadow: 0 4px 0 rgba(60,50,35,0.08), 0 20px 60px rgba(26,22,18,0.28);
+  width: 100%;
+  max-width: 420px;
+  padding: 32px 28px 28px;
+  animation: fadeSlideUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  position: relative;
+  overflow: hidden;
+}
+
+.nfc-consent-sheet::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--c-accent), var(--c-gold), var(--c-green));
+}
+
+/* Logo */
+.nfc-consent-logo {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 18px;
+}
+
+.nfc-consent-logo-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--c-accent);
+  flex-shrink: 0;
+}
+
+.nfc-consent-logo-name {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 600;
+  font-style: italic;
+  color: var(--c-ink2);
+  letter-spacing: 0.02em;
+}
+
+/* Title */
+.nfc-consent-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.35rem, 4vw, 1.65rem);
+  font-weight: 600;
+  color: var(--c-ink);
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  margin-bottom: 6px;
+}
+
+.nfc-consent-subtitle {
+  font-size: 0.875rem;
+  color: var(--c-ink2);
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+/* Policy box */
+.nfc-consent-policy-box {
+  background: var(--c-surface2);
+  border: 1px solid var(--c-border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.nfc-consent-policy-text {
+  font-size: 0.82rem;
+  color: var(--c-ink2);
+  line-height: 1.65;
+}
+
+.nfc-consent-toggle {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--c-accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  letter-spacing: 0.01em;
+  transition: opacity 0.15s ease;
+}
+
+.nfc-consent-toggle:hover {
+  opacity: 0.75;
+}
+
+/* Checkboxes */
+.nfc-consent-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.nfc-consent-check-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  cursor: pointer;
+  font-size: 0.87rem;
+  color: var(--c-ink);
+  line-height: 1.45;
+}
+
+.nfc-consent-check-row input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  border: 1.75px solid var(--c-border);
+  border-radius: 5px;
+  background: var(--c-surface);
+  cursor: pointer;
+  margin-top: 1px;
+  position: relative;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.nfc-consent-check-row input[type="checkbox"]:checked {
+  background: var(--c-accent);
+  border-color: var(--c-accent);
+}
+
+.nfc-consent-check-row input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  top: 2px; left: 5px;
+  width: 5px;
+  height: 9px;
+  border: 2px solid #fff;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg);
+}
+
+.nfc-consent-check-row span {
+  flex: 1;
+}
+
+.nfc-consent-check-row strong {
+  font-weight: 600;
+  color: var(--c-ink);
+}
+
+/* Accept button */
+.nfc-consent-accept-btn {
+  display: block;
+  width: 100%;
+  padding: 13px 24px;
+  background: var(--c-accent);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  font-family: var(--font-body);
+  font-size: 0.93rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  box-shadow: var(--shadow-btn);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, opacity 0.18s ease;
+  margin-bottom: 12px;
+}
+
+.nfc-consent-accept-btn:hover:not(:disabled) {
+  background: #b8451f;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 0 rgba(200,82,42,0.4), 0 8px 24px rgba(200,82,42,0.3);
+}
+
+.nfc-consent-accept-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.nfc-consent-accept-btn:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Footer note */
+.nfc-consent-footer-note {
+  font-size: 0.72rem;
+  color: var(--c-ink3);
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .nfc-consent-sheet {
+    padding: 28px 20px 24px;
+  }
+  .nfc-consent-title {
+    font-size: 1.3rem;
+  }
+}

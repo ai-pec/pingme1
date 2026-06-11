@@ -54,6 +54,10 @@ const buyers = [
   { fullName: "Sachin Singh", companyName: "PASAPI Tech Solutions Pvt Ltd / Tbonyds - Tricity Businesses On Your Doors", jobTitle: "Founder/Director", phone: "7710611913", email: "sachin.singh@pasapi.com", username: "sachinsingh" },
   { fullName: "Dr. Pawan Garg", companyName: "Education & Career Counciling", jobTitle: "Mentor", phone: "9466068185", email: "dr.pawangarg12@gmail.com", username: "drpawangarg" },
   { fullName: "Dr. Asha Garg", companyName: "Education & Career Counciling", jobTitle: "Mentor", phone: "9416167565", email: "ashagarg16@gmail.com", username: "drashagarg" },
+  { fullName: "Muhammad Shahbaz", companyName: "Rezon Studio", jobTitle: "CEO, Brand Strategist", phone: "7696690079", email: "mhshahbazrzn@gmail.com", username: "muhammadshahbaz", linkedin: "https://www.linkedin.com/in/mh-shahbaz/" },
+  { fullName: "Vikas Mittal", companyName: "ERC MAX Ventures Pvt Ltd", jobTitle: "Director", phone: "9216003333", email: "ercmaxworld@gmail.com", username: "vikasmittal", address: "SCO 69, level 2, Sector 17D Chandigarh 160017", instagram: "https://www.instagram.com/zoogolindia" },
+  { fullName: "Appul Jot Virdi", companyName: "Kontent Kai", jobTitle: "Founder", phone: "9814700270", email: "appul.virdi@gmail.com", username: "appuljotvirdi" },
+  { fullName: "Lovepreet Singh", companyName: "Erosius", jobTitle: "Founder & CEO", phone: "8168510617", email: "erophilous@gmail.com", username: "lovepreetsingh", instagram: "https://www.instagram.com/erosius_" },
 ];
 
 const NFC_ITEM_ID = "nfc-card-default";
@@ -147,6 +151,9 @@ async function createFor(buyer) {
       jobTitle: buyer.jobTitle || '',
       email: email || null,
       phone: buyer.phone || null,
+      ...(buyer.linkedin ? { linkedin: buyer.linkedin } : {}),
+      ...(buyer.instagram ? { instagram: buyer.instagram } : {}),
+      ...(buyer.address ? { address: buyer.address } : {}),
     },
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -163,6 +170,9 @@ async function createFor(buyer) {
     jobTitle: bookingData.nfcProfile.jobTitle || null,
     email: bookingData.nfcProfile.email || null,
     phone: bookingData.nfcProfile.phone || null,
+    ...(bookingData.nfcProfile.linkedin ? { linkedin: bookingData.nfcProfile.linkedin } : {}),
+    ...(bookingData.nfcProfile.instagram ? { instagram: bookingData.nfcProfile.instagram } : {}),
+    ...(bookingData.nfcProfile.address ? { address: bookingData.nfcProfile.address } : {}),
     status: 'confirmed',
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),

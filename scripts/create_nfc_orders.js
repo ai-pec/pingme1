@@ -27,6 +27,10 @@ const buyers = [
   { fullName: "Sandeep Ahluwalia", companyName: "Sanvi Capital LLP", jobTitle: "Partner", phone: "8360534656", email: "Investor@sanvicapital.com", username: "sandeepahluwalia" },
   { fullName: "Manish Kumar", companyName: "Kyntix Technology", jobTitle: "Founder", phone: "9478586699", email: "Manish.kyntix@gmail.com", username: "manishkumar" },
   { fullName: "Paramveer Singh", companyName: "Project X", jobTitle: "Co-Founder", phone: "9915366447", email: "pvsingh4747@gmail.com", username: "paramveersingh" },
+  { fullName: "Muhammad Shahbaz", companyName: "Rezon Studio", jobTitle: "CEO, Brand Strategist", phone: "7696690079", email: "mhshahbazrzn@gmail.com", username: "muhammadshahbaz", linkedin: "https://www.linkedin.com/in/mh-shahbaz/" },
+  { fullName: "Vikas Mittal", companyName: "ERC MAX Ventures Pvt Ltd", jobTitle: "Director", phone: "9216003333", email: "ercmaxworld@gmail.com", username: "vikasmittal", address: "SCO 69, level 2, Sector 17D Chandigarh 160017", instagram: "https://www.instagram.com/zoogolindia" },
+  { fullName: "Appul Jot Virdi", companyName: "Kontent Kai", jobTitle: "Founder", phone: "9814700270", email: "appul.virdi@gmail.com", username: "appuljotvird" },
+  { fullName: "Lovepreet Singh", companyName: "Erosius", jobTitle: "Founder & CEO", phone: "8168510617", email: "erophilous@gmail.com", username: "lovepreetsingh", instagram: "https://www.instagram.com/erosius_" },
 ];
 
 const NFC_ITEM_ID = "nfc-card-default";
@@ -96,6 +100,9 @@ async function createFor(buyer) {
       jobTitle: buyer.jobTitle || '',
       email: email || null,
       phone: buyer.phone || null,
+      ...(buyer.linkedin ? { linkedin: buyer.linkedin } : {}),
+      ...(buyer.instagram ? { instagram: buyer.instagram } : {}),
+      ...(buyer.address ? { address: buyer.address } : {}),
     },
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -112,6 +119,9 @@ async function createFor(buyer) {
     jobTitle: bookingData.nfcProfile.jobTitle || null,
     email: bookingData.nfcProfile.email || null,
     phone: bookingData.nfcProfile.phone || null,
+    ...(bookingData.nfcProfile.linkedin ? { linkedin: bookingData.nfcProfile.linkedin } : {}),
+    ...(bookingData.nfcProfile.instagram ? { instagram: bookingData.nfcProfile.instagram } : {}),
+    ...(bookingData.nfcProfile.address ? { address: bookingData.nfcProfile.address } : {}),
     status: 'confirmed',
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),

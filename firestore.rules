@@ -116,6 +116,29 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isSignedIn();
     }
+
+    // NFC privacy policy consent records — written once by the profile owner, never editable
+    match /nfc_consents/{username} {
+      // Anyone can check if consent was given for a username
+      allow read: if true;
+      // Anyone can record consent (link is emailed only to the profile owner)
+      // Strict field validation: only allowed fields, consentGiven must be true
+      allow create: if
+        request.resource.data.keys().hasOnly(['consentGiven', 'acceptedAt', 'username', 'userAgent']) &&
+        request.resource.data.keys().hasAll(['consentGiven', 'acceptedAt', 'username']) &&
+        request.resource.data.consentGiven == true &&
+        request.resource.data.username is string &&
+        request.resource.data.username.size() > 0 &&
+        request.resource.data.username.size() <= 100 &&
+        request.resource.data.acceptedAt == request.time;
+      // Allow updating consent (e.g. if admin reset it to false, user can re-accept)
+      // Client can only ever set consentGiven to true — never downgrade
+      allow update: if
+        request.resource.data.consentGiven == true &&
+        request.resource.data.acceptedAt == request.time;
+      // Consent cannot be deleted via client
+      allow delete: if false;
+    }
   }
 }
 

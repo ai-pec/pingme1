@@ -7,6 +7,7 @@ import { CartProvider } from "@/contexts/CartContext";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import PublicNFCProfile from "./pages/PublicNFCProfile";
 import NFCLanding from "./pages/NFCLanding";
+import NfcPrivacyPolicy from "./pages/NfcPrivacyPolicy";
 import "./index.css";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,8 @@ function NfcApp() {
               <Routes>
                 {/* Root → NFC landing page */}
                 <Route path="/" element={<NFCLanding />} />
+                {/* /:username/NFC-Privacy-Policy → consent page (must be before /:username) */}
+                <Route path="/:username/NFC-Privacy-Policy" element={<NfcPrivacyPolicy />} />
                 {/* /:username → public NFC profile */}
                 <Route path="/:username" element={<PublicNFCProfile />} />
                 {/* fallback → landing page */}

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Info, AlertCircle } from "lucide-react";
+import { ArrowLeft, Info, AlertCircle, Lock } from "lucide-react";
 
 const MAX_IMAGE_DATA_URL_LENGTH = 850000;
 const MAX_IMAGE_DIMENSION = 1200;
@@ -330,22 +330,21 @@ export default function NFCProfileBuilder({
             <div className="rounded-xl border p-4 space-y-4">
               <h3 className="text-xl font-semibold">Basic Information</h3>
               <div>
-                <Label htmlFor="profile-username">Username *</Label>
+                <Label htmlFor="profile-username" className="flex items-center gap-1.5">
+                  Username
+                  <Lock className="w-3.5 h-3.5 text-muted-foreground" />
+                </Label>
                 <Input
                   id="profile-username"
-                  placeholder="default"
                   value={profileData.username || ""}
-                  onChange={(e) => handleInputChange("username", e.target.value)}
-                  className={`mt-1 ${validationErrors.username ? "border-destructive" : ""}`}
-                  ref={(el) => { if (el) inputRefs.current.username = el; }}
+                  readOnly
+                  disabled
+                  className="mt-1 bg-muted text-muted-foreground cursor-not-allowed opacity-70"
                 />
-                {validationErrors.username && showValidationErrors && (
-                  <p className="text-sm text-destructive mt-1.5 flex items-center gap-1">
-                    <AlertCircle className="w-4 h-4" />
-                    {validationErrors.username}
-                  </p>
-                )}
-                <p className="text-xs text-muted-foreground mt-1">Keep this consistent with your card profile data.</p>
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1.5 flex items-center gap-1">
+                  <Lock className="w-3 h-3 shrink-0" />
+                  Username cannot be changed after initial setup.
+                </p>
               </div>
               <div>
                 <Label htmlFor="profile-name">Name *</Label>
@@ -705,7 +704,7 @@ export default function NFCProfileBuilder({
                   <Label htmlFor="profile-username">Username *</Label>
                   <Input
                     id="profile-username"
-                    placeholder="default"
+                    placeholder="yourname"
                     value={profileData.username || ""}
                     onChange={(e) => handleInputChange("username", e.target.value)}
                     className={`mt-1 ${validationErrors.username ? "border-destructive" : ""}`}
@@ -717,7 +716,14 @@ export default function NFCProfileBuilder({
                       {validationErrors.username}
                     </p>
                   )}
-                  <p className="text-xs text-muted-foreground mt-1">Keep this consistent with your card profile data.</p>
+                  {profileData.username?.trim() && (
+                    <div className="mt-2 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950 px-3 py-2">
+                      <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                      <p className="text-xs text-amber-700 dark:text-amber-300 leading-snug">
+                        <span className="font-semibold">Choose carefully —</span> this username cannot be changed later. It will become your permanent public profile URL.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div>

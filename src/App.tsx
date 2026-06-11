@@ -41,6 +41,7 @@ const Profile = lazy(() => import("./pages/Profile"));
 const Admin = lazy(() => import("./pages/Admin"));
 const PublicNFCProfile = lazy(() => import("./pages/PublicNFCProfile"));
 const NFCLanding = lazy(() => import("./pages/NFCLanding"));
+const NfcPrivacyPolicy = lazy(() => import("./pages/NfcPrivacyPolicy"));
 
 const PageLoader = () => (
   <div className="flex h-[100dvh] w-full flex-col items-center justify-center bg-background gap-6">
@@ -96,7 +97,9 @@ const queryClient = new QueryClient();
 
 const isNfcSubdomain = typeof window !== "undefined" && (
   window.location.hostname.startsWith("nfc.") ||
-  window.location.hostname.includes(".nfc.")
+  window.location.hostname.includes(".nfc.") ||
+  // Dev convenience: add ?nfc=1 to any localhost URL to test NFC routing
+  (import.meta.env.DEV && new URLSearchParams(window.location.search).get("nfc") === "1")
 );
 
 const App = () => (
@@ -114,6 +117,7 @@ const App = () => (
                 {isNfcSubdomain ? (
                   <>
                     <Route path="/" element={<NFCLanding />} />
+                    <Route path="/:username/NFC-Privacy-Policy" element={<NfcPrivacyPolicy />} />
                     <Route path="/:username" element={<PublicNFCProfile />} />
                     <Route path="*" element={<NFCLanding />} />
                   </>
@@ -177,6 +181,7 @@ const App = () => (
                    Render the profile directly on the main domain as well.
                    This satisfies the requirement that plzpingme.com/<username> also works.
                 */}
+                <Route path="/:username/NFC-Privacy-Policy" element={<NfcPrivacyPolicy />} />
                 <Route path="/:username" element={<PublicNFCProfile />} />
                 <Route path="*" element={<NotFound />} />
                   </>

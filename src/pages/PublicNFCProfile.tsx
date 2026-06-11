@@ -347,26 +347,44 @@ export default function PublicNFCProfile() {
   /* ── Save Contact ── */
   const handleSaveContact = async () => {
     if (!profile) return;
-    try {
-      const { vcard, file, filename } = createVCard(profile);
-      const nav: any = navigator;
-      if (typeof nav.canShare === "function" && nav.canShare({ files: [file] })) {
-        await nav.share({ files: [file], title: profile.name || profile.username });
-        toast.success("Contact shared"); return;
-      }
-      if (typeof nav.share === "function") {
-        await nav.share({ title: profile.name || profile.username, text: vcard });
-        toast.success("Contact shared"); return;
-      }
+    const { vcard, file, filename } = createVCard(profile);
+
+    const downloadVCard = () => {
       const a  = document.createElement("a");
       a.href   = `data:text/vcard;charset=utf-8,${encodeURIComponent(vcard)}`;
       a.download = filename;
       document.body.appendChild(a); a.click(); a.remove();
       toast.success("vCard downloaded");
-    } catch (err) {
-      toast.error(getErrorMessage(err, "Unable to share or save contact."));
+    };
+
+    const nav: any = navigator;
+
+    // Try file-share first (mobile browsers on HTTPS)
+    if (typeof nav.canShare === "function" && nav.canShare({ files: [file] })) {
+      try {
+        await nav.share({ files: [file], title: profile.name || profile.username });
+        toast.success("Contact shared"); return;
+      } catch (err: any) {
+        if (err?.name === "AbortError") return; // user dismissed — no error needed
+        // Permission denied or unsupported — fall through to text share / download
+      }
     }
+
+    // Try text share (also on HTTPS)
+    if (typeof nav.share === "function") {
+      try {
+        await nav.share({ title: profile.name || profile.username, text: vcard });
+        toast.success("Contact shared"); return;
+      } catch (err: any) {
+        if (err?.name === "AbortError") return; // user dismissed — no error needed
+        // Permission denied or unsupported — fall through to download
+      }
+    }
+
+    // Final fallback: direct vCard download (always works)
+    downloadVCard();
   };
+
 
   /* ── Render ── */
   return (
