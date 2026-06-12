@@ -116,11 +116,45 @@ export default function NfcPrivacyPolicy() {
             <div className="nfc-profile-content">
 
               <div className="nfc-profile-section">
+                <p className="nfc-section-title">What Data Is Collected</p>
+                <p style={{ fontSize: "0.875rem", color: "var(--c-ink2)", lineHeight: 1.7 }}>
+                  We collect the information you provide when setting up your NFC profile. This includes:
+                  your <strong>name</strong>, <strong>email address</strong>, <strong>phone number</strong>,
+                  <strong> job title</strong>, <strong>company name</strong>, <strong>profile photo</strong>,
+                  <strong> social media links</strong> (LinkedIn, Instagram, Twitter, YouTube, Facebook),
+                  <strong> website</strong>, <strong>address</strong>, <strong>UPI / payment links</strong>,
+                  and any <strong>portfolio items or documents</strong> you choose to add.
+                  Only information you explicitly enter is stored.
+                </p>
+              </div>
+
+              <div className="nfc-profile-section">
+                <p className="nfc-section-title">Why It Is Collected</p>
+                <p style={{ fontSize: "0.875rem", color: "var(--c-ink2)", lineHeight: 1.7 }}>
+                  This data is collected to create and power your public NFC profile — the page people
+                  see when they tap your PingME NFC card. It lets you share your contact details,
+                  business information, and social links instantly with anyone you meet, without
+                  exchanging paper cards.
+                </p>
+              </div>
+
+              <div className="nfc-profile-section">
+                <p className="nfc-section-title">How It Will Be Used</p>
+                <p style={{ fontSize: "0.875rem", color: "var(--c-ink2)", lineHeight: 1.7 }}>
+                  Your profile data is displayed on your public NFC profile page (accessible via your
+                  unique profile link). It is <strong>not sold</strong> to third parties, not used for
+                  advertising, and not shared with anyone outside of PingME's service infrastructure.
+                  The data is used solely to render and serve your NFC profile to visitors.
+                </p>
+              </div>
+
+              <div className="nfc-profile-section">
                 <p className="nfc-section-title">Data Retention</p>
                 <p style={{ fontSize: "0.875rem", color: "var(--c-ink2)", lineHeight: 1.7 }}>
-                  We retain your personal information only for as long as your account remains active
-                  and as necessary to provide our services. Your data is stored securely and used
-                  solely for the purposes described in this Privacy Policy.
+                  Your data is retained for as long as your NFC profile remains active. If you
+                  request deletion, your profile data will be removed or anonymized within a
+                  reasonable timeframe, except where retention is required by applicable law or
+                  for legitimate purposes such as fraud prevention or dispute resolution.
                 </p>
               </div>
 
@@ -131,6 +165,22 @@ export default function NfcPrivacyPolicy() {
                   personal data within a reasonable period, except where retention is required by
                   applicable law, regulatory requirements, or for legitimate business purposes such as
                   fraud prevention, dispute resolution, or legal compliance.
+                </p>
+              </div>
+
+              <div className="nfc-profile-section">
+                <p className="nfc-section-title">Privacy Concerns &amp; Contact</p>
+                <p style={{ fontSize: "0.875rem", color: "var(--c-ink2)", lineHeight: 1.7 }}>
+                  If you have any questions, concerns, or requests related to your data or this
+                  Privacy Policy, please reach out to us directly:
+                </p>
+                <p style={{ fontSize: "0.875rem", color: "var(--c-ink2)", lineHeight: 1.7, marginTop: 8 }}>
+                  📞 <a
+                    href="tel:+917347340007"
+                    style={{ color: "var(--c-accent)", fontWeight: 600, textDecoration: "none" }}
+                  >
+                    +91 73473 40007
+                  </a>
                 </p>
               </div>
 

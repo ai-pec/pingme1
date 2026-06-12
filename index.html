@@ -14,6 +14,18 @@
     <meta name="apple-mobile-web-app-title" content="PingME" />
     <link rel="manifest" href="/site.webmanifest" />
 
+    <!-- Prevent flash of unstyled content: paint background before JS loads -->
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        background-color: #ffffff;
+      }
+      #root {
+        min-height: 100vh;
+      }
+    </style>
+
     <!-- Open Graph -->
     <meta property="og:title" content="pingME" />
     <meta property="og:description" content="PingME NFC cards — tap to share your contact, social links, and profile instantly" />
