@@ -39,7 +39,7 @@ export function OrderHistory({ orders, ordersLoading, onEditNFC }: OrderHistoryP
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <ShoppingBag className="h-5 w-5" />
-          Orders & Pre-bookings
+          Orders &amp; Pre-bookings
         </CardTitle>
         <CardDescription>
           Track your orders and pre-booking status
@@ -68,29 +68,63 @@ export function OrderHistory({ orders, ordersLoading, onEditNFC }: OrderHistoryP
                   ? "confirmed"
                   : order.status;
               const nfcLines = getNfcLineProfilesFromOrder(order);
+              const hasNfcActions =
+                isNFCOrder(order) && displayStatus === "confirmed" && nfcLines.length > 0;
 
               return (
                 <div
                   key={order.id}
                   className="border border-border rounded-xl p-4 bg-card"
                 >
-                  <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
-                    <div className="flex items-center gap-2">
-                      <Package className="w-4 h-4 text-primary" />
-                      <span className="text-xs font-mono text-muted-foreground">
+                  {/* ── Row 1: Order ID + Status Badge ── */}
+                  <div className="flex items-center justify-between mb-3 gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Package className="w-4 h-4 text-primary shrink-0" />
+                      <span className="text-xs font-mono text-muted-foreground truncate">
                         #{order.id.slice(0, 8).toUpperCase()}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 flex-wrap justify-end">
-                      {isNFCOrder(order) &&
-                        displayStatus === "confirmed" &&
+
+                    {/* Status badge — always visible with text */}
+                    <Badge
+                      variant="secondary"
+                      className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
+                        displayStatus === "confirmed"
+                          ? "bg-green-100 text-green-700"
+                          : displayStatus === "cancelled"
+                          ? "bg-red-100 text-red-700"
+                          : "bg-amber-100 text-amber-700"
+                      }`}
+                    >
+                      {displayStatus === "confirmed" && (
+                        <>
+                          <CheckCircle className="h-3 w-3" />
+                          <span>Confirmed</span>
+                        </>
+                      )}
+                      {displayStatus === "pending" && (
+                        <>
+                          <Clock className="h-3 w-3" />
+                          <span>Pending</span>
+                        </>
+                      )}
+                      {displayStatus === "cancelled" && (
+                        <span>Cancelled</span>
+                      )}
+                    </Badge>
+                  </div>
+
+                  {/* ── Row 2: Action buttons — full-width, always labelled ── */}
+                  {(hasNfcActions || order.payment) && (
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {hasNfcActions &&
                         nfcLines.map((line) => (
                           <Button
                             key={line.lineKey}
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="h-9 shrink-0 md:px-3 md:gap-2"
+                            className="h-8 gap-1.5 px-3 text-xs font-medium"
                             onClick={() =>
                               onEditNFC(
                                 order,
@@ -98,62 +132,45 @@ export function OrderHistory({ orders, ordersLoading, onEditNFC }: OrderHistoryP
                                 getLineDisplayTitle(line, order)
                               )
                             }
-                            aria-label={`Edit NFC profile for ${line.title}`}
+                            aria-label={`Edit NFC profile for ${getLineDisplayTitle(line, order)}`}
                           >
-                            <Edit2 className="h-3.5 w-3.5" />
-                            <span className="hidden md:inline">
+                            <Edit2 className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate max-w-[160px]">
                               {nfcLines.length > 1
-                                ? `Edit NFC — ${getLineDisplayTitle(line, order)}`
-                                : "Edit NFC"}
+                                ? `Edit — ${getLineDisplayTitle(line, order)}`
+                                : "Edit NFC Profile"}
                             </span>
                           </Button>
                         ))}
+
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="h-9 w-9 shrink-0 md:h-9 md:w-auto md:px-3 md:gap-2"
+                        className="h-8 gap-1.5 px-3 text-xs font-medium"
                         onClick={() => downloadReceipt(order as PrebookingRecord, order.email || "")}
                         disabled={!order.payment}
                         aria-label="Download Invoice"
                       >
-                        <span className="hidden md:inline">Download Invoice</span>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-3.5 w-3.5 shrink-0"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                        >
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                          <polyline points="7 10 12 15 17 10" />
+                          <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                        <span>Download Invoice</span>
                       </Button>
-                      <Badge
-                        variant="secondary"
-                        className={`inline-flex h-8 min-w-8 items-center justify-center gap-1 rounded-full px-2 text-xs ${
-                          displayStatus === "confirmed"
-                            ? "bg-green-100 text-green-700 md:min-w-0 md:px-2.5"
-                            : displayStatus === "cancelled"
-                            ? "bg-red-100 text-red-700 md:min-w-0 md:px-2.5"
-                            : "bg-amber-100 text-amber-700 md:min-w-0 md:px-2.5"
-                        }`}
-                      >
-                        {displayStatus === "confirmed" && (
-                          <>
-                            <CheckCircle className="h-3 w-3" />
-                            <span className="hidden md:inline">Confirmed</span>
-                            <span className="sr-only md:hidden">Confirmed</span>
-                          </>
-                        )}
-                        {displayStatus === "pending" && (
-                          <>
-                            <Clock className="h-3 w-3" />
-                            <span>
-                              {displayStatus.charAt(0).toUpperCase() +
-                                displayStatus.slice(1)}
-                            </span>
-                          </>
-                        )}
-                        {displayStatus === "cancelled" && (
-                          <span>
-                            {displayStatus.charAt(0).toUpperCase() +
-                              displayStatus.slice(1)}
-                          </span>
-                        )}
-                      </Badge>
                     </div>
-                  </div>
+                  )}
 
                   <div className="space-y-2 mb-3">
                     {order.items?.map((item: CartItem, idx: number) => {
@@ -198,7 +215,7 @@ export function OrderHistory({ orders, ordersLoading, onEditNFC }: OrderHistoryP
                               </span>
                             </span>
                           </div>
-                          <span className="font-medium">{itemPrice}</span>
+                          <span className="font-medium shrink-0">{itemPrice}</span>
                         </div>
                       );
                     })}
