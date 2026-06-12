@@ -1,6 +1,6 @@
 import { ShoppingBag, Package, Edit2, CheckCircle, Clock, MapPin, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { downloadReceipt } from "@/lib/paymentService";
+import { downloadReceipt } from "@/lib/invoiceUtils";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,

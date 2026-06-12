@@ -17,7 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { subscribeToOrders, updateOrderStatus, subscribeToContactMessages, deleteContactMessage, markContactMessageRead, type ContactMessage } from "@/lib/adminService";
-import { downloadReceipt } from "@/lib/paymentService";
+import { downloadReceipt } from "@/lib/invoiceUtils";
 import { categoryDescriptionFromName, categoryNameFromSlug, normalizeCategorySlug } from "@/lib/productCatalog";
 import { subscribeToProducts, saveProduct, deleteProductDoc, uploadProductImage, DbProduct, renameCategory, moveProductsToCategory, subscribeToProductCategories, saveProductCategory, deleteCategory } from "@/lib/productService";
 import type { PrebookingRecord } from "@/lib/prebookService";

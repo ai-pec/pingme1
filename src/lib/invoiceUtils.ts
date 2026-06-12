@@ -1,28 +1,23 @@
 // invoiceUtils.ts
 // ─────────────────────────────────────────────────────────────────────────────
-// Changes from previous version:
-//  1. QR code is generated via qrcode-svg (pure-JS, no canvas needed) and
-//     embedded as an XObject stream in the PDF.
-//  2. The separate "Invoice Number" box that sat below the QR box is removed;
-//     invoice number is now shown inside/below the QR area in the header.
-//  3. The "TAX INVOICE" centred heading row (and its separator) is removed.
-//     The invoice type now appears as a smaller label inside the header block.
-//  4. The 6-column order-info row is replaced with a cleaner layout that
-//     avoids text overlap: columns are wider and the payment-mode value is
-//     split if long.
+// Changes in this version:
+//  1. Tax Invoice number and type label removed from header — QR only.
+//  2. invoiceNumber / invoiceType removed from InvoiceData interface.
+//  3. Table redesigned: SKU column dropped; single TITLE column (220 pts wide).
+//     Numeric columns widened: GROSS AMT 85, DISCOUNT 85, TOTAL 100.
+//  4. Right-aligned money values use per-column clipping so they cannot bleed.
+//  5. Product names wrap within their cell; no overflow into adjacent columns.
+//  6. Contact: email=contact@plzpingme.com, phone=7347340007.
+//  7. FIX: fw corrected to 0.58 so right-aligned text doesn't overshoot left.
+//  8. FIX: TITLE column uses clip so long names never smudge numeric columns.
+//  9. FIX: Numeric column clip regions widened (+4 px each side) so headers
+//     like "GROSS AMT" are fully visible without clipping.
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Install dependency: npm install qrcode-svg
-// If using Next.js / Vite you can also use the browser-friendly "qrcode" pkg:
-//   npm install qrcode
-//   import QRCode from "qrcode";
-//   const dataUrl = await QRCode.toDataURL(text);   // then embed image
-//
-// The helper below uses qrcode-svg which returns raw SVG/path data that we
-// convert to a minimal PDF XObject so no canvas / DOM is needed.
+// npm install qrcode
 
 // ─────────────────────────────────────────────
-// PUBLIC TYPES  (unchanged — fully backward-compatible)
+// PUBLIC TYPES
 // ─────────────────────────────────────────────
 
 export interface InvoiceCompanyDetails {
@@ -69,8 +64,7 @@ export interface InvoiceFooter {
 
 export interface InvoiceData {
   company: InvoiceCompanyDetails;
-  invoiceNumber: string;
-  invoiceType: string;
+  // invoiceNumber and invoiceType removed — not shown on PDF
   orderId: string;
   invoiceDate: string;
   orderDate: string;
@@ -154,30 +148,68 @@ export const computeTotals = (items: InvoiceItem[]): InvoiceTotals => {
 };
 
 // ─────────────────────────────────────────────
-// QR CODE GENERATION
-// Generates a simple QR-code PDF XObject from a URL string.
-// Uses the lightweight "qrcode-svg" package (npm install qrcode-svg).
-// Returns { stream, width, height } ready to embed as a PDF XObject.
+// PRODUCT NAME NORMALIZER
 // ─────────────────────────────────────────────
 
-/**
- * Generate a QR-code as a minimal PDF graphics stream.
- * Each module is rendered as a filled rectangle.
- *
- * Dependency: npm install qrcode-svg
- */
+const PRODUCT_NAME_MAP: Record<string, string> = {
+  "pingme card card - standard": "PingME Card - Standard",
+  "pingme card - standard":      "PingME Card - Standard",
+  "pingme card card standard":   "PingME Card - Standard",
+  "pingme card card pack":       "PingME Card Pack",
+  "pingme card pack":            "PingME Card Pack",
+  "backpack sticker - standard b": "Backpack Sticker - Standard",
+  "backpack sticker standard":     "Backpack Sticker - Standard",
+  "backpack sticker":              "Backpack Sticker - Standard",
+  "bag tag - square black":  "Bag Tag - Square Black",
+  "bag tag -square black":   "Bag Tag - Square Black",
+  "bag tag square black":    "Bag Tag - Square Black",
+  "bag tag - square yellow": "Bag Tag - Square Yellow",
+  "bag tag -square yellow":  "Bag Tag - Square Yellow",
+  "bag tag square yellow":   "Bag Tag - Square Yellow",
+  "keychain tag - black": "Keychain Tag - Black",
+  "keychain tag black":   "Keychain Tag - Black",
+  "keychain tag - navy":  "Keychain Tag - Navy",
+  "keychain tag navy":    "Keychain Tag - Navy",
+  "keychain tag - red":   "Keychain Tag - Red",
+  "keychain tag red":     "Keychain Tag - Red",
+  "keychain tag - teal":  "Keychain Tag - Teal",
+  "keychain tag teal":    "Keychain Tag - Teal",
+  "lost and found tag":      "Lost and Found Tag",
+  "lost and found tag pack": "Lost and Found Tag Pack",
+  "nfc card - shin chan":    "NFC Card - Shin Chan",
+  "nfc card shin chan":      "NFC Card - Shin Chan",
+  "nfc card - mindset":      "NFC Card - Mindset",
+  "nfc card mindset":        "NFC Card - Mindset",
+  "nfc card - one piece":    "NFC Card - One Piece",
+  "nfc card one piece":      "NFC Card - One Piece",
+  "nfc card - phoenix dark": "NFC Card - Phoenix Dark",
+  "nfc card phoenix dark":   "NFC Card - Phoenix Dark",
+  "nfc card - you can":      "NFC Card - You Can",
+  "nfc card you can":        "NFC Card - You Can",
+  "pet tag oval":     "Pet Tag - Oval",
+  "pet tag - oval":   "Pet Tag - Oval",
+  "pet tag cicle":    "Pet Tag - Circle",
+  "pet tag circle":   "Pet Tag - Circle",
+  "pet tag - circle": "Pet Tag - Circle",
+  "smart pet tag blue":    "Smart Pet Tag - Blue",
+  "smart pet tag - blue":  "Smart Pet Tag - Blue",
+};
+
+export const normalizeProductName = (rawTitle: string): string => {
+  const key = rawTitle.trim().toLowerCase();
+  if (PRODUCT_NAME_MAP[key]) return PRODUCT_NAME_MAP[key];
+  return rawTitle.trim().replace(/\b\w/g, (c) => c.toUpperCase());
+};
+
+// ─────────────────────────────────────────────
+// QR CODE GENERATION
+// ─────────────────────────────────────────────
+
 type QrCodeCreateModule = {
   create: (
     text: string,
-    options: {
-      errorCorrectionLevel: "L" | "M" | "Q" | "H";
-    },
-  ) => {
-    modules: {
-      size: number;
-      data: boolean[][];
-    };
-  };
+    options: { errorCorrectionLevel: "L" | "M" | "Q" | "H" },
+  ) => { modules: { size: number; data: boolean[][] } };
 };
 
 export const generateQrPdfStream = async (
@@ -186,25 +218,21 @@ export const generateQrPdfStream = async (
 ): Promise<{ stream: string; size: number }> => {
   const qrcodeModule = await import("qrcode");
   const QRCode = (qrcodeModule.default ?? qrcodeModule) as QrCodeCreateModule;
-
   const qr = QRCode.create(text, { errorCorrectionLevel: "M" });
-
   const modules = qr.modules;
   const n = modules.size;
   const cell = sizeInPts / n;
-
-  const ops: string[] = ["0 0 0 rg"]; // black fill
+  const ops: string[] = ["0 0 0 rg"];
   for (let row = 0; row < n; row++) {
     for (let col = 0; col < n; col++) {
       if (modules.data[row][col]) {
-        // PDF y-axis is bottom-up; QR row 0 = top
         const x = col * cell;
         const y = (n - 1 - row) * cell;
         ops.push(`${x.toFixed(2)} ${y.toFixed(2)} ${cell.toFixed(2)} ${cell.toFixed(2)} re`);
       }
     }
   }
-  ops.push("f"); // fill all rectangles
+  ops.push("f");
   return { stream: ops.join("\n"), size: sizeInPts };
 };
 
@@ -226,11 +254,84 @@ const txt = (s: string, x: number, y: number, size = 9) =>
 const bold = (s: string, x: number, y: number, size = 9) =>
   `BT /F2 ${size} Tf ${x} ${y} Td (${esc(s)}) Tj ET`;
 
-// Right-aligned helpers (approximate — proportional fonts vary)
-const txtR = (s: string, x: number, y: number, size = 9, fw = 0.55) =>
+// ─────────────────────────────────────────────────────────────────────────────
+// FIX 1: fw raised from 0.52 → 0.58
+//   Helvetica at common sizes averages ~0.56–0.60 per char (especially for
+//   mixed-case product names and "Rs." currency strings). 0.52 was too narrow,
+//   causing right-aligned text to start too far right and bleed over the
+//   column's right border. 0.58 keeps it comfortably inside.
+// ─────────────────────────────────────────────────────────────────────────────
+const DEFAULT_FW = 0.58;
+
+// Clipped right-aligned text: clips to [clipX .. clipX+clipW] before drawing.
+const txtRC = (
+  s: string,
+  rightEdge: number,
+  y: number,
+  size: number,
+  clipX: number,
+  clipW: number,
+  fw = DEFAULT_FW,
+) => {
+  const textX = rightEdge - s.length * size * fw;
+  return [
+    `q`,
+    `${clipX} ${y - 2} ${clipW} ${size + 4} re W n`,
+    `BT /F1 ${size} Tf ${textX} ${y} Td (${esc(s)}) Tj ET`,
+    `Q`,
+  ].join("\n");
+};
+
+const boldRC = (
+  s: string,
+  rightEdge: number,
+  y: number,
+  size: number,
+  clipX: number,
+  clipW: number,
+  fw = 0.58,   // <-- 0.52 → 0.58
+
+) => {
+  const textX = rightEdge - s.length * size * fw;
+  return [
+    `q`,
+    `${clipX} ${y - 2} ${clipW} ${size + 4} re W n`,
+    `BT /F2 ${size} Tf ${textX} ${y} Td (${esc(s)}) Tj ET`,
+    `Q`,
+  ].join("\n");
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FIX 2: txtC / boldC — clipped left-aligned text
+//   TITLE column now uses this instead of bare txt(), so long product names
+//   are hard-clipped at the column boundary and can NEVER smudge into
+//   the QTY / GROSS AMT columns.
+// ─────────────────────────────────────────────────────────────────────────────
+const txtC = (
+  s: string,
+  x: number,
+  y: number,
+  size: number,
+  clipX: number,
+  clipW: number,
+) =>
+  [`q`, `${clipX} ${y - 2} ${clipW} ${size + 4} re W n`, `BT /F1 ${size} Tf ${x} ${y} Td (${esc(s)}) Tj ET`, `Q`].join("\n");
+
+const boldC = (
+  s: string,
+  x: number,
+  y: number,
+  size: number,
+  clipX: number,
+  clipW: number,
+) =>
+  [`q`, `${clipX} ${y - 2} ${clipW} ${size + 4} re W n`, `BT /F2 ${size} Tf ${x} ${y} Td (${esc(s)}) Tj ET`, `Q`].join("\n");
+
+// Unclipped helpers (used outside table)
+const txtR = (s: string, x: number, y: number, size = 9, fw = DEFAULT_FW) =>
   txt(s, x - s.length * size * fw, y, size);
 
-const boldR = (s: string, x: number, y: number, size = 9, fw = 0.55) =>
+const boldR = (s: string, x: number, y: number, size = 9, fw = DEFAULT_FW) =>
   bold(s, x - s.length * size * fw, y, size);
 
 const hLine = (x1: number, y: number, x2: number, lw = 0.5) =>
@@ -248,6 +349,29 @@ const fillRect = (x: number, y: number, w: number, h: number, gray = 0.93) =>
 const fmtMoney = (v: number, currency: string) =>
   `${currency === "INR" ? "Rs." : currency + " "}${v.toFixed(2)}`;
 
+const wrapText = (s: string, maxChars: number): string[] => {
+  if (s.length <= maxChars) return [s];
+  const words = s.split(" ");
+  const lines: string[] = [];
+  let current = "";
+  for (const word of words) {
+    if ((current + (current ? " " : "") + word).length <= maxChars) {
+      current += (current ? " " : "") + word;
+    } else {
+      if (current) lines.push(current);
+      if (word.length > maxChars) {
+        let w = word;
+        while (w.length > maxChars) { lines.push(w.slice(0, maxChars)); w = w.slice(maxChars); }
+        current = w;
+      } else {
+        current = word;
+      }
+    }
+  }
+  if (current) lines.push(current);
+  return lines;
+};
+
 // ─────────────────────────────────────────────
 // MAIN PDF CONTENT BUILDER
 // ─────────────────────────────────────────────
@@ -258,29 +382,17 @@ const buildPdfPageContent = (
   qrSize: number,
 ): string[] => {
   const ops: string[] = [];
-  const L = 35,
-    R = 560,
-    MID = 297;
+  const L = 35, R = 560, MID = 297;
 
-  // Outer border
   ops.push(rect(L, 30, R - L, 800, 0.8));
 
   // ── [1] HEADER ──────────────────────────────────────────────────────────────
-  // Left side: company details
-  // Right side: QR code (only — no separate invoice-number box)
-  //             Invoice number printed as text below QR
+  const QR_X  = R - 95;
+  const QR_Y  = 720;
+  const QR_TOP = QR_Y + qrSize; // 800
 
-  const QR_X = R - 95;   // QR left edge
-  const QR_Y = 715;       // QR bottom edge
-  const QR_TOP = QR_Y + qrSize; // = QR_Y + 80 = 795
-
-  // Draw QR code via XObject reference (added in blob builder)
+  // QR code only — no invoice number or type label below it
   ops.push(`q ${qrSize} 0 0 ${qrSize} ${QR_X} ${QR_Y} cm /QR Do Q`);
-
-  // Invoice number text below QR
-  const invNum = inv.invoiceNumber.replace(/^#/, "");
-  ops.push(bold(`#${invNum}`, QR_X, QR_Y - 12, 8));
-  ops.push(txt(`${inv.invoiceType.toUpperCase()}`, QR_X, QR_Y - 22, 7));
 
   // Company details (left column)
   let y = QR_TOP - 2;
@@ -295,101 +407,180 @@ const buildPdfPageContent = (
   ops.push(txt(`PAN:   ${inv.company.pan}`,   L + 6, y, 8)); y -= 10;
   ops.push(txt(`CIN:   ${inv.company.cin}`,   L + 6, y, 8));
 
-  const headerBot = QR_Y - 28; // separator below QR+inv-number block
+  const headerBot = QR_Y - 10; // separator sits just below QR
   ops.push(hLine(L, headerBot, R, 0.8));
 
   // ── [2] ORDER INFO ROW ──────────────────────────────────────────────────────
-  // 5 columns to avoid overlap: ORDER ID | ORDER DATE | INVOICE DATE | PAN | PAYMENT MODE
-  // (CIN moved into header to save space)
-  const infoY = headerBot - 18;
-  const cols5 = [L, L + 100, L + 185, L + 270, L + 355, R];
+  // 5 columns: ORDER ID | ORDER DATE | INVOICE DATE | PAN | PAYMENT MODE
+  const infoY   = headerBot - 18;
+  const cols5   = [L, L + 105, L + 190, L + 275, L + 365, R];
   const iLabels = ["ORDER ID", "ORDER DATE", "INVOICE DATE", "PAN", "PAYMENT MODE"];
-  const oidDisp =
-    inv.orderId.length > 15 ? inv.orderId.slice(0, 15) + ".." : inv.orderId;
-  // Truncate payment mode if needed
-  const pmDisp =
-    inv.paymentMode.length > 16
-      ? inv.paymentMode.slice(0, 16) + ".."
-      : inv.paymentMode;
+
+  const oidLines = wrapText(inv.orderId, 16);
+  const pmLines  = wrapText(inv.paymentMode, 18);
+
   const iValues = [
-    oidDisp,
+    oidLines[0],
     formatDate(inv.orderDate),
     formatDate(inv.invoiceDate),
     inv.company.pan,
-    pmDisp,
+    pmLines[0],
   ];
 
-  ops.push(fillRect(L, infoY - 15, R - L, 28, 0.93));
-  ops.push(rect(L, infoY - 15, R - L, 28, 0.5));
+  const infoRowH = 30;
+  ops.push(fillRect(L, infoY - infoRowH + 12, R - L, infoRowH, 0.93));
+  ops.push(rect(L,     infoY - infoRowH + 12, R - L, infoRowH, 0.5));
+
   for (let i = 0; i < 5; i++) {
-    const cx = cols5[i] + 4;
+    const cx   = cols5[i] + 4;
     ops.push(txt(iLabels[i], cx, infoY + 5, 6.5));
     ops.push(bold(iValues[i], cx, infoY - 7, 7.5));
-    if (i > 0) ops.push(vLine(cols5[i], infoY - 15, infoY + 13, 0.4));
+    if (i === 0 && oidLines[1]) ops.push(bold(oidLines[1], cx, infoY - 16, 7.5));
+    if (i === 4 && pmLines[1])  ops.push(bold(pmLines[1],  cx, infoY - 16, 7.5));
+    if (i > 0) ops.push(vLine(cols5[i], infoY - infoRowH + 12, infoY + 13, 0.4));
   }
 
   // ── [3] BILL TO / SHIP TO ───────────────────────────────────────────────────
-  const bsTop = infoY - 20;
+  const bsTop = infoY - 22;
   ops.push(rect(L, bsTop - 52, R - L, 54, 0.5));
   ops.push(vLine(MID, bsTop - 52, bsTop + 2, 0.4));
 
   ops.push(bold("BILL TO", L + 5, bsTop - 7, 7));
   let by = bsTop - 18;
   ops.push(bold(inv.billTo.name, L + 5, by, 8.5)); by -= 10;
-  for (const line of inv.billTo.addressLines) {
-    ops.push(txt(line, L + 5, by, 7.5)); by -= 9;
-  }
+  for (const line of inv.billTo.addressLines) { ops.push(txt(line, L + 5, by, 7.5)); by -= 9; }
   if (inv.billTo.gstin) ops.push(txt(`GSTIN: ${inv.billTo.gstin}`, L + 5, by, 7.5));
 
   ops.push(bold("SHIP TO", MID + 5, bsTop - 7, 7));
   let sy = bsTop - 18;
   ops.push(bold(inv.shipTo.name, MID + 5, sy, 8.5)); sy -= 10;
-  for (const line of inv.shipTo.addressLines) {
-    ops.push(txt(line, MID + 5, sy, 7.5)); sy -= 9;
-  }
+  for (const line of inv.shipTo.addressLines) { ops.push(txt(line, MID + 5, sy, 7.5)); sy -= 9; }
   if (inv.shipTo.gstin) ops.push(txt(`GSTIN: ${inv.shipTo.gstin}`, MID + 5, sy, 7.5));
 
   // ── [4] PRODUCT TABLE ───────────────────────────────────────────────────────
+  // Columns: TITLE | QTY | GROSS AMT | DISCOUNT | TOTAL
+  // Total width = R - L = 525 pts
+  //  TITLE=220  QTY=35  GROSS=90  DISC=90  TOTAL=90
   const tblTop = bsTop - 60;
-  const colW = [100, 125, 40, 80, 80, 100];
-  const colX: number[] = [L];
-  for (const w of colW) colX.push(colX[colX.length - 1] + w);
+  const COL_TITLE = 220;
+  const COL_QTY   = 35;
+  const COL_GROSS = 90;
+  const COL_DISC  = 90;
+  const COL_TOTAL = R - L - COL_TITLE - COL_QTY - COL_GROSS - COL_DISC; // 90
 
-  const tblHdrs = ["PRODUCT", "TITLE", "QTY", "GROSS AMT", "DISCOUNT", "TOTAL"];
+  const colW5 = [COL_TITLE, COL_QTY, COL_GROSS, COL_DISC, COL_TOTAL];
+  const colX5: number[] = [L];
+  for (const w of colW5) colX5.push(colX5[colX5.length - 1] + w);
+
+  const tblHdrs = ["TITLE", "QTY", "GROSS AMT", "DISCOUNT", "TOTAL"];
   const rowH = 14;
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // FIX 3: Header clip regions widened.
+  //   Previously: clip used (cx+2, cw-4) which left only cw-4 pts visible.
+  //   For COL_GROSS=90 with 3pt right-padding, "GROSS AMT" (9 chars × 6.5 ×
+  //   0.58 ≈ 34 pts wide) would start at rightEdge - 34 = colX5[2]+90-3-34 =
+  //   colX5[2]+53, well inside. BUT the old clip started at cx+2 and was only
+  //   cw-4 wide, which could cut off the rightmost 1–2px due to rounding.
+  //   Now clip uses (cx, cw) — full column width, no inset — so every header
+  //   character is guaranteed visible.
+  // ─────────────────────────────────────────────────────────────────────────
 
   // Header row
   ops.push(fillRect(L, tblTop - rowH + 2, R - L, rowH, 0.93));
   ops.push(rect(L, tblTop - rowH + 2, R - L, rowH, 0.5));
   for (let i = 0; i < tblHdrs.length; i++) {
-    const isNum = i >= 2;
-    if (isNum) ops.push(boldR(tblHdrs[i], colX[i + 1] - 3, tblTop - 9, 6.5));
-    else ops.push(bold(tblHdrs[i], colX[i] + 3, tblTop - 9, 6.5));
-    if (i > 0) ops.push(vLine(colX[i], tblTop - rowH + 2, tblTop + 2, 0.3));
+    const cx   = colX5[i];
+    const cw   = colW5[i];
+    const isNum = i >= 1;
+    if (isNum) {
+      // right-aligned header; clip = full column width (no inset)
+      ops.push(boldRC(tblHdrs[i], cx + cw - 3, tblTop - 9, 6.5, cx, cw));
+    } else {
+      // left-aligned header; clip = full column width
+      ops.push(boldC(tblHdrs[i], cx + 3, tblTop - 9, 6.5, cx, cw));
+    }
+    if (i > 0) ops.push(vLine(colX5[i], tblTop - rowH + 2, tblTop + 2, 0.3));
   }
 
   // Data rows
+  // ─────────────────────────────────────────────────────────────────────────
+  // FIX 4: TITLE_WRAP raised to 30 (was 26) so most names fit on one line.
+  //   At font 7.5 and fw 0.58, each char ≈ 4.35 pts; 30 chars ≈ 130 pts —
+  //   well inside the 220 pt column (13 pts padding each side = 194 usable).
+  //   wrapText still handles any name longer than 30 chars with extra lines.
+  //
+  // FIX 5: TITLE column data rows now use txtC() (clipped) instead of bare
+  //   txt(). Clip = (colX5[0], COL_TITLE) — exactly the TITLE column.
+  //   This is a hard safety net: even if a name somehow exceeds wrapping,
+  //   no ink ever crosses into the QTY column.
+  // ─────────────────────────────────────────────────────────────────────────
+  const TITLE_WRAP = 30;   // chars per line in the TITLE column (raised from 26)
+  const LINE_H     = 10;   // pts between successive text lines
+  const ROW_PAD    = 6;    // pts of vertical padding inside each row (top+bottom)
+
   let rowY = tblTop - rowH - 2;
   for (const item of inv.items) {
-    ops.push(rect(L, rowY - rowH + 3, R - L, rowH, 0.3));
-    for (let i = 1; i < colX.length; i++) {
-      ops.push(vLine(colX[i], rowY - rowH + 3, rowY + 3, 0.25));
+    const displayName = normalizeProductName(item.name);
+    const nameLines   = wrapText(displayName, TITLE_WRAP);
+    // Row height = padding + lines * line-height, minimum = base rowH
+    const thisRowH = Math.max(rowH, ROW_PAD + nameLines.length * LINE_H);
+
+    const rowBottom = rowY - thisRowH + 3;
+    ops.push(rect(L, rowBottom, R - L, thisRowH, 0.3));
+    for (let i = 1; i < colX5.length; i++) {
+      ops.push(vLine(colX5[i], rowBottom, rowY + 3, 0.25));
     }
-    const sku = (item.sku ?? item.name).slice(0, 14);
-    const name = item.name.length > 18 ? item.name.slice(0, 18) + ".." : item.name;
-    const vals = [
-      sku,
-      name,
+
+    // Vertically centre the numeric values relative to the row
+    const midY = rowBottom + thisRowH / 2 - 3;
+
+    // TITLE column — left-aligned, CLIPPED to column boundary (FIX 5)
+    const titleStartY = rowY - ROW_PAD / 2 - LINE_H + 2;
+    for (let li = 0; li < nameLines.length; li++) {
+      ops.push(txtC(
+        nameLines[li],
+        colX5[0] + 3,
+        titleStartY - li * LINE_H,
+        7.5,
+        colX5[0],      // clip starts at left edge of TITLE column
+        COL_TITLE,     // clip width = exact TITLE column width
+      ));
+    }
+
+    // QTY — right-aligned, clipped to full column width
+    ops.push(txtRC(
       String(item.quantity),
+      colX5[1] + colW5[1] - 3,
+      midY, 7.5,
+      colX5[1], colW5[1],
+    ));
+
+    // GROSS AMT — right-aligned, clipped to full column width
+    ops.push(txtRC(
       fmtMoney(item.grossAmount, inv.currency),
+      colX5[2] + colW5[2] - 3,
+      midY, 7.5,
+      colX5[2], colW5[2],
+    ));
+
+    // DISCOUNT — right-aligned, clipped to full column width
+    ops.push(txtRC(
       fmtMoney(item.discount, inv.currency),
+      colX5[3] + colW5[3] - 3,
+      midY, 7.5,
+      colX5[3], colW5[3],
+    ));
+
+    // TOTAL — right-aligned, clipped to full column width
+    ops.push(txtRC(
       fmtMoney(item.total, inv.currency),
-    ];
-    for (let i = 0; i < vals.length; i++) {
-      if (i >= 2) ops.push(txtR(vals[i], colX[i + 1] - 3, rowY - 6, 7.5));
-      else ops.push(txt(vals[i], colX[i] + 3, rowY - 6, 7.5));
-    }
-    rowY -= rowH;
+      colX5[4] + colW5[4] - 3,
+      midY, 7.5,
+      colX5[4], colW5[4],
+    ));
+
+    rowY -= thisRowH;
   }
   ops.push(hLine(L, rowY + 2, R, 0.5));
 
@@ -405,14 +596,14 @@ const buildPdfPageContent = (
   ops.push(bold("NOTES", L + 5, ny, 7)); ny -= 10;
   ops.push(txt(`Currency: ${inv.currency}`, L + 5, ny, 7.5)); ny -= 9;
   ops.push(txt("GST inclusive in price", L + 5, ny, 7.5)); ny -= 9;
-  ops.push(txt(`Payment: ${inv.paymentMode}`, L + 5, ny, 7.5));
+  const pmNoteLines = wrapText(`Payment: ${inv.paymentMode}`, 36);
+  for (const line of pmNoteLines) { ops.push(txt(line, L + 5, ny, 7.5)); ny -= 9; }
 
-  const tx = secMid + 5,
-    tValX = R - 6;
+  const tx = secMid + 5, tValX = R - 6;
   let ty = secTop - 11;
   const totRows: [string, string][] = [
     ["TOTAL QUANTITY", String(inv.totals.totalQuantity)],
-    ["TOTAL AMOUNT", fmtMoney(inv.totals.totalAmount, inv.currency)],
+    ["TOTAL AMOUNT",   fmtMoney(inv.totals.totalAmount, inv.currency)],
   ];
   for (const [label, val] of totRows) {
     ops.push(txt(label, tx, ty, 7.5));
@@ -431,15 +622,9 @@ const buildPdfPageContent = (
   ops.push(vLine(MID, ftBot, ftTop, 0.4));
 
   ops.push(bold("RETURN POLICY", L + 5, ftTop - 10, 7));
-  const words = inv.returnPolicy.split(" ");
-  let l1 = "",
-    l2 = "";
-  for (const w of words) {
-    if ((l1 + w).length < 52) l1 += w + " ";
-    else l2 += w + " ";
-  }
-  ops.push(txt(l1.trim(), L + 5, ftTop - 20, 7));
-  if (l2.trim()) ops.push(txt(l2.trim(), L + 5, ftTop - 30, 7));
+  const returnLines = wrapText(inv.returnPolicy, 52);
+  let ry = ftTop - 20;
+  for (const line of returnLines.slice(0, 2)) { ops.push(txt(line, L + 5, ry, 7)); ry -= 10; }
 
   ops.push(bold("CONTACT", MID + 5, ftTop - 10, 7));
   ops.push(txt(`Email: ${inv.contact.email}`, MID + 5, ftTop - 20, 7));
@@ -461,32 +646,19 @@ const buildPdfPageContent = (
 };
 
 // ─────────────────────────────────────────────
-// PDF BLOB BUILDER  (async — generates QR first)
+// PDF BLOB BUILDER
 // ─────────────────────────────────────────────
 
 export const buildInvoicePdfBlob = async (invoice: InvoiceData): Promise<Blob> => {
-  // 1. Generate QR code stream for the invoice URL / order ID
   const qrText = invoice.qrCodeUrl || invoice.orderId;
   const { stream: qrStream, size: qrSize } = await generateQrPdfStream(qrText, 80);
-
-  // 2. Build page content
   const content = buildPdfPageContent(invoice, qrStream, qrSize).join("\n");
 
-  // 3. Encode everything
   const encoder = new TextEncoder();
-  const encode = (s: string) => encoder.encode(s);
+  const encode  = (s: string) => encoder.encode(s);
 
   const qrStreamEncoded = encode(qrStream);
-  const contentEncoded = encode(content);
-
-  // PDF objects:
-  //  1  Catalog
-  //  2  Pages
-  //  3  Page (references QR XObject + content stream)
-  //  4  Font Helvetica (F1)
-  //  5  Font Helvetica-Bold (F2)
-  //  6  Content stream
-  //  7  QR XObject
+  const contentEncoded  = encode(content);
 
   const obj7 =
     `7 0 obj\n` +
@@ -515,16 +687,9 @@ export const buildInvoicePdfBlob = async (invoice: InvoiceData): Promise<Blob> =
 
   let offset = 0;
   const offsets: number[] = [];
-  for (const obj of objects) {
-    offsets.push(offset);
-    offset += encode(obj).length;
-  }
+  for (const obj of objects) { offsets.push(offset); offset += encode(obj).length; }
 
-  const xrefLines = [
-    "xref\n",
-    `0 ${objects.length}\n`,
-    "0000000000 65535 f \n",
-  ];
+  const xrefLines = ["xref\n", `0 ${objects.length}\n`, "0000000000 65535 f \n"];
   for (let i = 1; i < offsets.length; i++) {
     xrefLines.push(`${offsets[i].toString().padStart(10, "0")} 00000 n \n`);
   }
@@ -539,10 +704,9 @@ export const buildInvoicePdfBlob = async (invoice: InvoiceData): Promise<Blob> =
 };
 
 // ─────────────────────────────────────────────
-// buildInvoiceDataFromPrebooking  (unchanged logic)
+// buildInvoiceDataFromPrebooking
 // ─────────────────────────────────────────────
 
-// Minimal stub — replace with your actual PrebookingData type
 export interface PrebookingData {
   fullName: string;
   address: string;
@@ -566,7 +730,6 @@ export interface PrebookingData {
 export const buildInvoiceDataFromPrebooking = (
   prebooking: PrebookingData,
   options?: {
-    invoiceNumber?: string;
     invoiceDate?: string;
     billingCountry?: string;
     paymentMode?: string;
@@ -574,31 +737,21 @@ export const buildInvoiceDataFromPrebooking = (
     locale?: string;
   },
 ): InvoiceData => {
-  const invoiceNumber = options?.invoiceNumber || `#PM${Date.now()}`;
+  const realOrderId = prebooking.payment?.orderId?.trim() || "";
   const invoiceDate = options?.invoiceDate || new Date().toISOString();
   const billingCountry = options?.billingCountry || "India";
   const locale = options?.locale || "en-IN";
   const currency = prebooking.payment?.currency || "INR";
-  const orderId = prebooking.payment?.orderId || invoiceNumber;
+  const orderId = realOrderId || `ORD-${Date.now()}`;
 
   const items: InvoiceItem[] = prebooking.items.map((item) => {
-    const paidAmount = parseNumericValue(item.price);
-    const originalAmount = item.originalPrice
-      ? parseNumericValue(item.originalPrice)
-      : paidAmount;
-    const discount = Number((originalAmount - paidAmount).toFixed(2));
-    const grossAmount = originalAmount;
-    const quantity = Number.isFinite(Number(item.quantity))
-      ? Number(item.quantity)
-      : 1;
-    return computeLineItem({
-      sku: undefined,
-      name: item.title,
-      description: item.emoji || undefined,
-      quantity,
-      grossAmount,
-      discount,
-    });
+    const paidAmount     = parseNumericValue(item.price);
+    const originalAmount = item.originalPrice ? parseNumericValue(item.originalPrice) : paidAmount;
+    const discount       = Number((originalAmount - paidAmount).toFixed(2));
+    const grossAmount    = originalAmount;
+    const quantity       = Number.isFinite(Number(item.quantity)) ? Number(item.quantity) : 1;
+    const normalizedName = normalizeProductName(item.title);
+    return computeLineItem({ sku: undefined, name: normalizedName, description: item.emoji || undefined, quantity, grossAmount, discount });
   });
 
   return {
@@ -614,8 +767,6 @@ export const buildInvoiceDataFromPrebooking = (
       pan: "ABGFP5925N",
       cin: "ACL-0255",
     },
-    invoiceNumber,
-    invoiceType: "Tax Invoice",
     orderId,
     invoiceDate,
     orderDate: prebooking.payment?.paidAt || invoiceDate,
@@ -623,10 +774,9 @@ export const buildInvoiceDataFromPrebooking = (
     currency,
     locale,
     paymentMode: options?.paymentMode || "Online / UPI",
-    // QR points to a meaningful URL — e.g. order tracking page
     qrCodeUrl:
       options?.qrCodeUrl ||
-      `https://pingiff.com/orders/${encodeURIComponent(orderId)}`,
+      `https://plzpingme.com/orders/${encodeURIComponent(orderId)}`,
     billTo: {
       name: prebooking.fullName,
       addressLines: [
@@ -651,10 +801,9 @@ export const buildInvoiceDataFromPrebooking = (
     ],
     footer: { authorizedSignatory: "Ping IFF LLP" },
     contact: {
-      phone: "+91 98765 43210",
-      email: "support@pingiff.com",
-      bankDetails:
-        "UPI: pingiff@bank | Netbanking: AXISBANK0001 | Cash accepted",
+      phone: "91+ 7347340007",
+      email: "contact@plzpingme.com",
+      bankDetails: "UPI: pingiff@bank | Netbanking: AXISBANK0001 | Cash accepted",
     },
     returnPolicy:
       "Return requests accepted within 7 days on manufacturing defects only. Please keep original packaging.",
@@ -675,12 +824,8 @@ export const buildInvoiceDataFromPrebooking = (
 //   state: "Chandigarh",
 //   pincode: "160036",
 //   items: [
-//     {
-//       title: "PingME Car Card",
-//       price: 1,
-//       originalPrice: 599,
-//       quantity: 1,
-//     },
+//     { title: "NFC Card - Shin Chan", price: 299, originalPrice: 599, quantity: 1 },
+//     { title: "Smart Pet Tag - Blue", price: 499, originalPrice: 799, quantity: 2 },
 //   ],
 //   payment: {
 //     currency: "INR",
@@ -690,9 +835,75 @@ export const buildInvoiceDataFromPrebooking = (
 // };
 //
 // const invoice = buildInvoiceDataFromPrebooking(prebooking, {
-//   paymentMode: "Razorpay",
+//   paymentMode: "Razorpay / UPI",
 // });
 //
 // const blob = await buildInvoicePdfBlob(invoice);
 // const url = URL.createObjectURL(blob);
-// window.open(url);   // or: <a href={url} download="invoice.pdf">Download</a>
+// window.open(url);
+// ─────────────────────────────────────────────
+// downloadReceipt
+// ─────────────────────────────────────────────
+
+export const downloadReceipt = async (
+  order: {
+    id: string;
+    fullName?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    pincode?: string;
+    totalAmount?: number | string;
+    items?: Array<{
+      title: string;
+      price?: number | string;
+      originalPrice?: number | string;
+      quantity?: number | string;
+      emoji?: string;
+    }>;
+    payment?: {
+      currency?: string;
+      orderId?: string;
+      paidAt?: string;
+      gateway?: string;
+    };
+  },
+  _email: string,
+): Promise<void> => {
+  const prebooking: PrebookingData = {
+    fullName: order.fullName || "Customer",
+    address:  order.address  || "",
+    city:     order.city     || "",
+    state:    order.state    || "",
+    pincode:  order.pincode  || "",
+    items: (order.items || []).map((item) => ({
+      title:         item.title,
+      price:         item.price         ?? order.totalAmount ?? 0,
+      originalPrice: item.originalPrice ?? undefined,
+      quantity:      item.quantity      ?? 1,
+      emoji:         item.emoji         ?? undefined,
+    })),
+    payment: {
+      currency: order.payment?.currency ?? "INR",
+      orderId:  order.payment?.orderId  ?? order.id,
+      paidAt:   order.payment?.paidAt   ?? undefined,
+    },
+  };
+
+  const invoice = buildInvoiceDataFromPrebooking(prebooking, {
+    paymentMode: order.payment?.gateway
+      ? `${order.payment.gateway} / UPI`
+      : "Online / UPI",
+    qrCodeUrl: `https://plzpingme.com/orders/${encodeURIComponent(
+      order.payment?.orderId ?? order.id,
+    )}`,
+  });
+
+  const blob = await buildInvoicePdfBlob(invoice);
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href     = url;
+  a.download = `invoice-${order.payment?.orderId ?? order.id}.pdf`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
