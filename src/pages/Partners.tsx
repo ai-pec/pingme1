@@ -1,24 +1,45 @@
+'use client';
+
+import { useState } from "react";
 import MainLayout from "@/layouts/MainLayout";
-import { Link } from "react-router-dom";
-import { BadgeCheck, Building2, Handshake, Rocket, ShieldCheck, Users } from "lucide-react";
-import pingMeLogo from "@/assets/pingprocard_logo.jpeg";
-import collaborationCard from "@/assets/pingprocard.jpeg";
+import {
+  BadgeCheck,
+  Building2,
+  Check,
+  ChevronDown,
+  Copy,
+  Handshake,
+  Loader2,
+  Mail,
+  MapPin,
+  Phone,
+  Rocket,
+  ShieldCheck,
+  Users,
+} from "lucide-react";
+const pingMeLogo = { src: "/collab-logo.jpeg" };
+const collaborationCard = {src: "/pingme-collab.jpeg"};
+
+const THEME_BG = "#FDF2D4";
 
 const programHighlights = [
   {
     icon: Rocket,
     title: "Pilot Program Launch",
-    description: "Pro Ultimate Gym Chain is our first official collaborator for testing high-traffic safety communication use cases.",
+    description:
+      "Pro Ultimate Gym Chain is our first official collaborator for testing high-traffic safety communication use cases.",
   },
   {
     icon: Users,
     title: "Member Safety Experience",
-    description: "The pilot introduces privacy-first owner alerts to improve response time and member support around parked vehicles.",
+    description:
+      "The pilot introduces privacy-first owner alerts to improve response time and member support around parked vehicles.",
   },
   {
     icon: ShieldCheck,
     title: "Privacy by Design",
-    description: "All interactions are built on PingME's masked communication framework to protect personal contact details.",
+    description:
+      "All interactions are built on PingME's masked communication framework to protect personal contact details.",
   },
 ];
 
@@ -29,60 +50,193 @@ const outcomes = [
   "Prepare a scalable partnership rollout model",
 ];
 
+const stats = [
+  { value: "1", label: "Pilot Partner Onboarded" },
+  { value: "100%", label: "Contact Details Masked" },
+  { value: "24/7", label: "Alert Availability" },
+  { value: "0", label: "Personal Numbers Shared" },
+];
+
+const faqs = [
+  {
+    question: "What does a pilot partnership involve?",
+    answer:
+      "We work with your team to roll out PingME's masked alert system at your locations, gather feedback from staff and members, and measure how quickly issues get resolved.",
+  },
+  {
+    question: "Is there a cost to become a pilot partner?",
+    answer:
+      "Pilot partnerships are evaluated case by case. Reach out through the form below and our team will walk you through what's involved for your locations.",
+  },
+  {
+    question: "How does PingME protect personal contact details?",
+    answer:
+      "All communication is routed through PingME's masking layer, so phone numbers and personal details are never exposed to the other party during an alert or conversation.",
+  },
+  {
+    question: "What kinds of businesses can partner with PingME?",
+    answer:
+      "Gyms, residential societies, offices, and any high-traffic space that manages parking or visitor access can benefit from PingME's alert and communication tools.",
+  },
+];
+
+const contactDetails = [
+  {
+    label: "Company",
+    value: "Ping IFF LLP",
+    icon: Building2,
+    copyable: false,
+  },
+  {
+    label: "Address",
+    value: "745, Burail, Ekta Market, Sector 45, Chandigarh – 160047",
+    icon: MapPin,
+    copyable: true,
+  },
+  {
+    label: "Phone",
+    value: "+91 73473 40007",
+    icon: Phone,
+    href: "tel:+917347340007",
+    copyable: true,
+  },
+  {
+    label: "Email",
+    value: "contact@pingiff.ai",
+    icon: Mail,
+    href: "mailto:contact@pingiff.ai",
+    copyable: true,
+  },
+];
+
+type FormStatus = "idle" | "submitting" | "success" | "error";
+
 const Partners = () => {
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
+
+  const [form, setForm] = useState({
+    businessName: "",
+    contactName: "",
+    email: "",
+    phone: "",
+    message: "",
+  });
+  const [formStatus, setFormStatus] = useState<FormStatus>("idle");
+  const [formError, setFormError] = useState("");
+
+  const handleCopy = async (label: string, value: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedField(label);
+      setTimeout(() => setCopiedField((current) => (current === label ? null : current)), 1800);
+    } catch {
+      // Clipboard access may be blocked; fail silently.
+    }
+  };
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (!form.businessName || !form.contactName || !form.email || !form.message) {
+      setFormStatus("error");
+      setFormError("Please fill in the required fields before sending your request.");
+      return;
+    }
+
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(form.email)) {
+      setFormStatus("error");
+      setFormError("Please enter a valid email address.");
+      return;
+    }
+
+    setFormStatus("submitting");
+    setFormError("");
+
+    // Placeholder submission. Wire this up to your API route / form handler.
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 900));
+      setFormStatus("success");
+      setForm({ businessName: "", contactName: "", email: "", phone: "", message: "" });
+    } catch {
+      setFormStatus("error");
+      setFormError("Something went wrong. Please try again or email us directly.");
+    }
+  };
+
   return (
     <MainLayout>
-      <section className="relative overflow-hidden bg-neutral-950 py-14 md:py-20 text-stone-100">
+      <section className="relative overflow-hidden py-14 md:py-20 text-stone-900" style={{ backgroundColor: THEME_BG }}>
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(5,5,7,0.64),rgba(5,5,7,0.84))]" />
-          <div className="absolute inset-0 bg-[repeating-linear-gradient(135deg,rgba(255,255,255,0.035)_0px,rgba(255,255,255,0.035)_1px,transparent_1px,transparent_12px)] opacity-40 mix-blend-soft-light" />
-          <div className="absolute inset-0 bg-[linear-gradient(105deg,rgba(250,204,21,0.12)_0%,rgba(250,204,21,0.04)_20%,rgba(0,0,0,0)_42%,rgba(0,0,0,0)_58%,rgba(239,68,68,0.04)_80%,rgba(239,68,68,0.12)_100%)]" />
-          <div className="absolute -left-40 top-10 h-[40rem] w-[40rem] rounded-full bg-yellow-300/55 blur-[170px] mix-blend-screen opacity-95" />
-          <div className="absolute -left-8 bottom-[-10rem] h-[28rem] w-[28rem] rounded-full bg-amber-400/35 blur-[140px] mix-blend-screen opacity-90" />
-          <div className="absolute -right-32 top-8 h-[42rem] w-[42rem] rounded-full bg-red-500/55 blur-[180px] mix-blend-screen opacity-95" />
-          <div className="absolute right-[-4rem] bottom-[-7rem] h-[30rem] w-[30rem] rounded-full bg-rose-600/35 blur-[150px] mix-blend-screen opacity-90" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_14%_48%,rgba(250,204,21,0.28),transparent_24%),radial-gradient(circle_at_82%_48%,rgba(239,68,68,0.28),transparent_26%),radial-gradient(circle_at_center,rgba(0,0,0,0.1),rgba(0,0,0,0.72))]" />
+          <div className="absolute inset-0 bg-[linear-gradient(105deg,rgba(250,204,21,0.08)_0%,rgba(250,204,21,0.02)_20%,rgba(0,0,0,0)_42%,rgba(0,0,0,0)_58%,rgba(239,68,68,0.02)_80%,rgba(239,68,68,0.08)_100%)]" />
+          <div className="absolute -left-40 top-10 h-[40rem] w-[40rem] rounded-full bg-yellow-300/30 blur-[170px] opacity-60" />
+          <div className="absolute -left-8 bottom-[-10rem] h-[28rem] w-[28rem] rounded-full bg-amber-400/20 blur-[140px] opacity-50" />
+          <div className="absolute -right-32 top-8 h-[42rem] w-[42rem] rounded-full bg-red-500/20 blur-[180px] opacity-60" />
+          <div className="absolute right-[-4rem] bottom-[-7rem] h-[30rem] w-[30rem] rounded-full bg-rose-600/20 blur-[150px] opacity-50" />
         </div>
 
         <div className="container relative space-y-12">
+          {/* -- HERO -- */}
           <div className="mx-auto max-w-4xl text-center space-y-5">
-            <p className="inline-flex items-center gap-2 rounded-full border border-red-400/30 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-amber-200 shadow-[0_0_30px_rgba(239,68,68,0.12)] backdrop-blur-sm">
+            <p className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-amber-800 shadow-sm backdrop-blur-sm">
               Partners
             </p>
-            <h1 className="text-4xl font-extrabold tracking-tight text-white md:text-5xl">
+            <h1 className="text-4xl font-extrabold tracking-tight text-stone-900 md:text-5xl">
               Building Safer Experiences Through Strategic Collaboration
             </h1>
-            <p className="mx-auto max-w-3xl text-lg leading-8 text-stone-300">
+            <p className="mx-auto max-w-3xl text-lg leading-8 text-stone-600">
               PingME is proud to announce a pilot partnership with{" "}
-              <span className="font-semibold text-amber-200">Pro Ultimate Gym Chain</span>, our first collaborator. This
+              <span className="font-semibold text-amber-800">Pro Ultimate Gym Chain</span>, our first collaborator. This
               program validates how privacy-first communication can improve member safety and day-to-day operations.
             </p>
           </div>
 
           <div className="mx-auto max-w-3xl">
             <div className="mt-8 flex justify-center">
-              <Link
-                to="/contact"
+              <a
+                href="#partner-form"
                 role="button"
-                className="inline-block w-full sm:w-auto text-center bg-amber-200/8 hover:bg-amber-200/12 border border-amber-300/20 text-amber-50 hover:text-amber-200 font-extrabold text-2xl md:text-3xl px-6 py-4 rounded-2xl shadow-lg"
+                className="inline-block w-full sm:w-auto text-center bg-amber-200/40 hover:bg-amber-300/50 border border-amber-400/40 text-amber-950 font-extrabold text-2xl md:text-3xl px-6 py-4 rounded-2xl shadow-md transition-colors"
               >
                 Want to collaborate with us? Contact us
-              </Link>
+              </a>
             </div>
           </div>
 
+          {/* -- STATS STRIP -- */}
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            {stats.map((stat) => (
+              <div
+                key={stat.label}
+                className="rounded-2xl border border-stone-200 bg-white/70 p-4 text-center shadow-sm backdrop-blur-sm"
+              >
+                <p className="text-2xl font-extrabold text-amber-800 md:text-3xl">{stat.value}</p>
+                <p className="mt-1 text-xs font-medium uppercase tracking-wide text-stone-600">{stat.label}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* -- PILOT PARTNER + SNAPSHOT -- */}
           <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
-            <article className="rounded-[1.75rem] border border-white/10 bg-black/70 p-6 shadow-[0_0_50px_rgba(239,68,68,0.12),0_0_80px_rgba(250,204,21,0.08)] backdrop-blur-xl md:p-8">
+            <article className="rounded-[1.75rem] border border-stone-200 bg-white/80 p-6 shadow-lg backdrop-blur-xl md:p-8">
               <div className="flex flex-wrap items-center gap-4">
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-2 shadow-[0_0_24px_rgba(250,204,21,0.12)]">
-                  <img src={pingMeLogo} alt="PingME logo" className="h-12 w-auto object-contain rounded-xl" />
+                <div className="rounded-2xl border border-stone-200 bg-white p-2 shadow-md">
+                  <img src={pingMeLogo.src} alt="PingME logo" className="h-12 w-auto object-contain rounded-xl" />
                 </div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-red-500/25 to-amber-400/20 text-amber-200 shadow-[0_0_18px_rgba(239,68,68,0.18)]">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-red-500/25 to-amber-400/20 text-amber-800 shadow-sm">
                   <Handshake className="h-6 w-6" />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-200/80">Collaboration Partner</p>
-                  <h2 className="text-2xl font-bold text-white">Pro Ultimate Gym Chain</h2>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-800/80">Collaboration Partner</p>
+                  <h2 className="text-2xl font-bold text-stone-900">Pro Ultimate Gym Chain</h2>
                 </div>
               </div>
 
@@ -90,26 +244,26 @@ const Partners = () => {
                 {programHighlights.map((item) => {
                   const Icon = item.icon;
                   return (
-                    <div key={item.title} className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
-                      <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-red-500/20 to-amber-400/20 shadow-[0_0_20px_rgba(239,68,68,0.12)]">
-                        <Icon className="h-5 w-5 text-amber-200" />
+                    <div key={item.title} className="rounded-2xl border border-stone-200 bg-white/70 p-4 backdrop-blur-sm shadow-sm">
+                      <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-red-500/20 to-amber-400/20 shadow-sm">
+                        <Icon className="h-5 w-5 text-amber-800" />
                       </div>
-                      <h3 className="text-sm font-bold text-white">{item.title}</h3>
-                      <p className="mt-2 text-sm leading-6 text-stone-300">{item.description}</p>
+                      <h3 className="text-sm font-bold text-stone-900">{item.title}</h3>
+                      <p className="mt-2 text-sm leading-6 text-stone-600">{item.description}</p>
                     </div>
                   );
                 })}
               </div>
 
-              <div className="mt-6 rounded-2xl border border-amber-300/15 bg-white/5 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-                <div className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.2em] text-amber-200">
-                  <BadgeCheck className="h-4 w-4 text-red-400" />
+              <div className="mt-6 rounded-2xl border border-amber-300/30 bg-white/50 p-5 shadow-sm">
+                <div className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.2em] text-amber-800">
+                  <BadgeCheck className="h-4 w-4 text-red-500" />
                   Pilot Program Objectives
                 </div>
                 <ul className="space-y-2">
                   {outcomes.map((item) => (
-                    <li key={item} className="flex items-start gap-2 text-sm text-stone-300">
-                      <span className="mt-1 inline-block h-2 w-2 shrink-0 rounded-full bg-gradient-to-r from-red-400 to-amber-300 shadow-[0_0_10px_rgba(250,204,21,0.35)]" />
+                    <li key={item} className="flex items-start gap-2 text-sm text-stone-600">
+                      <span className="mt-1 inline-block h-2 w-2 shrink-0 rounded-full bg-gradient-to-r from-red-400 to-amber-400 shadow-none" />
                       <span>{item}</span>
                     </li>
                   ))}
@@ -117,87 +271,258 @@ const Partners = () => {
               </div>
             </article>
 
-            <aside className="rounded-[1.75rem] border border-white/10 bg-black/70 p-6 shadow-[0_0_50px_rgba(250,204,21,0.08),0_0_80px_rgba(239,68,68,0.1)] backdrop-blur-xl md:p-8">
+            <aside className="rounded-[1.75rem] border border-stone-200 bg-white/80 p-6 shadow-lg backdrop-blur-xl md:p-8">
               <div className="mb-4 flex items-center gap-3">
                 <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-red-500/20 to-amber-400/20">
-                  <Building2 className="h-5 w-5 text-amber-200" />
+                  <Building2 className="h-5 w-5 text-amber-800" />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-200/80">Partnership Preview</p>
-                  <h3 className="text-xl font-bold text-white">Collaboration Snapshot</h3>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-800/80">Partnership Preview</p>
+                  <h3 className="text-xl font-bold text-stone-900">Collaboration Snapshot</h3>
                 </div>
               </div>
 
-              <div className="overflow-hidden rounded-xl border border-white/10 bg-neutral-900/80">
-                <img src={collaborationCard} alt="PingME collaboration card" className="w-full object-cover" />
+              <div className="overflow-hidden rounded-xl border border-stone-200 bg-stone-100/80">
+                <img src={collaborationCard.src} alt="PingME collaboration card" className="w-full object-cover" />
               </div>
 
-              <p className="mt-4 text-sm leading-7 text-stone-300">
+              <p className="mt-4 text-sm leading-7 text-stone-600">
                 This pilot marks the beginning of PingME's partnership track. We are working closely with Pro Ultimate Gym
                 Chain to shape reliable, privacy-first communication at scale.
               </p>
-              <p className="mt-4 text-sm leading-7 text-stone-300">
+              <p className="mt-4 text-sm leading-7 text-stone-600">
                 Want to collaborate with us?{" "}
-                <Link to="/contact" className="font-semibold text-amber-200 hover:underline">
-                  Contact us
-                </Link>
+                <a href="#partner-form" className="font-semibold text-amber-800 hover:underline">
+                  Fill out the form below
+                </a>
                 .
               </p>
             </aside>
           </div>
 
-          {/* ── BECOME A PARTNER — dark-themed to match page ── */}
-          <div className="rounded-[1.75rem] border border-white/10 bg-black/70 p-6 shadow-[0_0_50px_rgba(250,204,21,0.08),0_0_80px_rgba(239,68,68,0.1)] backdrop-blur-xl md:p-8">
+          {/* -- FAQ ACCORDION -- */}
+          <div className="rounded-[1.75rem] border border-stone-200 bg-white/80 p-6 shadow-lg backdrop-blur-xl md:p-8">
+            <div className="mb-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-800/80">Good to Know</p>
+              <h2 className="text-xl font-bold text-stone-900">Partnership FAQs</h2>
+            </div>
+
+            <div className="divide-y divide-stone-200">
+              {faqs.map((faq, index) => {
+                const isOpen = openFaq === index;
+                return (
+                  <div key={faq.question} className="py-3">
+                    <button
+                      type="button"
+                      onClick={() => setOpenFaq(isOpen ? null : index)}
+                      aria-expanded={isOpen}
+                      className="flex w-full items-center justify-between gap-4 text-left"
+                    >
+                      <span className="text-sm font-semibold text-stone-900">{faq.question}</span>
+                      <ChevronDown
+                        className={`h-4 w-4 shrink-0 text-amber-800 transition-transform ${isOpen ? "rotate-180" : ""}`}
+                      />
+                    </button>
+                    {isOpen && (
+                      <p className="mt-2 text-sm leading-6 text-stone-600">{faq.answer}</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* -- BECOME A PARTNER -- */}
+          <div className="rounded-[1.75rem] border border-stone-200 bg-white/80 p-6 shadow-lg backdrop-blur-xl md:p-8">
             <div className="mb-5 flex items-center gap-3">
-              <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-red-500/20 to-amber-400/20 shadow-[0_0_20px_rgba(239,68,68,0.12)]">
-                <Handshake className="h-5 w-5 text-amber-200" />
+              <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-red-500/20 to-amber-400/20 shadow-sm">
+                <Handshake className="h-5 w-5 text-amber-800" />
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-200/80">Get Started</p>
-                <h2 className="text-xl font-bold text-white">Become a Partner</h2>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-800/80">Get Started</p>
+                <h2 className="text-xl font-bold text-stone-900">Become a Partner</h2>
               </div>
             </div>
 
-            <p className="mb-6 text-sm leading-7 text-stone-300">
+            <p className="mb-6 text-sm leading-7 text-stone-600">
               Interested in bringing PingME to your gym, society, or office? Reach out to us and let's build something
               together.
             </p>
 
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {[
-                { label: "Company", value: "Ping IFF LLP", href: undefined },
-                { label: "Address", value: "745, Burail, Ekta Market, Sector 45, Chandigarh – 160047", href: undefined },
-                { label: "Phone", value: "+91 73473 40007", href: "tel:+917347340007" },
-                { label: "Email", value: "contact@pingiff.ai", href: "mailto:contact@pingiff.ai" },
-              ].map(({ label, value, href }) => (
-                <div
-                  key={label}
-                  className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm"
-                >
-                  <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-amber-200/70">{label}</p>
+              {contactDetails.map(({ label, value, href, copyable, icon: Icon }) => (
+                <div key={label} className="rounded-2xl border border-stone-200 bg-white/60 p-4 backdrop-blur-sm">
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-amber-800/70">
+                      <Icon className="h-3.5 w-3.5" />
+                      {label}
+                    </p>
+                    {copyable && (
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(label, value)}
+                        aria-label={`Copy ${label.toLowerCase()}`}
+                        className="rounded-md p-1 text-stone-400 transition-colors hover:bg-amber-100 hover:text-amber-800"
+                      >
+                        {copiedField === label ? (
+                          <Check className="h-3.5 w-3.5 text-emerald-600" />
+                        ) : (
+                          <Copy className="h-3.5 w-3.5" />
+                        )}
+                      </button>
+                    )}
+                  </div>
                   {href ? (
                     <a
                       href={href}
-                      className="break-all text-sm font-medium text-stone-200 transition-colors hover:text-amber-200"
+                      className="break-all text-sm font-medium text-stone-700 transition-colors hover:text-amber-800"
                     >
                       {value}
                     </a>
                   ) : (
-                    <p className="text-sm font-medium leading-5 text-stone-200">{value}</p>
+                    <p className="break-words text-sm font-medium leading-5 text-stone-700">{value}</p>
+                  )}
+                  {copiedField === label && (
+                    <p className="mt-1 text-[10px] font-medium text-emerald-600">Copied to clipboard</p>
                   )}
                 </div>
               ))}
             </div>
+          </div>
 
-            <div className="mt-6">
-              <Link
-                to="/contact"
-                className="inline-flex items-center gap-2 rounded-full border border-amber-300/25 bg-amber-200/8 px-6 py-2.5 text-sm font-semibold text-amber-100 transition-all hover:bg-amber-200/15 hover:text-amber-200"
-              >
-                Contact Us to Partner
-                <span className="text-amber-400">→</span>
-              </Link>
+          {/* -- PARTNER INQUIRY FORM -- */}
+          <div id="partner-form" className="rounded-[1.75rem] border border-stone-200 bg-white/80 p-6 shadow-lg backdrop-blur-xl md:p-8">
+            <div className="mb-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-800/80">Let's Talk</p>
+              <h2 className="text-xl font-bold text-stone-900">Tell Us About Your Business</h2>
+              <p className="mt-2 text-sm leading-6 text-stone-600">
+                Share a few details and our partnerships team will get back to you about next steps.
+              </p>
             </div>
+
+            {formStatus === "success" ? (
+              <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+                <Check className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+                <div>
+                  <p className="text-sm font-semibold text-emerald-800">Thanks — your request has been received.</p>
+                  <p className="mt-1 text-sm text-emerald-700">
+                    Our team will reach out to the email you provided shortly.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setFormStatus("idle")}
+                    className="mt-3 text-sm font-semibold text-emerald-700 underline hover:text-emerald-900"
+                  >
+                    Submit another request
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="businessName" className="text-xs font-semibold uppercase tracking-widest text-amber-800/70">
+                    Business Name *
+                  </label>
+                  <input
+                    id="businessName"
+                    name="businessName"
+                    type="text"
+                    value={form.businessName}
+                    onChange={handleChange}
+                    placeholder="e.g. Pro Ultimate Gym Chain"
+                    className="rounded-xl border border-stone-200 bg-white/80 px-4 py-2.5 text-sm text-stone-800 outline-none transition-colors focus:border-amber-400 focus:ring-2 focus:ring-amber-200"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="contactName" className="text-xs font-semibold uppercase tracking-widest text-amber-800/70">
+                    Your Name *
+                  </label>
+                  <input
+                    id="contactName"
+                    name="contactName"
+                    type="text"
+                    value={form.contactName}
+                    onChange={handleChange}
+                    placeholder="Full name"
+                    className="rounded-xl border border-stone-200 bg-white/80 px-4 py-2.5 text-sm text-stone-800 outline-none transition-colors focus:border-amber-400 focus:ring-2 focus:ring-amber-200"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="email" className="text-xs font-semibold uppercase tracking-widest text-amber-800/70">
+                    Email *
+                  </label>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    value={form.email}
+                    onChange={handleChange}
+                    placeholder="you@company.com"
+                    className="rounded-xl border border-stone-200 bg-white/80 px-4 py-2.5 text-sm text-stone-800 outline-none transition-colors focus:border-amber-400 focus:ring-2 focus:ring-amber-200"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="phone" className="text-xs font-semibold uppercase tracking-widest text-amber-800/70">
+                    Phone (optional)
+                  </label>
+                  <input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    value={form.phone}
+                    onChange={handleChange}
+                    placeholder="+91 00000 00000"
+                    className="rounded-xl border border-stone-200 bg-white/80 px-4 py-2.5 text-sm text-stone-800 outline-none transition-colors focus:border-amber-400 focus:ring-2 focus:ring-amber-200"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5 sm:col-span-2">
+                  <label htmlFor="message" className="text-xs font-semibold uppercase tracking-widest text-amber-800/70">
+                    How would you like to collaborate? *
+                  </label>
+                  <textarea
+                    id="message"
+                    name="message"
+                    rows={4}
+                    value={form.message}
+                    onChange={handleChange}
+                    placeholder="Tell us about your locations and what you'd like to pilot with PingME."
+                    className="resize-none rounded-xl border border-stone-200 bg-white/80 px-4 py-2.5 text-sm text-stone-800 outline-none transition-colors focus:border-amber-400 focus:ring-2 focus:ring-amber-200"
+                  />
+                </div>
+
+                {formStatus === "error" && (
+                  <p className="sm:col-span-2 text-sm font-medium text-red-600">{formError}</p>
+                )}
+
+                <div className="sm:col-span-2">
+                  <button
+                    type="submit"
+                    disabled={formStatus === "submitting"}
+                    className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-200/40 px-6 py-2.5 text-sm font-semibold text-amber-950 transition-all hover:bg-amber-300/50 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {formStatus === "submitting" && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {formStatus === "submitting" ? "Sending..." : "Send Partnership Request"}
+                    {formStatus !== "submitting" && <span className="text-amber-800">→</span>}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            <p className="mt-6 text-sm leading-7 text-stone-600">
+              Prefer email or a call? Reach us directly at{" "}
+              <a href="mailto:contact@pingiff.ai" className="font-semibold text-amber-800 hover:underline">
+                contact@pingiff.ai
+              </a>{" "}
+              or{" "}
+              <a href="tel:+917347340007" className="font-semibold text-amber-800 hover:underline">
+                +91 73473 40007
+              </a>
+              .
+            </p>
           </div>
         </div>
       </section>
