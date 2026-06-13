@@ -1,1652 +1,1548 @@
-import { useEffect, useMemo, useState, startTransition } from "react";
+/**
+ * Admin.tsx — Mobile-first, fully responsive admin panel.
+ *
+ * Mobile patterns used:
+ *  • Bottom tab bar (fixed, safe-area aware) replaces top TabsList on phones
+ *  • Bottom-sheet dialogs (slide up from bottom) on < sm screens
+ *  • Card-list view instead of tables on phones; tables only on md+
+ *  • 44 px minimum tap targets throughout
+ *  • Pull-to-reveal filter drawer (no cluttered rows)
+ *  • Skeleton loaders instead of spinners
+ *  • Sticky section headers inside accordion on mobile
+ *  • Safe-area padding for iPhone notch / home indicator
+ */
+
+import {
+  useEffect, useMemo, useRef, useState, startTransition,
+} from "react";
 import { useNavigate } from "react-router-dom";
-import { CheckCircle2, Copy, Eye, Loader2, MessageSquare, Save, Search, Shield, SlidersHorizontal, XCircle, Plus, Edit, Trash2, HelpCircle } from "lucide-react";
+import {
+  CheckCircle2, Copy, Eye, Loader2, MessageSquare, Save,
+  Search, Shield, SlidersHorizontal, XCircle, Plus, Edit,
+  Trash2, HelpCircle, ChevronDown, ChevronRight, Filter,
+  ReceiptText, Package, ArrowLeft, MoreVertical, X,
+} from "lucide-react";
 import { toast } from "sonner";
 import MainLayout from "@/layouts/MainLayout";
-import { Badge } from "@/components/ui/badge";
+import { Badge }  from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { useAuth } from "@/contexts/AuthContext";
-import { subscribeToOrders, updateOrderStatus, subscribeToContactMessages, deleteContactMessage, markContactMessageRead, type ContactMessage } from "@/lib/adminService";
+import { Input }  from "@/components/ui/input";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/ui/card";
+import {
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
+  Accordion, AccordionContent, AccordionItem, AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Checkbox }  from "@/components/ui/checkbox";
+import { Textarea }  from "@/components/ui/textarea";
+import { Label }     from "@/components/ui/label";
+import { useAuth }   from "@/contexts/AuthContext";
+import {
+  subscribeToOrders, updateOrderStatus,
+  subscribeToContactMessages, deleteContactMessage,
+  markContactMessageRead, type ContactMessage,
+} from "@/lib/adminService";
 import { downloadReceipt } from "@/lib/invoiceUtils";
-import { categoryDescriptionFromName, categoryNameFromSlug, normalizeCategorySlug } from "@/lib/productCatalog";
-import { subscribeToProducts, saveProduct, deleteProductDoc, uploadProductImage, DbProduct, renameCategory, moveProductsToCategory, subscribeToProductCategories, saveProductCategory, deleteCategory } from "@/lib/productService";
+import {
+  categoryDescriptionFromName, categoryNameFromSlug, normalizeCategorySlug,
+} from "@/lib/productCatalog";
+import {
+  subscribeToProducts, saveProduct, deleteProductDoc, uploadProductImage,
+  DbProduct, renameCategory, moveProductsToCategory,
+  subscribeToProductCategories, saveProductCategory, deleteCategory,
+} from "@/lib/productService";
 import type { PrebookingRecord } from "@/lib/prebookService";
-import { subscribeToFAQs, saveFAQ, deleteFAQ, initializeDefaultFAQs, type FAQItem } from "@/lib/faqService";
+import {
+  subscribeToFAQs, saveFAQ, deleteFAQ, initializeDefaultFAQs, type FAQItem,
+} from "@/lib/faqService";
 
-const formatDate = (value: unknown): string => {
-  if (!value || typeof value !== "object") return "-";
+/* ──────────────────────── pure helpers ──────────────────────── */
 
-  const timestampValue = value as {
-    toDate?: () => Date;
-    seconds?: number;
-  };
-
-  if (typeof timestampValue.toDate === "function") return timestampValue.toDate().toLocaleString("en-IN");
-  if (typeof timestampValue.seconds === "number") return new Date(timestampValue.seconds * 1000).toLocaleString("en-IN");
-  return "-";
+const fmtDate = (v: unknown): string => {
+  if (!v || typeof v !== "object") return "—";
+  const t = v as { toDate?: () => Date; seconds?: number };
+  if (typeof t.toDate === "function") return t.toDate().toLocaleString("en-IN");
+  if (typeof t.seconds === "number")
+    return new Date(t.seconds * 1000).toLocaleString("en-IN");
+  return "—";
 };
 
-const normalizePriceInput = (rawValue: string): string | null => {
-  const numericValue = Number(rawValue.replace(/[^\d.]/g, ""));
-  if (!Number.isFinite(numericValue) || numericValue <= 0) return null;
-  return `₹${Number.isInteger(numericValue) ? numericValue.toFixed(0) : numericValue.toFixed(2)}`;
+const fmtPrice = (raw: string): string | null => {
+  const n = Number(raw.replace(/[^\d.]/g, ""));
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return `₹${Number.isInteger(n) ? n.toFixed(0) : n.toFixed(2)}`;
 };
 
-const DEFAULT_CATEGORY_SLUG = "uncategorized";
+const DEFAULT_SLUG = "uncategorized";
+const catIcon = (ps: DbProduct[]) =>
+  ps.find((p) => typeof p.emoji === "string" && p.emoji.trim())?.emoji?.trim() ?? "📦";
 
-const getCategoryIcon = (products: DbProduct[]): string => {
-  const iconSource = products.find((product) => typeof product.emoji === "string" && product.emoji.trim());
-  return iconSource?.emoji?.trim() || "📦";
-};
+const statusColor = (s?: string) =>
+  s === "confirmed" ? "default" : s === "cancelled" ? "destructive" : "outline";
 
-const AdminProductMedia = ({ product }: { product: DbProduct }) => {
-  const [imageFailed, setImageFailed] = useState(false);
+/* ──────────────────────── tiny shared UI ──────────────────────── */
 
+/** Skeleton shimmer line */
+const Bone = ({ w = "w-full", h = "h-4" }: { w?: string; h?: string }) => (
+  <div className={`${w} ${h} rounded bg-muted animate-pulse`} />
+);
+
+const SkeletonCard = () => (
+  <div className="border rounded-xl p-4 space-y-3">
+    <div className="flex justify-between"><Bone w="w-1/3" /><Bone w="w-16" h="h-5" /></div>
+    <Bone w="w-1/2" h="h-3" />
+    <Bone w="w-full" h="h-3" />
+    <div className="flex gap-2 pt-1">
+      <Bone w="w-full" h="h-8" /><Bone w="w-full" h="h-8" /><Bone w="w-full" h="h-8" />
+    </div>
+  </div>
+);
+
+/** Stat tile — compact on mobile */
+const Stat = ({ label, value, accent = false }: { label: string; value: React.ReactNode; accent?: boolean }) => (
+  <div className={`rounded-xl border p-3 sm:p-4 flex flex-col gap-0.5 ${accent ? "border-primary/30 bg-primary/5" : ""}`}>
+    <span className="text-[10px] sm:text-xs text-muted-foreground font-medium uppercase tracking-wide">{label}</span>
+    <span className="text-xl sm:text-2xl font-bold leading-none">{value}</span>
+  </div>
+);
+
+/** 44px icon button with tooltip */
+const IconBtn = ({
+  icon: Icon, onClick, label, variant = "ghost", danger = false, disabled = false,
+}: {
+  icon: React.ElementType; onClick: () => void; label: string;
+  variant?: "ghost" | "outline"; danger?: boolean; disabled?: boolean;
+}) => (
+  <button
+    type="button"
+    disabled={disabled}
+    onClick={onClick}
+    aria-label={label}
+    title={label}
+    className={[
+      "inline-flex items-center justify-center rounded-lg transition-colors",
+      "min-w-[44px] min-h-[44px] w-11 h-11",
+      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+      "disabled:opacity-40 disabled:pointer-events-none",
+      danger
+        ? "text-destructive hover:bg-destructive/10"
+        : variant === "outline"
+        ? "border border-input hover:bg-accent"
+        : "hover:bg-accent text-muted-foreground hover:text-foreground",
+    ].join(" ")}
+  >
+    <Icon className="w-4 h-4" />
+  </button>
+);
+
+/** Section empty state */
+const Empty = ({ icon: Icon, title, cta }: {
+  icon: React.ElementType; title: string; cta?: React.ReactNode;
+}) => (
+  <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
+    <Icon className="w-10 h-10 opacity-20" />
+    <p className="text-sm text-center max-w-xs">{title}</p>
+    {cta}
+  </div>
+);
+
+/** Search input */
+const SearchBar = ({
+  value, onChange, placeholder,
+}: { value: string; onChange: (v: string) => void; placeholder: string }) => (
+  <div className="relative">
+    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+    <Input
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="pl-9 h-11 text-[15px] rounded-xl border-muted-foreground/20"
+    />
+    {value && (
+      <button
+        type="button"
+        onClick={() => onChange("")}
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+      >
+        <X className="w-4 h-4" />
+      </button>
+    )}
+  </div>
+);
+
+/** Bottom-sheet / centered dialog that is sheet on mobile */
+const Sheet = ({
+  open, onClose, title, description, children,
+}: {
+  open: boolean; onClose: () => void;
+  title: string; description?: string;
+  children: React.ReactNode;
+}) => (
+  <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+    <DialogContent className={[
+      /* mobile: slide up from bottom, full-width, max 90vh */
+      "fixed bottom-0 left-0 right-0 top-auto",
+      "translate-x-0 translate-y-0",
+      "rounded-t-2xl rounded-b-none",
+      "max-h-[92dvh] w-full overflow-y-auto",
+      "px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]",
+      /* desktop: centered card, max width */
+      "sm:bottom-auto sm:left-1/2 sm:right-auto sm:top-1/2",
+      "sm:-translate-x-1/2 sm:-translate-y-1/2",
+      "sm:rounded-2xl sm:max-w-lg sm:w-[calc(100vw-2rem)]",
+      "sm:max-h-[85dvh] sm:px-6 sm:py-6",
+    ].join(" ")}>
+      {/* drag handle – mobile only */}
+      <div className="sm:hidden mx-auto mb-3 w-10 h-1 rounded-full bg-muted-foreground/30" />
+      <DialogHeader className="text-left mb-4">
+        <DialogTitle className="text-base font-semibold">{title}</DialogTitle>
+        {description && (
+          <DialogDescription className="text-xs leading-relaxed">{description}</DialogDescription>
+        )}
+      </DialogHeader>
+      {children}
+    </DialogContent>
+  </Dialog>
+);
+
+/* ──────────────────────── product media ──────────────────────── */
+
+const ProductMedia = ({ product }: { product: DbProduct }) => {
+  const [failed, setFailed] = useState(false);
   return (
-    <div className="aspect-[4/3] bg-muted flex items-center justify-center p-2 relative">
+    <div className="aspect-[4/3] bg-muted flex items-center justify-center relative overflow-hidden">
       {product.popular && (
-        <Badge className="absolute top-2 right-2">Popular</Badge>
+        <Badge className="absolute top-2 right-2 text-[10px] z-10">Popular</Badge>
       )}
-      {product.image && !imageFailed ? (
+      {product.image && !failed ? (
         <img
-          src={product.image}
-          alt={product.title}
-          className="max-h-full object-contain"
-          onError={() => setImageFailed(true)}
+          src={product.image} alt={product.title}
+          className="w-full h-full object-cover"
+          onError={() => setFailed(true)}
         />
       ) : (
-        <span className="text-4xl">{product.emoji || "📦"}</span>
+        <span className="text-4xl select-none">{product.emoji ?? "📦"}</span>
       )}
     </div>
   );
 };
 
+/* ══════════════════════════════════════════════════════════════
+   MAIN COMPONENT
+══════════════════════════════════════════════════════════════ */
+
+type TabId = "orders" | "products" | "messages" | "faqs";
+
 export default function Admin() {
   const { user } = useAuth();
-  const navigate = useNavigate();
-  const [orders, setOrders] = useState<PrebookingRecord[]>([]);
-  const [loadingOrders, setLoadingOrders] = useState(true);
+  const navigate  = useNavigate();
+
+  const [activeTab, setActiveTab] = useState<TabId>("orders");
+
+  /* ── orders ── */
+  const [orders,          setOrders]          = useState<PrebookingRecord[]>([]);
+  const [loadingOrders,   setLoadingOrders]   = useState(true);
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
-  const [selectedOrder, setSelectedOrder] = useState<PrebookingRecord | null>(null);
-  const [orderSearch, setOrderSearch] = useState("");
-  const [orderStatusFilter, setOrderStatusFilter] = useState("all");
-  const [orderSort, setOrderSort] = useState("newest");
-  
-  const [dbProducts, setDbProducts] = useState<DbProduct[]>([]);
-  const [editingProduct, setEditingProduct] = useState<DbProduct | null>(null);
-  const [renameCategoryTarget, setRenameCategoryTarget] = useState<string | null>(null);
-  const [renameCategoryName, setRenameCategoryName] = useState<string>("");
-  const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
-  const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false);
-  const [moveTargetProductId, setMoveTargetProductId] = useState<string | null>(null);
-  const [moveTargetSlug, setMoveTargetSlug] = useState<string>("");
-  const [isCopyDialogOpen, setIsCopyDialogOpen] = useState(false);
-  const [copyTargetProductId, setCopyTargetProductId] = useState<string | null>(null);
-  const [copyTargetSlug, setCopyTargetSlug] = useState<string>("");
-  const [categoryMetadata, setCategoryMetadata] = useState<Record<string, { name?: string; description?: string; icon?: string; coverImage?: string; gradient?: string }>>({});
-  const [isProductDialogOpn, setIsProductDialogOpn] = useState(false);
-  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState("");
-  const [newCategoryIcon, setNewCategoryIcon] = useState("");
-  const [newCategoryDescription, setNewCategoryDescription] = useState("");
-  const [newCategoryProTip, setNewCategoryProTip] = useState("");
-  const [savingProductId, setSavingProductId] = useState<string | null>(null);
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [selectedOrder,   setSelectedOrder]   = useState<PrebookingRecord | null>(null);
+  const [orderSearch,     setOrderSearch]     = useState("");
+  const [orderStatus,     setOrderStatus]     = useState("all");
+  const [orderSort,       setOrderSort]       = useState("newest");
+  const [showFilters,     setShowFilters]     = useState(false);
 
-  const [contactMessages, setContactMessages] = useState<ContactMessage[]>([]);
+  /* ── products ── */
+  const [dbProducts,        setDbProducts]        = useState<DbProduct[]>([]);
+  const [editingProduct,    setEditingProduct]    = useState<DbProduct | null>(null);
+  const [isProductOpen,     setIsProductOpen]     = useState(false);
+  const [categoryMeta,      setCategoryMeta]      = useState<Record<string, {
+    name?: string; description?: string; icon?: string; coverImage?: string; gradient?: string;
+  }>>({});
+  const [isCategoryOpen,    setIsCategoryOpen]    = useState(false);
+  const [newCatName,        setNewCatName]        = useState("");
+  const [newCatIcon,        setNewCatIcon]        = useState("");
+  const [newCatDesc,        setNewCatDesc]        = useState("");
+  const [newCatTip,         setNewCatTip]         = useState("");
+  const [isRenameOpen,      setIsRenameOpen]      = useState(false);
+  const [renameTarget,      setRenameTarget]      = useState<string | null>(null);
+  const [renameName,        setRenameName]        = useState("");
+  const [isMoveOpen,        setIsMoveOpen]        = useState(false);
+  const [moveProductId,     setMoveProductId]     = useState<string | null>(null);
+  const [moveSlug,          setMoveSlug]          = useState("");
+  const [isCopyOpen,        setIsCopyOpen]        = useState(false);
+  const [copyProductId,     setCopyProductId]     = useState<string | null>(null);
+  const [copySlug,          setCopySlug]          = useState("");
+  const [savingProductId,   setSavingProductId]   = useState<string | null>(null);
+  const [isUploadingImage,  setIsUploadingImage]  = useState(false);
+
+  /* ── messages ── */
+  const [messages,        setMessages]        = useState<ContactMessage[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(true);
-  const [messageSearch, setMessageSearch] = useState("");
-  const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null);
+  const [msgSearch,       setMsgSearch]       = useState("");
+  const [selectedMsg,     setSelectedMsg]     = useState<ContactMessage | null>(null);
 
-  const [faqs, setFaqs] = useState<FAQItem[]>([]);
-  const [loadingFaqs, setLoadingFaqs] = useState(true);
-  const [faqSearch, setFaqSearch] = useState("");
-  const [editingFaq, setEditingFaq] = useState<Omit<FAQItem, "createdAt" | "updatedAt"> | null>(null);
-  const [isFaqDialogOpen, setIsFaqDialogOpen] = useState(false);
-  const [savingFaqId, setSavingFaqId] = useState<string | null>(null);
-  const [isInitializingFaqs, setIsInitializingFaqs] = useState(false);
+  /* ── faqs ── */
+  const [faqs,           setFaqs]           = useState<FAQItem[]>([]);
+  const [loadingFaqs,    setLoadingFaqs]    = useState(true);
+  const [faqSearch,      setFaqSearch]      = useState("");
+  const [editingFaq,     setEditingFaq]     = useState<Omit<FAQItem, "createdAt"|"updatedAt"> | null>(null);
+  const [isFaqOpen,      setIsFaqOpen]      = useState(false);
+  const [savingFaqId,    setSavingFaqId]    = useState<string | null>(null);
+  const [initFaqs,       setInitFaqs]       = useState(false);
 
+  /* ── subscriptions ── */
   useEffect(() => {
     setLoadingOrders(true);
-    const unsubscribe = subscribeToOrders(
-      (latest) => {
-        setOrders(latest);
-        setLoadingOrders(false);
-      },
-      (error) => {
-        console.error("Failed to sync orders", error);
-        toast.error("Failed to sync orders from Firebase.");
-        setLoadingOrders(false);
-      },
+    return subscribeToOrders(
+      (d) => { setOrders(d); setLoadingOrders(false); },
+      (e) => { console.error(e); toast.error("Failed to sync orders"); setLoadingOrders(false); },
     );
-
-    return unsubscribe;
   }, []);
 
-  useEffect(() => {
-    const unsubscribe = subscribeToProducts(
-      (latest) => setDbProducts(latest),
-      (error) => {
-        console.error("Failed to load products", error);
-        toast.error("Failed to load products from Firebase.");
-      },
-    );
-    return unsubscribe;
-  }, []);
+  useEffect(() => subscribeToProducts(
+    (d) => setDbProducts(d),
+    (e) => { console.error(e); toast.error("Failed to load products"); },
+  ), []);
 
   useEffect(() => {
     setLoadingMessages(true);
-    const unsubscribe = subscribeToContactMessages(
-      (latest) => {
-        setContactMessages(latest);
-        setLoadingMessages(false);
-      },
-      (error) => {
-        console.error("Failed to sync contact messages", error);
-        toast.error("Failed to load message queries from Firebase.");
-        setLoadingMessages(false);
-      },
+    return subscribeToContactMessages(
+      (d) => { setMessages(d); setLoadingMessages(false); },
+      (e) => { console.error(e); toast.error("Failed to load messages"); setLoadingMessages(false); },
     );
-    return unsubscribe;
   }, []);
 
-  useEffect(() => {
-    const unsub = subscribeToProductCategories(
-      (map) => setCategoryMetadata(map),
-      (err) => console.error("Failed to load category metadata", err),
-    );
-    return unsub;
-  }, []);
+  useEffect(() => subscribeToProductCategories(
+    (m) => setCategoryMeta(m),
+    (e) => console.error(e),
+  ), []);
 
   useEffect(() => {
     setLoadingFaqs(true);
-    const unsubscribe = subscribeToFAQs(
-      (latest) => {
-        setFaqs(latest);
-        setLoadingFaqs(false);
-      },
-      (error) => {
-        console.error("Failed to sync FAQs", error);
-        toast.error("Failed to load FAQs from Firebase.");
-        setLoadingFaqs(false);
-      }
+    return subscribeToFAQs(
+      (d) => { setFaqs(d); setLoadingFaqs(false); },
+      (e) => { console.error(e); toast.error("Failed to load FAQs"); setLoadingFaqs(false); },
     );
-    return unsubscribe;
   }, []);
 
-  const categorizedProducts = useMemo(() => {
+  /* ── derived ── */
+  const categorized = useMemo(() => {
     const groups = new Map<string, DbProduct[]>();
-
-    dbProducts.forEach((product) => {
-      const slug = normalizeCategorySlug(product.categorySlug) || DEFAULT_CATEGORY_SLUG;
-      const existing = groups.get(slug) || [];
-      existing.push({ ...product, categorySlug: slug });
-      groups.set(slug, existing);
+    dbProducts.forEach((p) => {
+      const slug = normalizeCategorySlug(p.categorySlug) || DEFAULT_SLUG;
+      groups.set(slug, [...(groups.get(slug) ?? []), { ...p, categorySlug: slug }]);
     });
+    const slugs = new Set([...groups.keys(), ...Object.keys(categoryMeta)]);
+    return Array.from(slugs).map((slug) => {
+      const products = (groups.get(slug) ?? []).sort((a, b) => a.title.localeCompare(b.title));
+      const meta = categoryMeta[slug] ?? {};
+      const name = meta.name || categoryNameFromSlug(slug);
+      return {
+        slug, name,
+        description: meta.description || categoryDescriptionFromName(slug, name),
+        icon: meta.icon?.trim() || catIcon(products),
+        products,
+      };
+    }).sort((a, b) => a.name.localeCompare(b.name));
+  }, [dbProducts, categoryMeta]);
 
-    const allSlugs = new Set<string>([...groups.keys(), ...Object.keys(categoryMetadata)]);
+  const catOptions    = useMemo(() => categorized.map((c) => c.slug), [categorized]);
+  const faqCategories = useMemo(() => Array.from(new Set(faqs.map((f) => f.category).filter(Boolean))), [faqs]);
+  const defaultSlug   = catOptions[0] ?? DEFAULT_SLUG;
 
-    return Array.from(allSlugs)
-      .map((slug) => {
-        const products = groups.get(slug) || [];
-        const meta = categoryMetadata[slug] || {};
-        const name = meta.name || categoryNameFromSlug(slug);
-
-        return {
-          slug,
-          name,
-          description: meta.description || categoryDescriptionFromName(slug, name),
-          icon: meta.icon?.trim() || getCategoryIcon(products),
-          products: products.sort((left, right) => left.title.localeCompare(right.title)),
-        };
+  const filteredOrders = useMemo(() => {
+    const q = orderSearch.trim().toLowerCase();
+    return orders
+      .filter((o) => {
+        const hay = [o.id, o.fullName, o.email, o.phone, o.address, o.city, o.state, o.pincode,
+          ...(o.items ?? []).map((i) => i.title)].filter(Boolean).join(" ").toLowerCase();
+        return (!q || hay.includes(q)) && (orderStatus === "all" || o.status === orderStatus);
       })
-      .sort((left, right) => left.name.localeCompare(right.name));
-  }, [dbProducts, categoryMetadata]);
-  
-
-  const categoryOptions = useMemo(() => categorizedProducts.map((category) => category.slug), [categorizedProducts]);
-
-  const faqCategories = useMemo(() => {
-    const cats = new Set(faqs.map((f) => f.category).filter(Boolean));
-    return Array.from(cats);
-  }, [faqs]);
-
-  const defaultCategorySlug = categoryOptions[0] || DEFAULT_CATEGORY_SLUG;
-
-  const handleEditProduct = (product: DbProduct | null, categorySlug?: string) => {
-    const resolvedCategorySlug = normalizeCategorySlug(categorySlug || "") || defaultCategorySlug;
-
-    if (product) {
-      setEditingProduct({
-        ...product,
-        categorySlug: normalizeCategorySlug(product.categorySlug) || defaultCategorySlug,
+      .sort((a, b) => {
+        const at = (a.createdAt as { seconds?: number })?.seconds ?? 0;
+        const bt = (b.createdAt as { seconds?: number })?.seconds ?? 0;
+        if (orderSort === "oldest")      return at - bt;
+        if (orderSort === "amount-high") return +((b.totalAmount ?? 0)) - +((a.totalAmount ?? 0));
+        if (orderSort === "amount-low")  return +((a.totalAmount ?? 0)) - +((b.totalAmount ?? 0));
+        if (orderSort === "name-az")     return (a.fullName ?? "").localeCompare(b.fullName ?? "");
+        if (orderSort === "name-za")     return (b.fullName ?? "").localeCompare(a.fullName ?? "");
+        return bt - at;
       });
-    } else {
-      setEditingProduct({
-        id: "",
-        categorySlug: resolvedCategorySlug,
-        title: "",
-        price: "",
-        originalPrice: "",
-        image: "",
-        emoji: "",
-        features: [""],
-        popular: false,
+  }, [orders, orderSearch, orderStatus, orderSort]);
+
+  const filteredMsgs = useMemo(() => {
+    const q = msgSearch.toLowerCase();
+    return messages.filter((m) => !q || [m.name, m.email, m.message].join(" ").toLowerCase().includes(q));
+  }, [messages, msgSearch]);
+
+  const filteredFaqs = useMemo(() => {
+    const q = faqSearch.toLowerCase();
+    return faqs.filter((f) => !q || [f.question, f.answer, f.category].join(" ").toLowerCase().includes(q));
+  }, [faqs, faqSearch]);
+
+  /* badge counts for tabs */
+  const pendingCount = orders.filter((o) => o.status === "pending").length;
+  const unreadCount  = messages.filter((m) => m.status === "new").length;
+
+  /* ── handlers ── */
+  const openProduct = (product: DbProduct | null, categorySlug?: string) => {
+    const slug = normalizeCategorySlug(categorySlug ?? "") || defaultSlug;
+    setEditingProduct(product
+      ? { ...product, categorySlug: normalizeCategorySlug(product.categorySlug) || defaultSlug }
+      : { id: "", categorySlug: slug, title: "", price: "", originalPrice: "", image: "", emoji: "", features: [""], popular: false },
+    );
+    setIsProductOpen(true);
+  };
+
+  const saveProductHandler = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProduct) return;
+    try {
+      setSavingProductId(editingProduct.id || "new");
+      await saveProduct({
+        ...editingProduct,
+        categorySlug: normalizeCategorySlug(editingProduct.categorySlug) || defaultSlug,
+        price: fmtPrice(editingProduct.price) ?? editingProduct.price,
+        originalPrice: editingProduct.originalPrice ? (fmtPrice(editingProduct.originalPrice) ?? editingProduct.originalPrice) : "",
+        features: editingProduct.features.filter((f) => f.trim()),
       });
-    }
-    setIsProductDialogOpn(true);
+      toast.success("Product saved");
+      setIsProductOpen(false);
+    } catch (err) { console.error(err); toast.error("Failed to save product"); }
+    finally { setSavingProductId(null); }
+  };
+
+  const copyProductHandler = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!copyProductId || !copySlug) return;
+    const src = dbProducts.find((p) => p.id === copyProductId);
+    if (!src) { toast.error("Product not found"); return; }
+    try {
+      setSavingProductId(copyProductId);
+      await saveProduct({ ...src, id: "", categorySlug: normalizeCategorySlug(copySlug) || defaultSlug, features: [...src.features] });
+      toast.success("Product copied");
+      setIsCopyOpen(false); setCopyProductId(null); setCopySlug("");
+    } catch (err) { console.error(err); toast.error("Failed to copy product"); }
+    finally { setSavingProductId(null); }
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !editingProduct) return;
-
     try {
       setIsUploadingImage(true);
-      const downloadURL = await uploadProductImage(file, editingProduct.categorySlug);
-      setEditingProduct({ ...editingProduct, image: downloadURL });
-      toast.success("Image uploaded successfully.");
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to upload image. Ensure Storage is enabled in Firebase Console.");
-    } finally {
-      setIsUploadingImage(false);
-    }
+      const url = await uploadProductImage(file, editingProduct.categorySlug);
+      setEditingProduct({ ...editingProduct, image: url });
+      toast.success("Image uploaded");
+    } catch (err) { console.error(err); toast.error("Failed to upload image"); }
+    finally { setIsUploadingImage(false); }
   };
 
-  const handleSaveProduct = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingProduct) return;
-    
+  const deleteProduct = async (id: string) => {
+    if (!confirm("Delete this product?")) return;
+    try { await deleteProductDoc(id); toast.success("Product deleted"); }
+    catch (err) { console.error(err); toast.error("Failed to delete"); }
+  };
+
+  const deleteCat = async (slug: string) => {
+    if (!confirm("Delete category? Products move to Uncategorized.")) return;
+    try { await deleteCategory(slug); toast.success("Category deleted"); }
+    catch (err) { console.error(err); toast.error(err instanceof Error ? err.message : "Failed to delete"); }
+  };
+
+  const updateOrder = async (id: string, status: PrebookingRecord["status"]) => {
     try {
-      setSavingProductId(editingProduct.id || "new");
-      const normalizedPrice = normalizePriceInput(editingProduct.price) || editingProduct.price;
-      const normalizedOrig = editingProduct.originalPrice ? (normalizePriceInput(editingProduct.originalPrice) || editingProduct.originalPrice) : "";
-      const normalizedCategorySlug = normalizeCategorySlug(editingProduct.categorySlug) || defaultCategorySlug;
-      
-      await saveProduct({
-        ...editingProduct,
-        categorySlug: normalizedCategorySlug,
-        price: normalizedPrice,
-        originalPrice: normalizedOrig,
-        features: editingProduct.features.filter(f => f.trim() !== ""),
-      });
-      toast.success("Product saved successfully.");
-      setIsProductDialogOpn(false);
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to save product.");
-    } finally {
-      setSavingProductId(null);
-    }
+      setUpdatingOrderId(id);
+      await updateOrderStatus(id, status);
+      setOrders((prev) => prev.map((o) => o.id === id ? { ...o, status } : o));
+      setSelectedOrder((prev) => prev?.id === id ? { ...prev, status } : prev);
+      toast.success(`Order ${status}`);
+    } catch (err) { console.error(err); toast.error("Failed to update order"); }
+    finally { setUpdatingOrderId(null); }
   };
 
-  const handleCopyProduct = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!copyTargetProductId || !copyTargetSlug) return;
+  const openMsg = (msg: ContactMessage) => {
+    setSelectedMsg(msg);
+    if (msg.status === "new") markContactMessageRead(msg.id).catch(console.error);
+  };
 
-    const sourceProduct = dbProducts.find((product) => product.id === copyTargetProductId);
-    if (!sourceProduct) {
-      toast.error("Could not find the product to copy.");
-      return;
-    }
-
+  const deleteMsg = async (id: string) => {
+    if (!confirm("Delete this message?")) return;
     try {
-      setSavingProductId(copyTargetProductId);
-      await saveProduct({
-        ...sourceProduct,
-        id: "",
-        categorySlug: normalizeCategorySlug(copyTargetSlug) || defaultCategorySlug,
-        title: sourceProduct.title,
-        features: [...sourceProduct.features],
-      });
-      toast.success("Product copied successfully.");
-      setIsCopyDialogOpen(false);
-      setCopyTargetProductId(null);
-      setCopyTargetSlug("");
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to copy product.");
-    } finally {
-      setSavingProductId(null);
-    }
+      setSelectedMsg((p) => p?.id === id ? null : p);
+      await deleteContactMessage(id);
+      toast.success("Message deleted");
+    } catch (err) { console.error(err); toast.error("Failed to delete"); }
   };
 
-  const handleDeleteProduct = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this product?")) return;
-    try {
-      await deleteProductDoc(id);
-      toast.success("Product deleted.");
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to delete product.");
-    }
+  const openFaq = (faq: FAQItem | null) => {
+    setEditingFaq(faq
+      ? { id: faq.id, question: faq.question, answer: faq.answer, category: faq.category, sortOrder: faq.sortOrder }
+      : { id: "", question: "", answer: "", category: "General Questions", sortOrder: faqs.length + 1 },
+    );
+    setIsFaqOpen(true);
   };
 
-  const handleDeleteCategory = async (slug: string) => {
-    if (!window.confirm("Are you sure you want to delete this category? All products in this category will be moved to 'Uncategorized'.")) return;
-    try {
-      await deleteCategory(slug);
-      toast.success("Category deleted and products moved to Uncategorized.");
-    } catch (error) {
-      console.error(error);
-      const message = error instanceof Error ? error.message : "Failed to delete category.";
-      toast.error(message);
-    }
-  };
-
-  const filteredOrders = useMemo(() => {
-    const searchTerm = orderSearch.trim().toLowerCase();
-
-    const filtered = orders.filter((order) => {
-      const haystack = [
-        order.id,
-        order.fullName,
-        order.email,
-        order.phone,
-        order.address,
-        order.city,
-        order.state,
-        order.pincode,
-        ...(order.items || []).map((item) => item.title),
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-
-      return (!searchTerm || haystack.includes(searchTerm)) && (orderStatusFilter === "all" || order.status === orderStatusFilter);
-    });
-
-    return filtered.sort((left, right) => {
-      const leftTs = left.createdAt as { seconds?: number } | undefined;
-      const rightTs = right.createdAt as { seconds?: number } | undefined;
-      const leftCreated = (leftTs?.seconds ?? 0) * 1000;
-      const rightCreated = (rightTs?.seconds ?? 0) * 1000;
-
-      switch (orderSort) {
-        case "oldest":
-          return leftCreated - rightCreated;
-        case "amount-high":
-          return Number(right.totalAmount || 0) - Number(left.totalAmount || 0);
-        case "amount-low":
-          return Number(left.totalAmount || 0) - Number(right.totalAmount || 0);
-        case "name-az":
-          return (left.fullName || "").localeCompare(right.fullName || "");
-        case "name-za":
-          return (right.fullName || "").localeCompare(left.fullName || "");
-        case "newest":
-        default:
-          return rightCreated - leftCreated;
-      }
-    });
-  }, [orderSearch, orderSort, orderStatusFilter, orders]);
-
-  const handleStatusUpdate = async (orderId: string, status: PrebookingRecord["status"]) => {
-    try {
-      setUpdatingOrderId(orderId);
-      await updateOrderStatus(orderId, status);
-      setOrders((previousOrders) => previousOrders.map((order) => (order.id === orderId ? { ...order, status } : order)));
-      setSelectedOrder((previousOrder) => (previousOrder && previousOrder.id === orderId ? { ...previousOrder, status } : previousOrder));
-      toast.success(`Order marked as ${status}.`);
-    } catch (error) {
-      console.error("Failed to update order status", error);
-      toast.error("Failed to update order status.");
-    } finally {
-      setUpdatingOrderId(null);
-    }
-  };
-
-  const handleViewOrder = (order: PrebookingRecord) => {
-    startTransition(() => {
-      setSelectedOrder(order);
-    });
-  };
-
-  const handleOpenMessage = (msg: ContactMessage) => {
-    setSelectedMessage(msg);
-    // Mark as read silently — real-time listener will update the count automatically
-    if (msg.status === "new") {
-      markContactMessageRead(msg.id).catch((err) =>
-        console.error("Failed to mark message as read", err),
-      );
-    }
-  };
-
-  const handleDeleteMessage = async (msgId: string) => {
-    if (!window.confirm("Delete this message query? This cannot be undone.")) return;
-    try {
-      // Close dialog if the deleted message is currently open
-      setSelectedMessage((prev) => (prev?.id === msgId ? null : prev));
-      await deleteContactMessage(msgId);
-      toast.success("Message deleted.");
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to delete message.");
-    }
-  };
-
-  const handleEditFaq = (faq: FAQItem | null) => {
-    if (faq) {
-      setEditingFaq({
-        id: faq.id,
-        question: faq.question,
-        answer: faq.answer,
-        category: faq.category,
-        sortOrder: faq.sortOrder,
-      });
-    } else {
-      setEditingFaq({
-        id: "",
-        question: "",
-        answer: "",
-        category: "General Questions",
-        sortOrder: faqs.length + 1,
-      });
-    }
-    setIsFaqDialogOpen(true);
-  };
-
-  const handleSaveFaq = async (e: React.FormEvent) => {
+  const saveFaqHandler = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingFaq) return;
-
     try {
       setSavingFaqId(editingFaq.id || "new");
       await saveFAQ(editingFaq);
-      toast.success("FAQ saved successfully.");
-      setIsFaqDialogOpen(false);
-      setEditingFaq(null);
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to save FAQ.");
-    } finally {
-      setSavingFaqId(null);
-    }
+      toast.success("FAQ saved");
+      setIsFaqOpen(false); setEditingFaq(null);
+    } catch (err) { console.error(err); toast.error("Failed to save FAQ"); }
+    finally { setSavingFaqId(null); }
   };
 
-  const handleDeleteFaq = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this FAQ item?")) return;
-    try {
-      await deleteFAQ(id);
-      toast.success("FAQ deleted.");
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to delete FAQ.");
-    }
+  const deleteFaqHandler = async (id: string) => {
+    if (!confirm("Delete this FAQ?")) return;
+    try { await deleteFAQ(id); toast.success("FAQ deleted"); }
+    catch (err) { console.error(err); toast.error("Failed to delete"); }
   };
 
-  const handleInitializeDefaultFaqs = async () => {
-    if (!window.confirm("This will load the default FAQ questions into your database. Continue?")) return;
+  const initDefaultFaqs = async () => {
+    if (!confirm("Load default FAQ entries?")) return;
     try {
-      setIsInitializingFaqs(true);
+      setInitFaqs(true);
       await initializeDefaultFAQs();
-      toast.success("Default FAQs loaded.");
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to load default FAQs.");
-    } finally {
-      setIsInitializingFaqs(false);
-    }
+      toast.success("Default FAQs loaded");
+    } catch (err) { console.error(err); toast.error("Failed to load default FAQs"); }
+    finally { setInitFaqs(false); }
   };
 
+  /* ── tab definitions ── */
+  const tabs: { id: TabId; label: string; shortLabel: string; icon: React.ElementType; badge?: number }[] = [
+    { id: "orders",   label: "Orders",   shortLabel: "Orders",   icon: ReceiptText,   badge: pendingCount },
+    { id: "products", label: "Products", shortLabel: "Products", icon: Package },
+    { id: "messages", label: "Messages", shortLabel: "Msgs",     icon: MessageSquare, badge: unreadCount },
+    { id: "faqs",     label: "FAQs",     shortLabel: "FAQs",     icon: HelpCircle },
+  ];
+
+  /* ══════ RENDER ══════ */
   return (
     <MainLayout>
       <style>{`
-        .admin-scroll-form {
-          max-height: 70vh;
-          scroll-behavior: smooth;
-          -webkit-overflow-scrolling: touch;
+        /* ── bottom nav safe area ── */
+        .admin-bottom-nav {
+          padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        /* ── main content padding on mobile (account for fixed bottom nav 64px + safe area) ── */
+        @media (max-width: 639px) {
+          .admin-content {
+            padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+          }
+        }
+        /* ── smooth form scroll ── */
+        .admin-form-scroll {
+          overflow-y: auto;
           overscroll-behavior: contain;
-          touch-action: pan-y;
+          -webkit-overflow-scrolling: touch;
         }
-        .admin-scroll-form::-webkit-scrollbar {
-          width: 8px;
+        .admin-form-scroll::-webkit-scrollbar { width: 4px; }
+        .admin-form-scroll::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 2px; }
+        /* ── sticky category header ── */
+        .sticky-cat-header { position: sticky; top: 0; z-index: 10; background: hsl(var(--background)); }
+        /* ── slide-up sheet on mobile ── */
+        @media (max-width: 639px) {
+          [role="dialog"][data-sheet] {
+            animation: slideUp 240ms cubic-bezier(0.32,0.72,0,1) both;
+          }
+          @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to   { transform: translateY(0); }
+          }
         }
-        .admin-scroll-form::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .admin-scroll-form::-webkit-scrollbar-thumb {
+        /* ── tab transitions ── */
+        .tab-panel { animation: fadeIn 180ms ease both; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Active bottom tab indicator */
+        .bottom-tab-active::before {
+          content: "";
+          position: absolute;
+          top: 0; left: 50%; transform: translateX(-50%);
+          width: 24px; height: 2px;
           background: hsl(var(--primary));
-          border-radius: 4px;
-        }
-        .admin-scroll-form::-webkit-scrollbar-thumb:hover {
-          background: hsl(var(--primary) / 0.8);
+          border-radius: 0 0 2px 2px;
         }
       `}</style>
-      <div className="container py-4 sm:py-8 space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Admin Panel</h1>
-            <p className="text-sm text-muted-foreground">Manage orders, products, messages and FAQs.</p>
+
+      {/* ── page wrapper ── */}
+      <div className="admin-content max-w-6xl mx-auto px-3 sm:px-5 lg:px-6 py-4 sm:py-6 space-y-5">
+
+        {/* ── header ── */}
+        <div className="flex items-center justify-between gap-3 min-w-0">
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-xl font-bold tracking-tight truncate">Admin Panel</h1>
+            <p className="text-xs text-muted-foreground mt-0.5 hidden sm:block">
+              Orders · Products · Messages · FAQs
+            </p>
           </div>
-          <Badge className="px-3 py-1 text-xs sm:text-sm" variant="secondary">
-            <Shield className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5" />
-            <span className="max-w-[160px] truncate">{user?.email}</span>
+          <Badge variant="secondary" className="shrink-0 flex items-center gap-1.5 px-2.5 py-1 text-xs max-w-[180px]">
+            <Shield className="w-3 h-3 shrink-0" />
+            <span className="truncate">{user?.email}</span>
           </Badge>
         </div>
 
-        <Tabs defaultValue="orders" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="orders" className="text-xs sm:text-sm px-1 sm:px-3">
-              <span className="hidden sm:inline">Order History</span>
-              <span className="sm:hidden">Orders</span>
-            </TabsTrigger>
-            <TabsTrigger value="products" className="text-xs sm:text-sm px-1 sm:px-3">Products</TabsTrigger>
-            <TabsTrigger value="messages" className="text-xs sm:text-sm px-1 sm:px-3 flex items-center gap-1">
-              <MessageSquare className="w-3 h-3 flex-shrink-0" />
-              <span className="hidden sm:inline">Message Queries</span>
-              <span className="sm:hidden">Msgs</span>
-              {contactMessages.length > 0 && (
-                <span className="inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-bold w-4 h-4 flex-shrink-0">
-                  {contactMessages.length > 99 ? "99+" : contactMessages.length}
+        {/* ── desktop tab bar (hidden on mobile — bottom nav handles it) ── */}
+        <div className="hidden sm:flex items-center gap-1 bg-muted/50 p-1 rounded-xl">
+          {tabs.map(({ id, label, icon: Icon, badge }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={[
+                "flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-medium transition-all",
+                activeTab === id
+                  ? "bg-background shadow-sm text-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/60",
+              ].join(" ")}
+            >
+              <Icon className="w-4 h-4 shrink-0" />
+              <span>{label}</span>
+              {!!badge && (
+                <span className="ml-0.5 inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-bold w-4 h-4 shrink-0">
+                  {badge > 99 ? "99+" : badge}
                 </span>
               )}
-            </TabsTrigger>
-            <TabsTrigger value="faqs" className="text-xs sm:text-sm px-1 sm:px-3 flex items-center gap-1">
-              <HelpCircle className="w-3 h-3 flex-shrink-0" />
-              <span className="hidden sm:inline">FAQ Manager</span>
-              <span className="sm:hidden">FAQs</span>
-            </TabsTrigger>
-          </TabsList>
+            </button>
+          ))}
+        </div>
 
-          <TabsContent value="orders" className="space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardDescription>Total Orders</CardDescription>
-                  <CardTitle className="text-3xl">{orders.length}</CardTitle>
-                </CardHeader>
-              </Card>
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardDescription>Pending Orders</CardDescription>
-                  <CardTitle className="text-3xl">{orders.filter((order) => order.status === "pending").length}</CardTitle>
-                </CardHeader>
-              </Card>
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardDescription>Confirmed Orders</CardDescription>
-                  <CardTitle className="text-3xl">{orders.filter((order) => order.status === "confirmed").length}</CardTitle>
-                </CardHeader>
-              </Card>
-            </div>
+        {/* ── tab content ── */}
+        <div className="tab-panel" key={activeTab}>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Order History</CardTitle>
-                <CardDescription>Search, sort, filter, confirm, or cancel orders from this panel only.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-3 md:grid-cols-3 mb-6">
-                  <div className="relative md:col-span-1">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      value={orderSearch}
-                      onChange={(event) => setOrderSearch(event.target.value)}
-                      placeholder="Search by order no, name, phone, email..."
-                      className="pl-9"
-                    />
+          {/* ╔══════════════ ORDERS ══════════════╗ */}
+          {activeTab === "orders" && (
+            <div className="space-y-4">
+              {/* stats */}
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                <Stat label="Total" value={orders.length} />
+                <Stat label="Pending" value={orders.filter((o) => o.status === "pending").length} accent />
+                <Stat label="Confirmed" value={orders.filter((o) => o.status === "confirmed").length} />
+              </div>
+
+              {/* search + filter toggle */}
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <SearchBar value={orderSearch} onChange={setOrderSearch} placeholder="Search orders…" />
                   </div>
-                  <Select value={orderStatusFilter} onValueChange={setOrderStatusFilter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Filter by status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All statuses</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="confirmed">Confirmed</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={orderSort} onValueChange={setOrderSort}>
-                    <SelectTrigger>
-                      <SlidersHorizontal className="mr-2 h-4 w-4 text-muted-foreground" />
-                      <SelectValue placeholder="Sort orders" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="newest">Newest first</SelectItem>
-                      <SelectItem value="oldest">Oldest first</SelectItem>
-                      <SelectItem value="amount-high">Amount high to low</SelectItem>
-                      <SelectItem value="amount-low">Amount low to high</SelectItem>
-                      <SelectItem value="name-az">Name A to Z</SelectItem>
-                      <SelectItem value="name-za">Name Z to A</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <button
+                    type="button"
+                    onClick={() => setShowFilters((v) => !v)}
+                    className={[
+                      "h-11 w-11 rounded-xl border flex items-center justify-center transition-colors shrink-0",
+                      showFilters ? "bg-primary text-primary-foreground border-primary" : "border-input hover:bg-accent",
+                    ].join(" ")}
+                    aria-label="Toggle filters"
+                  >
+                    <Filter className="w-4 h-4" />
+                  </button>
                 </div>
 
-                {loadingOrders ? (
-                  <div className="py-12 flex justify-center">
-                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                {/* collapsible filters */}
+                {showFilters && (
+                  <div className="grid grid-cols-2 gap-2 p-3 bg-muted/40 rounded-xl border border-dashed">
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Status</p>
+                      <Select value={orderStatus} onValueChange={setOrderStatus}>
+                        <SelectTrigger className="h-9 text-sm rounded-lg">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All</SelectItem>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="confirmed">Confirmed</SelectItem>
+                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Sort by</p>
+                      <Select value={orderSort} onValueChange={setOrderSort}>
+                        <SelectTrigger className="h-9 text-sm rounded-lg">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="newest">Newest</SelectItem>
+                          <SelectItem value="oldest">Oldest</SelectItem>
+                          <SelectItem value="amount-high">Amount ↓</SelectItem>
+                          <SelectItem value="amount-low">Amount ↑</SelectItem>
+                          <SelectItem value="name-az">Name A–Z</SelectItem>
+                          <SelectItem value="name-za">Name Z–A</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                ) : filteredOrders.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No orders found.</p>
-                ) : (
-                  <div className="overflow-x-auto -mx-4 sm:mx-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="whitespace-nowrap">Order ID</TableHead>
-                        <TableHead className="whitespace-nowrap">Customer</TableHead>
-                        <TableHead className="hidden sm:table-cell whitespace-nowrap">Phone</TableHead>
-                        <TableHead className="whitespace-nowrap">Amount</TableHead>
-                        <TableHead className="whitespace-nowrap">Status</TableHead>
-                        <TableHead className="hidden md:table-cell whitespace-nowrap">Created</TableHead>
-                        <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredOrders.map((order) => (
-                        <TableRow key={order.id}>
-                          <TableCell className="font-mono text-xs max-w-[100px] truncate">{order.id}</TableCell>
-                          <TableCell className="max-w-[120px] truncate">
+                )}
+
+                {/* result count */}
+                <p className="text-xs text-muted-foreground px-0.5">
+                  {filteredOrders.length} order{filteredOrders.length !== 1 ? "s" : ""}
+                  {orderSearch || orderStatus !== "all" ? " matching" : ""}
+                </p>
+              </div>
+
+              {/* loading */}
+              {loadingOrders && (
+                <div className="space-y-3">
+                  {[1,2,3].map((i) => <SkeletonCard key={i} />)}
+                </div>
+              )}
+
+              {/* empty */}
+              {!loadingOrders && filteredOrders.length === 0 && (
+                <Empty icon={ReceiptText} title="No orders found. Try adjusting your search or filters." />
+              )}
+
+              {/* ── mobile: card list ── */}
+              {!loadingOrders && filteredOrders.length > 0 && (
+                <>
+                  <div className="md:hidden space-y-3">
+                    {filteredOrders.map((order) => (
+                      <div
+                        key={order.id}
+                        className="bg-card border rounded-xl p-4 space-y-3 active:scale-[0.99] transition-transform"
+                      >
+                        {/* top row */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
                             {order.userId ? (
                               <button
                                 onClick={() => navigate(`/profile/${order.userId}`)}
-                                className="text-primary hover:underline cursor-pointer text-left"
-                                title="View customer profile"
+                                className="font-semibold text-[15px] text-primary hover:underline text-left truncate block w-full"
                               >
-                                {order.fullName || "-"}
+                                {order.fullName || "Unknown"}
                               </button>
                             ) : (
-                              order.fullName || "-"
+                              <p className="font-semibold text-[15px] truncate">{order.fullName || "Unknown"}</p>
                             )}
-                          </TableCell>
-                          <TableCell className="hidden sm:table-cell whitespace-nowrap">{order.phone || "-"}</TableCell>
-                          <TableCell className="whitespace-nowrap">₹{Number(order.totalAmount || 0).toFixed(2)}</TableCell>
-                          <TableCell>
-                            <Badge variant={order.status === "confirmed" ? "default" : order.status === "cancelled" ? "destructive" : "outline"} className="whitespace-nowrap text-xs">
-                              {order.status || "pending"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell whitespace-nowrap text-sm">{formatDate(order.createdAt)}</TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-1">
-                              <Button variant="outline" size="sm" onClick={() => handleViewOrder(order)} className="h-8 w-8 p-0 sm:w-auto sm:px-3">
-                                <Eye className="w-4 h-4" />
-                                <span className="hidden sm:inline ml-1">View</span>
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                disabled={updatingOrderId === order.id || order.status === "confirmed"}
-                                onClick={() => handleStatusUpdate(order.id, "confirmed")}
-                                className="h-8 w-8 p-0 sm:w-auto sm:px-3"
-                              >
-                                {updatingOrderId === order.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CheckCircle2 className="w-4 h-4" /><span className="hidden sm:inline ml-1">Confirm</span></>}
-                              </Button>
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                disabled={updatingOrderId === order.id || order.status === "cancelled"}
-                                onClick={() => handleStatusUpdate(order.id, "cancelled")}
-                                className="h-8 w-8 p-0 sm:w-auto sm:px-3"
-                              >
-                                {updatingOrderId === order.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <><XCircle className="w-4 h-4" /><span className="hidden sm:inline ml-1">Cancel</span></>}
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="products">
-            <Card>
-              <CardHeader className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                <div>
-                  <CardTitle>Manage Products</CardTitle>
-                  <CardDescription>View, Add, Edit, and Delete products.</CardDescription>
-                </div>
-                <div className="flex gap-2 shrink-0">
-                  <Button size="sm" onClick={() => setIsCategoryDialogOpen(true)}>
-                    <Plus className="w-4 h-4 mr-1" />
-                    <span className="hidden sm:inline">Add Product Category</span>
-                    <span className="sm:hidden">Add Category</span>
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  {categorizedProducts.length === 0 ? (
-                    <p className="text-sm text-muted-foreground italic">
-                      No products found. Use Add Product to create your first item.
-                    </p>
-                  ) : (
-                    <Accordion type="single" collapsible className="w-full space-y-4">
-                      {categorizedProducts.map((category) => (
-                        <AccordionItem key={category.slug} value={category.slug} className="rounded-xl border px-4">
-                          <div className="flex items-center gap-2">
-                            <AccordionTrigger className="flex-1 py-4 hover:no-underline">
-                              <div className="flex items-center gap-3 text-left">
-                                <span className="text-xl">{category.icon}</span>
-                                <div>
-                                  <h3 className="font-semibold text-lg leading-tight">{category.name}</h3>
-                                  <p className="text-xs text-muted-foreground">/{category.slug} • {category.products.length} product{category.products.length === 1 ? "" : "s"}</p>
-                                </div>
-                              </div>
-                            </AccordionTrigger>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                setRenameCategoryTarget(category.slug);
-                                setRenameCategoryName(category.name);
-                                setIsRenameDialogOpen(true);
-                              }}
-                              aria-label={`Rename ${category.name}`}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              disabled={category.slug === "uncategorized"}
-                              className="text-destructive hover:bg-destructive/10 disabled:text-muted-foreground disabled:hover:bg-transparent"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                handleDeleteCategory(category.slug);
-                              }}
-                              aria-label={`Delete ${category.name}`}
-                              title={category.slug === "uncategorized" ? "Cannot delete the Uncategorized category" : `Delete ${category.name}`}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                            <p className="text-xs text-muted-foreground font-mono mt-0.5 truncate">{order.id}</p>
                           </div>
-                          <AccordionContent className="pb-4">
-                            <div className="mb-4 flex justify-end">
-                              <Button variant="ghost" size="sm" onClick={() => handleEditProduct(null, category.slug)}>
-                                <Plus className="w-3 h-3 mr-1" /> Add to {category.name}
-                              </Button>
-                            </div>
+                          <Badge variant={statusColor(order.status)} className="text-[11px] shrink-0 capitalize">
+                            {order.status || "pending"}
+                          </Badge>
+                        </div>
 
-                            {category.products.length === 0 ? (
-                              <p className="text-sm text-muted-foreground italic">No products in this category.</p>
-                            ) : (
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {category.products.map((product) => (
-                                  <Card key={product.id} className="overflow-hidden flex flex-col">
-                                    <AdminProductMedia product={product} />
-                                    <CardContent className="p-4 flex-1 flex flex-col">
-                                      <h4 className="font-bold truncate mb-1" title={product.title}>{product.title}</h4>
-                                      <div className="flex items-center justify-between mt-auto pt-4">
-                                        <div>
-                                          <span className="font-bold text-primary">{product.price}</span>
-                                          {product.originalPrice && (
-                                            <span className="text-xs text-muted-foreground line-through ml-2">{product.originalPrice}</span>
-                                          )}
-                                        </div>
-                                        <div className="flex gap-1">
-                                          <Button variant="ghost" size="icon" onClick={() => handleEditProduct(product)}>
-                                            <Edit className="w-4 h-4" />
-                                          </Button>
-                                          <Button variant="ghost" size="icon" onClick={() => { setCopyTargetProductId(product.id); setCopyTargetSlug(normalizeCategorySlug(product.categorySlug) || defaultCategorySlug); setIsCopyDialogOpen(true); }}>
-                                            <Copy className="w-4 h-4" />
-                                          </Button>
-                                          <Button variant="ghost" size="icon" onClick={() => { setMoveTargetProductId(product.id); setIsMoveDialogOpen(true); }}>
-                                            <SlidersHorizontal className="w-4 h-4" />
-                                          </Button>
-                                          <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => handleDeleteProduct(product.id)}>
-                                            <Trash2 className="w-4 h-4" />
-                                          </Button>
-                                        </div>
-                                      </div>
-                                    </CardContent>
-                                  </Card>
-                                ))}
-                              </div>
-                            )}
-                          </AccordionContent>
-                        </AccordionItem>
-                      ))}
-                    </Accordion>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                        {/* meta row */}
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="font-bold text-base">₹{Number(order.totalAmount || 0).toFixed(2)}</span>
+                          <span className="text-xs text-muted-foreground">{order.phone || "—"}</span>
+                        </div>
 
-          <TabsContent value="messages" className="space-y-6">
-            {/* Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardDescription>Total Messages</CardDescription>
-                  <CardTitle className="text-3xl">{contactMessages.length}</CardTitle>
-                </CardHeader>
-              </Card>
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardDescription>New / Unread</CardDescription>
-                  <CardTitle className="text-3xl">
-                    {contactMessages.filter((m) => m.status === "new").length}
-                  </CardTitle>
-                </CardHeader>
-              </Card>
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardDescription>With Phone</CardDescription>
-                  <CardTitle className="text-3xl">
-                    {contactMessages.filter((m) => m.phone && m.phone.trim()).length}
-                  </CardTitle>
-                </CardHeader>
-              </Card>
-            </div>
+                        {/* items preview */}
+                        {(order.items ?? []).length > 0 && (
+                          <p className="text-xs text-muted-foreground truncate">
+                            {order.items!.map((i) => i.title).join(", ")}
+                          </p>
+                        )}
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MessageSquare className="w-5 h-5" />
-                  Message Queries
-                </CardTitle>
-                <CardDescription>
-                  Real-time contact form submissions from the website. New entries appear instantly.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {/* Search */}
-                <div className="relative mb-4 max-w-sm">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    value={messageSearch}
-                    onChange={(e) => setMessageSearch(e.target.value)}
-                    placeholder="Search by name, email or message..."
-                    className="pl-9"
-                  />
-                </div>
-
-                {loadingMessages ? (
-                  <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground">
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    <span>Loading messages…</span>
-                  </div>
-                ) : contactMessages.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
-                    <MessageSquare className="h-10 w-10 opacity-30" />
-                    <p className="text-sm">No messages yet. They'll appear here as soon as someone fills in the contact form.</p>
-                  </div>
-                ) : (() => {
-                  const filtered = contactMessages.filter((m) => {
-                    const q = messageSearch.toLowerCase();
-                    return (
-                      !q ||
-                      m.name.toLowerCase().includes(q) ||
-                      m.email.toLowerCase().includes(q) ||
-                      m.message.toLowerCase().includes(q)
-                    );
-                  });
-
-                  return filtered.length === 0 ? (
-                    <p className="py-8 text-center text-sm text-muted-foreground">No messages match your search.</p>
-                  ) : (
-                    <div className="rounded-md border overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="w-[140px] whitespace-nowrap">Name</TableHead>
-                            <TableHead className="w-[80px] whitespace-nowrap">Status</TableHead>
-                            <TableHead className="w-[200px] whitespace-nowrap">Email</TableHead>
-                            <TableHead className="hidden sm:table-cell w-[130px] whitespace-nowrap">Phone</TableHead>
-                            <TableHead>Message</TableHead>
-                            <TableHead className="hidden md:table-cell w-[160px] whitespace-nowrap">Received At</TableHead>
-                            <TableHead className="w-[60px] text-right">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {filtered.map((msg) => (
-                            <TableRow
-                              key={msg.id}
-                              className="cursor-pointer hover:bg-muted/60 transition-colors"
-                              onClick={() => handleOpenMessage(msg)}
-                            >
-                              <TableCell className="font-medium whitespace-nowrap">
-                                <button
-                                  className="text-primary hover:underline text-left font-medium"
-                                  onClick={(e) => { e.stopPropagation(); handleOpenMessage(msg); }}
-                                >
-                                  {msg.name}
-                                </button>
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant={msg.status === "new" ? "default" : "outline"} className="whitespace-nowrap text-xs">
-                                  {msg.status === "new" ? "New" : "Read"}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <a
-                                  href={`mailto:${msg.email}`}
-                                  className="text-primary hover:underline break-all text-xs sm:text-sm"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  {msg.email}
-                                </a>
-                              </TableCell>
-                              <TableCell className="hidden sm:table-cell whitespace-nowrap text-muted-foreground">
-                                {msg.phone && msg.phone.trim() ? (
-                                  <a
-                                    href={`tel:${msg.phone}`}
-                                    className="hover:underline"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    {msg.phone}
-                                  </a>
-                                ) : (
-                                  <span className="italic opacity-50">—</span>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                <p className="max-w-[180px] text-sm text-muted-foreground truncate">
-                                  {msg.message}
-                                </p>
-                              </TableCell>
-                              <TableCell className="hidden md:table-cell whitespace-nowrap text-sm text-muted-foreground">
-                                {formatDate(msg.createdAt)}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="text-destructive hover:bg-destructive/10 h-7 w-7"
-                                  onClick={(e) => { e.stopPropagation(); handleDeleteMessage(msg.id); }}
-                                  title="Delete message"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  );
-                })()}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="faqs" className="space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardDescription>Total FAQs</CardDescription>
-                  <CardTitle className="text-3xl">{faqs.length}</CardTitle>
-                </CardHeader>
-              </Card>
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardDescription>Categories</CardDescription>
-                  <CardTitle className="text-3xl">{faqCategories.length}</CardTitle>
-                </CardHeader>
-              </Card>
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardDescription>Status</CardDescription>
-                  <CardTitle className="text-xl">
-                    {faqs.length > 0 ? (
-                      <span className="text-green-600 flex items-center gap-1.5 font-semibold text-lg">
-                        <CheckCircle2 className="w-5 h-5" /> Active
-                      </span>
-                    ) : (
-                      <span className="text-amber-600 flex items-center gap-1.5 font-semibold text-lg">
-                        <XCircle className="w-5 h-5" /> Not Initialized
-                      </span>
-                    )}
-                  </CardTitle>
-                </CardHeader>
-              </Card>
-            </div>
-
-            <Card>
-              <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between space-y-2 sm:space-y-0 pb-4">
-                <div>
-                  <CardTitle>FAQ Manager</CardTitle>
-                  <CardDescription>Manage and update FAQ entries shown on the website.</CardDescription>
-                </div>
-                <div className="flex gap-2 shrink-0">
-                  {faqs.length === 0 && (
-                    <Button 
-                      variant="outline"
-                      size="sm"
-                      onClick={handleInitializeDefaultFaqs} 
-                      disabled={isInitializingFaqs}
-                    >
-                      {isInitializingFaqs ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      ) : (
-                        <Plus className="w-4 h-4 mr-2" />
-                      )}
-                      <span className="hidden sm:inline">Load Default FAQs</span>
-                      <span className="sm:hidden">Load Defaults</span>
-                    </Button>
-                  )}
-                  <Button size="sm" onClick={() => handleEditFaq(null)}>
-                    <Plus className="w-4 h-4 mr-1" />
-                    <span className="hidden sm:inline">Add FAQ Item</span>
-                    <span className="sm:hidden">Add FAQ</span>
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="relative mb-4 max-w-sm">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    value={faqSearch}
-                    onChange={(e) => setFaqSearch(e.target.value)}
-                    placeholder="Search FAQs by question or category..."
-                    className="pl-9"
-                  />
-                </div>
-
-                {loadingFaqs ? (
-                  <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground">
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    <span>Loading FAQs...</span>
-                  </div>
-                ) : faqs.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
-                    <HelpCircle className="h-10 w-10 opacity-30" />
-                    <p className="text-sm">No FAQs found in Firestore.</p>
-                    <Button onClick={handleInitializeDefaultFaqs} disabled={isInitializingFaqs}>
-                      {isInitializingFaqs ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                      Load Default FAQs
-                    </Button>
-                  </div>
-                ) : (() => {
-                  const filtered = faqs.filter((faq) => {
-                    const q = faqSearch.toLowerCase();
-                    return (
-                      !q ||
-                      faq.question.toLowerCase().includes(q) ||
-                      faq.answer.toLowerCase().includes(q) ||
-                      faq.category.toLowerCase().includes(q)
-                    );
-                  });
-
-                  return filtered.length === 0 ? (
-                    <p className="py-8 text-center text-sm text-muted-foreground">No FAQs match your search.</p>
-                  ) : (
-                    <div className="rounded-md border overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="w-[80px]">Order</TableHead>
-                            <TableHead className="w-[180px]">Category</TableHead>
-                            <TableHead>Question / Answer</TableHead>
-                            <TableHead className="w-[100px] text-right">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {filtered.map((faq) => (
-                            <TableRow key={faq.id}>
-                              <TableCell className="font-mono text-xs">{faq.sortOrder}</TableCell>
-                              <TableCell>
-                                <Badge variant="outline">{faq.category}</Badge>
-                              </TableCell>
-                              <TableCell className="max-w-md">
-                                <div className="font-semibold text-sm mb-1">{faq.question}</div>
-                                <div className="text-xs text-muted-foreground line-clamp-2">{faq.answer}</div>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex items-center justify-end gap-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleEditFaq(faq)}
-                                    title="Edit FAQ"
-                                  >
-                                    <Edit className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="text-destructive hover:bg-destructive/10"
-                                    onClick={() => handleDeleteFaq(faq.id)}
-                                    title="Delete FAQ"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  );
-                })()}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-
-        {/* Message Detail Dialog */}
-        <Dialog open={!!selectedMessage} onOpenChange={(open) => !open && setSelectedMessage(null)}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-primary" />
-                Message from {selectedMessage?.name}
-              </DialogTitle>
-              <DialogDescription>Full message details from the contact form</DialogDescription>
-            </DialogHeader>
-            {selectedMessage && (
-              <div className="space-y-4 pt-2">
-                <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-3 text-sm">
-                  <span className="font-semibold text-muted-foreground">Name</span>
-                  <span className="font-medium">{selectedMessage.name}</span>
-
-                  <span className="font-semibold text-muted-foreground">Email</span>
-                  <a
-                    href={`mailto:${selectedMessage.email}`}
-                    className="text-primary hover:underline break-all"
-                  >
-                    {selectedMessage.email}
-                  </a>
-
-                  <span className="font-semibold text-muted-foreground">Phone</span>
-                  {selectedMessage.phone && selectedMessage.phone.trim() ? (
-                    <a href={`tel:${selectedMessage.phone}`} className="hover:underline">
-                      {selectedMessage.phone}
-                    </a>
-                  ) : (
-                    <span className="italic text-muted-foreground opacity-60">Not provided</span>
-                  )}
-
-                  <span className="font-semibold text-muted-foreground">Received</span>
-                  <span>{formatDate(selectedMessage.createdAt)}</span>
-                </div>
-
-                <div className="border-t pt-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Message</p>
-                  <div className="rounded-lg bg-muted/50 border p-4 text-sm whitespace-pre-wrap leading-relaxed">
-                    {selectedMessage.message}
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-1">
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleDeleteMessage(selectedMessage.id)}
-                  >
-                    <Trash2 className="w-4 h-4 mr-1.5" />
-                    Delete Query
-                  </Button>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" asChild>
-                      <a href={`mailto:${selectedMessage.email}`}>
-                        Reply via Email
-                      </a>
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => setSelectedMessage(null)}>
-                      Close
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrder(null)}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Order Details</DialogTitle>
-              <DialogDescription>Full order data from Firestore</DialogDescription>
-            </DialogHeader>
-            {selectedOrder && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                  <p><span className="font-medium">Order ID:</span> {selectedOrder.id}</p>
-                  <p><span className="font-medium">Status:</span> {selectedOrder.status || "pending"}</p>
-                  <p><span className="font-medium">Name:</span> {selectedOrder.fullName || "-"}</p>
-                  <p><span className="font-medium">Email:</span> {selectedOrder.email || "-"}</p>
-                  <p><span className="font-medium">Invoice Email:</span> {selectedOrder.email || "-"}</p>
-                  <p><span className="font-medium">Phone:</span> {selectedOrder.phone || "-"}</p>
-                  <p><span className="font-medium">Amount:</span> ₹{Number(selectedOrder.totalAmount || 0).toFixed(2)}</p>
-                  <p><span className="font-medium">Address:</span> {selectedOrder.address || "-"}</p>
-                  <p><span className="font-medium">City/State:</span> {selectedOrder.city || "-"}, {selectedOrder.state || "-"}</p>
-                  <p><span className="font-medium">Pincode:</span> {selectedOrder.pincode || "-"}</p>
-                  <p><span className="font-medium">Created:</span> {formatDate(selectedOrder.createdAt)}</p>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold mb-2">Items</h3>
-                  <div className="space-y-2">
-                    {(selectedOrder.items || []).map((item) => (
-                      <div key={item.id} className="rounded-md border p-3 text-sm flex items-center justify-between">
-                        <span>{item.title}</span>
-                        <span>Qty: {item.quantity}</span>
+                        {/* actions */}
+                        <div className="grid grid-cols-3 gap-2 pt-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-10 text-xs rounded-lg gap-1"
+                            onClick={() => startTransition(() => setSelectedOrder(order))}
+                          >
+                            <Eye className="w-3.5 h-3.5" /> View
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-10 text-xs rounded-lg gap-1 text-green-700 border-green-200 hover:bg-green-50"
+                            disabled={updatingOrderId === order.id || order.status === "confirmed"}
+                            onClick={() => updateOrder(order.id, "confirmed")}
+                          >
+                            {updatingOrderId === order.id
+                              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              : <><CheckCircle2 className="w-3.5 h-3.5" />OK</>}
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="h-10 text-xs rounded-lg gap-1"
+                            disabled={updatingOrderId === order.id || order.status === "cancelled"}
+                            onClick={() => updateOrder(order.id, "cancelled")}
+                          >
+                            {updatingOrderId === order.id
+                              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              : <><XCircle className="w-3.5 h-3.5" />Cancel</>}
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
-                </div>
 
-                {selectedOrder.payment && (
-                  <div>
-                    <h3 className="font-semibold mb-2">Payment</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                      <p><span className="font-medium">Gateway:</span> {selectedOrder.payment.gateway}</p>
-                      <p><span className="font-medium">Order ID:</span> {selectedOrder.payment.orderId}</p>
-                      <p><span className="font-medium">Payment ID:</span> {selectedOrder.payment.paymentId}</p>
-                      <p><span className="font-medium">Currency:</span> {selectedOrder.payment.currency}</p>
-                    </div>
+                  {/* ── desktop table ── */}
+                  <div className="hidden md:block rounded-xl border overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/40">
+                          <TableHead className="whitespace-nowrap font-semibold">Order ID</TableHead>
+                          <TableHead className="whitespace-nowrap font-semibold">Customer</TableHead>
+                          <TableHead className="whitespace-nowrap font-semibold">Phone</TableHead>
+                          <TableHead className="whitespace-nowrap font-semibold">Amount</TableHead>
+                          <TableHead className="whitespace-nowrap font-semibold">Status</TableHead>
+                          <TableHead className="hidden lg:table-cell whitespace-nowrap font-semibold">Created</TableHead>
+                          <TableHead className="text-right font-semibold">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredOrders.map((order) => (
+                          <TableRow key={order.id} className="hover:bg-muted/30 transition-colors">
+                            <TableCell className="font-mono text-xs text-muted-foreground max-w-[100px] truncate">{order.id}</TableCell>
+                            <TableCell className="font-medium max-w-[140px] truncate">
+                              {order.userId
+                                ? <button onClick={() => navigate(`/profile/${order.userId}`)} className="text-primary hover:underline text-left">{order.fullName || "—"}</button>
+                                : order.fullName || "—"}
+                            </TableCell>
+                            <TableCell className="text-sm">{order.phone || "—"}</TableCell>
+                            <TableCell className="font-semibold">₹{Number(order.totalAmount || 0).toFixed(2)}</TableCell>
+                            <TableCell>
+                              <Badge variant={statusColor(order.status)} className="capitalize text-xs">{order.status || "pending"}</Badge>
+                            </TableCell>
+                            <TableCell className="hidden lg:table-cell text-xs text-muted-foreground">{fmtDate(order.createdAt)}</TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                <Button variant="ghost" size="sm" className="h-8 gap-1" onClick={() => startTransition(() => setSelectedOrder(order))}>
+                                  <Eye className="w-3.5 h-3.5" /><span className="hidden lg:inline">View</span>
+                                </Button>
+                                <Button variant="ghost" size="sm" className="h-8 gap-1 text-green-700 hover:bg-green-50 hover:text-green-700"
+                                  disabled={updatingOrderId === order.id || order.status === "confirmed"}
+                                  onClick={() => updateOrder(order.id, "confirmed")}>
+                                  {updatingOrderId === order.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><CheckCircle2 className="w-3.5 h-3.5" /><span className="hidden lg:inline">Confirm</span></>}
+                                </Button>
+                                <Button variant="ghost" size="sm" className="h-8 gap-1 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                  disabled={updatingOrderId === order.id || order.status === "cancelled"}
+                                  onClick={() => updateOrder(order.id, "cancelled")}>
+                                  {updatingOrderId === order.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><XCircle className="w-3.5 h-3.5" /><span className="hidden lg:inline">Cancel</span></>}
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   </div>
-                )}
+                </>
+              )}
+            </div>
+          )}
 
-                <div className="flex flex-wrap gap-2 pt-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => selectedOrder && handleStatusUpdate(selectedOrder.id, "confirmed")}
-                    disabled={!selectedOrder || updatingOrderId === selectedOrder.id || selectedOrder.status === "confirmed"}
-                  >
-                    Confirm Order
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={() => selectedOrder && handleStatusUpdate(selectedOrder.id, "cancelled")}
-                    disabled={!selectedOrder || updatingOrderId === selectedOrder.id || selectedOrder.status === "cancelled"}
-                  >
-                    Cancel Order
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => selectedOrder && downloadReceipt(selectedOrder, selectedOrder.email || "")}
-                    disabled={!selectedOrder?.payment}
-                  >
-                    Download Invoice
-                  </Button>
+          {/* ╔══════════════ PRODUCTS ══════════════╗ */}
+          {activeTab === "products" && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground">
+                    {dbProducts.length} product{dbProducts.length !== 1 ? "s" : ""} across {categorized.length} categor{categorized.length !== 1 ? "ies" : "y"}
+                  </p>
                 </div>
+                <Button size="sm" className="h-9 gap-1.5 rounded-lg text-xs" onClick={() => setIsCategoryOpen(true)}>
+                  <Plus className="w-3.5 h-3.5" /> Add Category
+                </Button>
               </div>
-            )}
-          </DialogContent>
-        </Dialog>
 
-          {/* Rename Category Dialog */}
-          <Dialog open={isRenameDialogOpen} onOpenChange={(open) => { if (!open) { setIsRenameDialogOpen(false); setRenameCategoryTarget(null); } }}>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>Rename Section</DialogTitle>
-                <DialogDescription>Provide a new display name or slug for this section. Slug will be generated automatically.</DialogDescription>
-              </DialogHeader>
-              <form onSubmit={async (e) => {
-                e.preventDefault();
-                if (!renameCategoryTarget) return;
-                try {
-                  await renameCategory(renameCategoryTarget, renameCategoryName || "");
-                  toast.success("Section renamed successfully.");
-                  setIsRenameDialogOpen(false);
-                  setRenameCategoryTarget(null);
-                } catch (err) {
-                  console.error(err);
-                  toast.error("Failed to rename section.");
-                }
-              }} className="space-y-4 py-4">
-                <div>
-                  <Label htmlFor="newName">New Name</Label>
-                  <Input id="newName" value={renameCategoryName} onChange={(e) => setRenameCategoryName(e.target.value)} placeholder="e.g. Pet Tags" required />
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" type="button" onClick={() => { setIsRenameDialogOpen(false); setRenameCategoryTarget(null); }}>Cancel</Button>
-                  <Button type="submit">Save</Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
-
-          {/* Move Product Dialog */}
-          <Dialog open={isMoveDialogOpen} onOpenChange={(open) => { if (!open) { setIsMoveDialogOpen(false); setMoveTargetProductId(null); setMoveTargetSlug(""); } }}>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>Move Tag to Section</DialogTitle>
-                <DialogDescription>Select the target section to move this product to.</DialogDescription>
-              </DialogHeader>
-              <form onSubmit={async (e) => {
-                e.preventDefault();
-                if (!moveTargetProductId || !moveTargetSlug) return;
-                try {
-                  await moveProductsToCategory([moveTargetProductId], moveTargetSlug);
-                  toast.success("Product moved successfully.");
-                  setIsMoveDialogOpen(false);
-                  setMoveTargetProductId(null);
-                  setMoveTargetSlug("");
-                } catch (err) {
-                  console.error(err);
-                  toast.error("Failed to move product.");
-                }
-              }} className="space-y-4 py-4">
-                <div>
-                  <Label htmlFor="target">Target Section</Label>
-                  <Select value={moveTargetSlug} onValueChange={(v) => setMoveTargetSlug(v)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose section" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categoryOptions.map((slug) => (
-                        <SelectItem key={slug} value={slug}>{(categoryMetadata[slug] && categoryMetadata[slug].name) ? categoryMetadata[slug].name : categoryNameFromSlug(slug)}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" type="button" onClick={() => { setIsMoveDialogOpen(false); setMoveTargetProductId(null); setMoveTargetSlug(""); }}>Cancel</Button>
-                  <Button type="submit">Move</Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
-
-          {/* Copy Product Dialog */}
-          <Dialog open={isCopyDialogOpen} onOpenChange={(open) => { if (!open) { setIsCopyDialogOpen(false); setCopyTargetProductId(null); setCopyTargetSlug(""); } }}>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>Copy Product to Another Section</DialogTitle>
-                <DialogDescription>Create a duplicate of this product in a selected category.</DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleCopyProduct} className="space-y-4 py-4">
-                <div>
-                  <Label htmlFor="copyTarget">Target Section</Label>
-                  <Select value={copyTargetSlug} onValueChange={(value) => setCopyTargetSlug(value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose section" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categoryOptions.map((slug) => (
-                        <SelectItem key={slug} value={slug}>
-                          {(categoryMetadata[slug] && categoryMetadata[slug].name) ? categoryMetadata[slug].name : categoryNameFromSlug(slug)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" type="button" onClick={() => { setIsCopyDialogOpen(false); setCopyTargetProductId(null); setCopyTargetSlug(""); }}>Cancel</Button>
-                  <Button type="submit" disabled={savingProductId === copyTargetProductId}>Copy</Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
-
-        {/* Product Dialog */}
-        <Dialog open={isProductDialogOpn} onOpenChange={setIsProductDialogOpn}>
-          <DialogContent className="max-w-2xl flex flex-col overflow-hidden">
-            <DialogHeader className="shrink-0">
-              <DialogTitle>{editingProduct?.id ? "Edit Product" : "Add Product"}</DialogTitle>
-              <DialogDescription>Modify product details here. Changes sync to Firestore instantly.</DialogDescription>
-            </DialogHeader>
-            {editingProduct && (
-              <form
-                onSubmit={handleSaveProduct}
-                className="admin-scroll-form grid gap-4 py-4 overflow-y-auto px-1"
-                onWheel={(e) => e.stopPropagation()}
-              >
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="category">Category Slug</Label>
-                    <Input
-                      id="category"
-                      value={editingProduct.categorySlug}
-                      onChange={(e) => setEditingProduct({ ...editingProduct, categorySlug: normalizeCategorySlug(e.target.value) })}
-                      placeholder="e.g. car-tags"
-                      list="category-slug-options"
-                      required
-                    />
-                    <datalist id="category-slug-options">
-                      {categoryOptions.map((slug) => (
-                        <option key={slug} value={slug} />
-                      ))}
-                    </datalist>
-                    <p className="text-xs text-muted-foreground">Use lowercase words with hyphens (for example: car-tags).</p>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="title">Title</Label>
-                    <Input 
-                      id="title" 
-                      value={editingProduct.title} 
-                      onChange={(e) => setEditingProduct({ ...editingProduct, title: e.target.value })} 
-                      placeholder="Product title" 
-                      required 
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="price">Price (₹)</Label>
-                    <Input 
-                      id="price" 
-                      value={editingProduct.price} 
-                      onChange={(e) => setEditingProduct({ ...editingProduct, price: e.target.value })} 
-                      placeholder="e.g. 499 or ₹499" 
-                      required 
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="originalPrice">Original Price (₹) [Optional]</Label>
-                    <Input 
-                      id="originalPrice" 
-                      value={editingProduct.originalPrice} 
-                      onChange={(e) => setEditingProduct({ ...editingProduct, originalPrice: e.target.value })} 
-                      placeholder="e.g. 599" 
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="image">Product Image</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="imageFile"
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        disabled={isUploadingImage}
-                        className="flex-1"
-                      />
-                      <Input
-                        id="image"
-                        value={editingProduct.image}
-                        onChange={(e) => setEditingProduct({ ...editingProduct, image: e.target.value })}
-                        placeholder="Or paste URL"
-                        className="flex-1"
-                      />
-                    </div>
-                    {isUploadingImage && <p className="text-xs text-muted-foreground flex items-center"><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Uploading...</p>}
-                    {editingProduct.image && (
-                      <div className="mt-2 w-full max-w-[200px] border rounded overflow-hidden">
-                        <img src={editingProduct.image} alt="Preview" className="w-full h-auto" />
+              {categorized.length === 0 ? (
+                <Empty icon={Package} title="No products yet. Add a category first, then add products to it." />
+              ) : (
+                <Accordion type="single" collapsible className="space-y-2.5">
+                  {categorized.map((cat) => (
+                    <AccordionItem key={cat.slug} value={cat.slug} className="border rounded-xl overflow-hidden px-0">
+                      {/* category header */}
+                      <div className="flex items-center pl-4 pr-2 sticky-cat-header">
+                        <AccordionTrigger className="flex-1 py-3.5 hover:no-underline gap-3">
+                          <div className="flex items-center gap-3 text-left w-full">
+                            <span className="text-2xl leading-none">{cat.icon}</span>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-semibold text-sm sm:text-base truncate">{cat.name}</p>
+                              <p className="text-[10px] text-muted-foreground">
+                                /{cat.slug} · {cat.products.length} item{cat.products.length !== 1 ? "s" : ""}
+                              </p>
+                            </div>
+                          </div>
+                        </AccordionTrigger>
+                        <div className="flex items-center gap-0.5 shrink-0">
+                          <IconBtn icon={Edit} label={`Rename ${cat.name}`} onClick={() => { setRenameTarget(cat.slug); setRenameName(cat.name); setIsRenameOpen(true); }} />
+                          <IconBtn icon={Trash2} label={`Delete ${cat.name}`} danger disabled={cat.slug === "uncategorized"} onClick={() => deleteCat(cat.slug)} />
+                        </div>
                       </div>
-                    )}
+
+                      <AccordionContent className="px-4 pb-4">
+                        <div className="flex justify-end mb-3">
+                          <Button variant="ghost" size="sm" className="h-9 gap-1.5 text-xs rounded-lg" onClick={() => openProduct(null, cat.slug)}>
+                            <Plus className="w-3.5 h-3.5" /> Add to {cat.name}
+                          </Button>
+                        </div>
+
+                        {cat.products.length === 0 ? (
+                          <p className="text-sm text-muted-foreground text-center py-6 italic">No products here yet.</p>
+                        ) : (
+                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                            {cat.products.map((product) => (
+                              <div key={product.id} className="border rounded-xl overflow-hidden flex flex-col bg-card">
+                                <ProductMedia product={product} />
+                                <div className="p-3 flex-1 flex flex-col gap-2">
+                                  <p className="font-semibold text-xs sm:text-sm leading-snug line-clamp-2" title={product.title}>
+                                    {product.title}
+                                  </p>
+                                  <div className="flex items-center gap-1 mt-auto">
+                                    <span className="font-bold text-primary text-xs sm:text-sm">{product.price}</span>
+                                    {product.originalPrice && (
+                                      <span className="text-[10px] text-muted-foreground line-through">{product.originalPrice}</span>
+                                    )}
+                                  </div>
+                                  {/* 4-action row — equal sized touch targets */}
+                                  <div className="grid grid-cols-4 gap-0.5 -mx-1">
+                                    <IconBtn icon={Edit}             label="Edit product"       onClick={() => openProduct(product)} />
+                                    <IconBtn icon={Copy}             label="Copy product"       onClick={() => { setCopyProductId(product.id); setCopySlug(normalizeCategorySlug(product.categorySlug) || defaultSlug); setIsCopyOpen(true); }} />
+                                    <IconBtn icon={SlidersHorizontal} label="Move product"      onClick={() => { setMoveProductId(product.id); setIsMoveOpen(true); }} />
+                                    <IconBtn icon={Trash2}           label="Delete product" danger onClick={() => deleteProduct(product.id)} />
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              )}
+            </div>
+          )}
+
+          {/* ╔══════════════ MESSAGES ══════════════╗ */}
+          {activeTab === "messages" && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                <Stat label="Total" value={messages.length} />
+                <Stat label="Unread" value={messages.filter((m) => m.status === "new").length} accent />
+                <Stat label="With phone" value={messages.filter((m) => m.phone?.trim()).length} />
+              </div>
+
+              <SearchBar value={msgSearch} onChange={setMsgSearch} placeholder="Search name, email, message…" />
+
+              <p className="text-xs text-muted-foreground px-0.5">
+                {filteredMsgs.length} message{filteredMsgs.length !== 1 ? "s" : ""}
+                {msgSearch ? " matching" : ""}
+              </p>
+
+              {loadingMessages && <div className="space-y-3">{[1,2,3].map((i) => <SkeletonCard key={i} />)}</div>}
+
+              {!loadingMessages && filteredMsgs.length === 0 && (
+                <Empty
+                  icon={MessageSquare}
+                  title={messages.length === 0
+                    ? "No messages yet. They'll appear here when someone fills in the contact form."
+                    : "No messages match your search."}
+                />
+              )}
+
+              {/* mobile cards */}
+              {!loadingMessages && filteredMsgs.length > 0 && (
+                <>
+                  <div className="md:hidden space-y-3">
+                    {filteredMsgs.map((msg) => (
+                      <div
+                        key={msg.id}
+                        onClick={() => openMsg(msg)}
+                        className="bg-card border rounded-xl p-4 space-y-2 cursor-pointer active:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="font-semibold text-[15px] text-primary truncate">{msg.name}</p>
+                          <Badge variant={msg.status === "new" ? "default" : "outline"} className="text-[10px] shrink-0">
+                            {msg.status === "new" ? "New" : "Read"}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate">{msg.email}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{msg.message}</p>
+                        <div className="flex items-center justify-between pt-1">
+                          <p className="text-[10px] text-muted-foreground">{fmtDate(msg.createdAt)}</p>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); deleteMsg(msg.id); }}
+                            className="h-9 w-9 flex items-center justify-center rounded-lg text-destructive hover:bg-destructive/10 transition-colors"
+                            aria-label="Delete message"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="emoji">Emoji (fallback if no image)</Label>
-                    <Input 
-                      id="emoji" 
-                      value={editingProduct.emoji || ""} 
-                      onChange={(e) => setEditingProduct({ ...editingProduct, emoji: e.target.value })} 
-                      placeholder="🚗" 
-                      maxLength={5}
-                    />
+                  {/* desktop table */}
+                  <div className="hidden md:block rounded-xl border overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/40">
+                          <TableHead className="font-semibold">Name</TableHead>
+                          <TableHead className="font-semibold w-[80px]">Status</TableHead>
+                          <TableHead className="font-semibold">Email</TableHead>
+                          <TableHead className="hidden lg:table-cell font-semibold">Phone</TableHead>
+                          <TableHead className="font-semibold">Message</TableHead>
+                          <TableHead className="hidden xl:table-cell font-semibold">Received</TableHead>
+                          <TableHead className="w-[50px]" />
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredMsgs.map((msg) => (
+                          <TableRow key={msg.id} className="cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => openMsg(msg)}>
+                            <TableCell className="font-medium">
+                              <button className="text-primary hover:underline" onClick={(e) => { e.stopPropagation(); openMsg(msg); }}>{msg.name}</button>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={msg.status === "new" ? "default" : "outline"} className="text-[10px]">
+                                {msg.status === "new" ? "New" : "Read"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-xs">
+                              <a href={`mailto:${msg.email}`} className="text-primary hover:underline" onClick={(e) => e.stopPropagation()}>{msg.email}</a>
+                            </TableCell>
+                            <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
+                              {msg.phone?.trim() ? <a href={`tel:${msg.phone}`} className="hover:underline" onClick={(e) => e.stopPropagation()}>{msg.phone}</a> : <span className="opacity-40">—</span>}
+                            </TableCell>
+                            <TableCell>
+                              <p className="text-xs text-muted-foreground max-w-[220px] truncate">{msg.message}</p>
+                            </TableCell>
+                            <TableCell className="hidden xl:table-cell text-xs text-muted-foreground">{fmtDate(msg.createdAt)}</TableCell>
+                            <TableCell>
+                              <button type="button" onClick={(e) => { e.stopPropagation(); deleteMsg(msg.id); }}
+                                className="h-9 w-9 flex items-center justify-center rounded-lg text-destructive hover:bg-destructive/10">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   </div>
-                </div>
+                </>
+              )}
+            </div>
+          )}
 
-                <div className="space-y-2">
-                  <Label htmlFor="features">Key Features (One per line)</Label>
-                  <Textarea 
-                    id="features" 
-                    rows={4}
-                    value={editingProduct.features.join("\n")} 
-                    onChange={(e) => setEditingProduct({ ...editingProduct, features: e.target.value.split("\n") })} 
-                    placeholder="Premium quality card with QR code&#10;Fits perfectly on car's front mirror..." 
-                    required 
-                  />
-                </div>
+          {/* ╔══════════════ FAQS ══════════════╗ */}
+          {activeTab === "faqs" && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                <Stat label="Total FAQs" value={faqs.length} />
+                <Stat label="Categories" value={faqCategories.length} />
+                <Stat
+                  label="Status"
+                  value={
+                    faqs.length > 0
+                      ? <span className="text-green-600 text-sm sm:text-base flex items-center gap-1"><CheckCircle2 className="w-4 h-4" />Live</span>
+                      : <span className="text-amber-500 text-sm sm:text-base flex items-center gap-1"><XCircle className="w-4 h-4" />Empty</span>
+                  }
+                />
+              </div>
 
-                <div className="flex items-center space-x-2 mt-2">
-                  <Checkbox 
-                    id="popular" 
-                    checked={editingProduct.popular} 
-                    onCheckedChange={(checked) => setEditingProduct({ ...editingProduct, popular: !!checked })} 
-                  />
-                  <Label htmlFor="popular" className="font-medium cursor-pointer">
-                    Mark as Popular (Best Seller)
-                  </Label>
+              {/* actions */}
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <SearchBar value={faqSearch} onChange={setFaqSearch} placeholder="Search questions…" />
                 </div>
+                <Button size="sm" className="h-11 gap-1.5 rounded-xl shrink-0" onClick={() => openFaq(null)}>
+                  <Plus className="w-4 h-4" />
+                  <span className="hidden sm:inline">Add FAQ</span>
+                </Button>
+              </div>
 
-                <div className="flex justify-end gap-2 mt-4 pt-4 border-t">
-                  <Button type="button" variant="outline" onClick={() => setIsProductDialogOpn(false)}>Cancel</Button>
-                  <Button type="submit" disabled={savingProductId !== null}>
-                    {savingProductId ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                    Save Product
-                  </Button>
+              {faqs.length === 0 && !loadingFaqs && (
+                <Button variant="outline" className="w-full h-11 rounded-xl gap-2" onClick={initDefaultFaqs} disabled={initFaqs}>
+                  {initFaqs ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                  Load Default FAQs
+                </Button>
+              )}
+
+              <p className="text-xs text-muted-foreground px-0.5">
+                {filteredFaqs.length} FAQ{filteredFaqs.length !== 1 ? "s" : ""}{faqSearch ? " matching" : ""}
+              </p>
+
+              {loadingFaqs && <div className="space-y-3">{[1,2,3].map((i) => <SkeletonCard key={i} />)}</div>}
+
+              {!loadingFaqs && filteredFaqs.length === 0 && (
+                <Empty icon={HelpCircle} title={faqs.length === 0 ? "No FAQs yet. Load defaults or add your first question." : "No FAQs match your search."} />
+              )}
+
+              {/* mobile cards */}
+              {!loadingFaqs && filteredFaqs.length > 0 && (
+                <>
+                  <div className="md:hidden space-y-3">
+                    {filteredFaqs.map((faq) => (
+                      <div key={faq.id} className="bg-card border rounded-xl p-4 space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <Badge variant="outline" className="text-[10px] shrink-0">{faq.category}</Badge>
+                          <span className="text-[10px] text-muted-foreground font-mono">#{faq.sortOrder}</span>
+                        </div>
+                        <p className="font-semibold text-sm leading-snug">{faq.question}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">{faq.answer}</p>
+                        <div className="flex justify-end gap-1 pt-1">
+                          <IconBtn icon={Edit}  label="Edit FAQ"   onClick={() => openFaq(faq)} />
+                          <IconBtn icon={Trash2} label="Delete FAQ" danger onClick={() => deleteFaqHandler(faq.id)} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* desktop table */}
+                  <div className="hidden md:block rounded-xl border overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/40">
+                          <TableHead className="w-[60px] font-semibold">#</TableHead>
+                          <TableHead className="w-[160px] font-semibold">Category</TableHead>
+                          <TableHead className="font-semibold">Question / Answer</TableHead>
+                          <TableHead className="w-[90px] text-right font-semibold">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredFaqs.map((faq) => (
+                          <TableRow key={faq.id} className="hover:bg-muted/30 transition-colors">
+                            <TableCell className="font-mono text-xs text-muted-foreground">{faq.sortOrder}</TableCell>
+                            <TableCell><Badge variant="outline" className="text-xs">{faq.category}</Badge></TableCell>
+                            <TableCell className="max-w-md">
+                              <p className="font-semibold text-sm">{faq.question}</p>
+                              <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{faq.answer}</p>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end">
+                                <IconBtn icon={Edit}  label="Edit FAQ"   onClick={() => openFaq(faq)} />
+                                <IconBtn icon={Trash2} label="Delete FAQ" danger onClick={() => deleteFaqHandler(faq.id)} />
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+        </div>{/* end tab-panel */}
+      </div>{/* end admin-content */}
+
+      {/* ══════════════════════════════════════════
+          MOBILE BOTTOM TAB BAR (sm:hidden)
+      ══════════════════════════════════════════ */}
+      <nav className="admin-bottom-nav sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-t">
+        <div className="grid grid-cols-4 h-16">
+          {tabs.map(({ id, shortLabel, icon: Icon, badge }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={[
+                "relative flex flex-col items-center justify-center gap-1 transition-colors",
+                activeTab === id ? "bottom-tab-active text-primary" : "text-muted-foreground",
+              ].join(" ")}
+            >
+              <div className="relative">
+                <Icon className="w-5 h-5" />
+                {!!badge && (
+                  <span className="absolute -top-1.5 -right-2.5 inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[9px] font-bold w-[14px] h-[14px]">
+                    {badge > 9 ? "9+" : badge}
+                  </span>
+                )}
+              </div>
+              <span className="text-[10px] font-medium leading-none">{shortLabel}</span>
+            </button>
+          ))}
+        </div>
+      </nav>
+
+      {/* ══════════════════════════════════════════
+          DIALOGS / BOTTOM SHEETS
+      ══════════════════════════════════════════ */}
+
+      {/* ── Order detail ── */}
+      <Sheet
+        open={!!selectedOrder}
+        onClose={() => setSelectedOrder(null)}
+        title="Order Details"
+        description={`Order ID: ${selectedOrder?.id ?? ""}`}
+      >
+        {selectedOrder && (
+          <div className="space-y-4 admin-form-scroll max-h-[60dvh]">
+            {/* customer info grid */}
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+              {([
+                ["Name",        selectedOrder.fullName],
+                ["Email",       selectedOrder.email],
+                ["Phone",       selectedOrder.phone],
+                ["Status",      selectedOrder.status || "pending"],
+                ["Amount",      `₹${Number(selectedOrder.totalAmount || 0).toFixed(2)}`],
+                ["Created",     fmtDate(selectedOrder.createdAt)],
+                ["Address",     selectedOrder.address],
+                ["City",        selectedOrder.city],
+                ["State",       selectedOrder.state],
+                ["Pincode",     selectedOrder.pincode],
+              ] as [string, string | undefined][]).map(([k, v]) => (
+                <div key={k} className="min-w-0">
+                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">{k}</p>
+                  <p className="text-sm font-medium truncate">{v || "—"}</p>
                 </div>
-              </form>
+              ))}
+            </div>
+
+            {/* items */}
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">Items</p>
+              <div className="space-y-1.5">
+                {(selectedOrder.items ?? []).map((item) => (
+                  <div key={item.id} className="flex items-center justify-between bg-muted/40 rounded-lg px-3 py-2 text-sm">
+                    <span className="truncate mr-2">{item.title}</span>
+                    <span className="text-muted-foreground shrink-0">×{item.quantity}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* payment */}
+            {selectedOrder.payment && (
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">Payment</p>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  {[
+                    ["Gateway",    selectedOrder.payment.gateway],
+                    ["Order ID",   selectedOrder.payment.orderId],
+                    ["Payment ID", selectedOrder.payment.paymentId],
+                    ["Currency",   selectedOrder.payment.currency],
+                  ].map(([k, v]) => (
+                    <div key={k} className="min-w-0">
+                      <p className="text-[10px] text-muted-foreground">{k}</p>
+                      <p className="text-sm font-mono truncate">{v}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
-          </DialogContent>
-        </Dialog>
 
-        {/* Create Category Dialog */}
-        <Dialog open={isCategoryDialogOpen} onOpenChange={(open) => { if (!open) { setIsCategoryDialogOpen(false); } }}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Create Product Category</DialogTitle>
-              <DialogDescription>Provide metadata for the new category. This appears on the storefront.</DialogDescription>
-            </DialogHeader>
+            {/* actions */}
+            <div className="grid grid-cols-3 gap-2 pt-2 border-t">
+              <Button variant="outline" size="sm" className="h-11 rounded-xl text-xs gap-1 text-green-700 border-green-200"
+                disabled={updatingOrderId === selectedOrder.id || selectedOrder.status === "confirmed"}
+                onClick={() => updateOrder(selectedOrder.id, "confirmed")}>
+                <CheckCircle2 className="w-4 h-4" /> Confirm
+              </Button>
+              <Button variant="destructive" size="sm" className="h-11 rounded-xl text-xs gap-1"
+                disabled={updatingOrderId === selectedOrder.id || selectedOrder.status === "cancelled"}
+                onClick={() => updateOrder(selectedOrder.id, "cancelled")}>
+                <XCircle className="w-4 h-4" /> Cancel
+              </Button>
+              <Button variant="outline" size="sm" className="h-11 rounded-xl text-xs gap-1"
+                disabled={!selectedOrder.payment}
+                onClick={() => downloadReceipt(selectedOrder, selectedOrder.email ?? "")}>
+                <ReceiptText className="w-4 h-4" /> Invoice
+              </Button>
+            </div>
+          </div>
+        )}
+      </Sheet>
 
-            <form onSubmit={async (e) => {
-              e.preventDefault();
-              try {
-                await saveProductCategory(newCategoryName || newCategoryIcon || Date.now().toString(), {
-                  name: newCategoryName,
-                  icon: newCategoryIcon,
-                  description: newCategoryDescription,
-                  proTip: newCategoryProTip,
-                });
-                toast.success("Category created.");
-                setIsCategoryDialogOpen(false);
-                setNewCategoryName("");
-                setNewCategoryIcon("");
-                setNewCategoryDescription("");
-                setNewCategoryProTip("");
-              } catch (err) {
-                console.error(err);
-                toast.error("Failed to create category.");
-              }
-            }} className="space-y-4 py-4">
-              <div>
-                <Label htmlFor="catName">Category Name</Label>
-                <Input id="catName" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} placeholder="e.g. Pet Tags" required />
-              </div>
-              <div>
-                <Label htmlFor="catIcon">Category Icon (emoji)</Label>
-                <Input id="catIcon" value={newCategoryIcon} onChange={(e) => setNewCategoryIcon(e.target.value)} placeholder="e.g. 🐾" />
-              </div>
-              <div>
-                <Label htmlFor="catDescription">Short Description</Label>
-                <Textarea id="catDescription" value={newCategoryDescription} onChange={(e) => setNewCategoryDescription(e.target.value)} placeholder="Short description shown on products page" />
-              </div>
-              <div>
-                <Label htmlFor="proTip">Pro Tip</Label>
-                <Input id="proTip" value={newCategoryProTip} onChange={(e) => setNewCategoryProTip(e.target.value)} placeholder="Short pro tip shown below points" />
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" type="button" onClick={() => setIsCategoryDialogOpen(false)}>Cancel</Button>
-                <Button type="submit">Create Category</Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
-
-        {/* FAQ Dialog */}
-        <Dialog open={isFaqDialogOpen} onOpenChange={setIsFaqDialogOpen}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>{editingFaq?.id ? "Edit FAQ Item" : "Add FAQ Item"}</DialogTitle>
-              <DialogDescription>Create or update FAQ questions and answers. Changes update the public FAQ page.</DialogDescription>
-            </DialogHeader>
-            {editingFaq && (
-              <form onSubmit={handleSaveFaq} className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="faqQuestion">Question</Label>
-                  <Input 
-                    id="faqQuestion" 
-                    value={editingFaq.question} 
-                    onChange={(e) => setEditingFaq({ ...editingFaq, question: e.target.value })} 
-                    placeholder="Enter the question" 
-                    required 
-                  />
+      {/* ── Message detail ── */}
+      <Sheet
+        open={!!selectedMsg}
+        onClose={() => setSelectedMsg(null)}
+        title={`Message from ${selectedMsg?.name ?? ""}`}
+        description="Contact form submission"
+      >
+        {selectedMsg && (
+          <div className="space-y-4">
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+              {([
+                ["Name",     selectedMsg.name],
+                ["Email",    selectedMsg.email],
+                ["Phone",    selectedMsg.phone?.trim() || "Not provided"],
+                ["Received", fmtDate(selectedMsg.createdAt)],
+              ] as [string, string][]).map(([k, v]) => (
+                <div key={k} className="min-w-0">
+                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">{k}</p>
+                  {k === "Email"
+                    ? <a href={`mailto:${v}`} className="text-sm text-primary hover:underline break-all">{v}</a>
+                    : <p className="text-sm font-medium break-all">{v}</p>}
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="faqAnswer">Answer</Label>
-                  <Textarea 
-                    id="faqAnswer" 
-                    rows={5}
-                    value={editingFaq.answer} 
-                    onChange={(e) => setEditingFaq({ ...editingFaq, answer: e.target.value })} 
-                    placeholder="Enter the answer" 
-                    required 
-                  />
-                </div>
+              ))}
+            </dl>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="faqCategory">Category</Label>
-                    <Input 
-                      id="faqCategory" 
-                      value={editingFaq.category} 
-                      onChange={(e) => setEditingFaq({ ...editingFaq, category: e.target.value })} 
-                      placeholder="e.g. General Questions" 
-                      list="faq-category-options"
-                      required 
-                    />
-                    <datalist id="faq-category-options">
-                      {faqCategories.map((cat) => (
-                        <option key={cat} value={cat} />
-                      ))}
-                    </datalist>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="faqSortOrder">Sort Order</Label>
-                    <Input 
-                      id="faqSortOrder" 
-                      type="number"
-                      value={editingFaq.sortOrder} 
-                      onChange={(e) => setEditingFaq({ ...editingFaq, sortOrder: parseInt(e.target.value, 10) || 0 })} 
-                      placeholder="e.g. 1" 
-                      required 
-                    />
-                  </div>
-                </div>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">Message</p>
+              <div className="bg-muted/40 rounded-xl p-3.5 text-sm whitespace-pre-wrap leading-relaxed max-h-40 overflow-y-auto">
+                {selectedMsg.message}
+              </div>
+            </div>
 
-                <div className="flex justify-end gap-2 pt-4 border-t">
-                  <Button type="button" variant="outline" onClick={() => setIsFaqDialogOpen(false)}>Cancel</Button>
-                  <Button type="submit" disabled={savingFaqId !== null}>
-                    {savingFaqId ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                    Save FAQ
-                  </Button>
+            <div className="grid grid-cols-3 gap-2 pt-2 border-t">
+              <Button variant="destructive" size="sm" className="h-11 rounded-xl gap-1 text-xs"
+                onClick={() => deleteMsg(selectedMsg.id)}>
+                <Trash2 className="w-4 h-4" /> Delete
+              </Button>
+              <Button variant="outline" size="sm" className="h-11 rounded-xl gap-1 text-xs" asChild>
+                <a href={`mailto:${selectedMsg.email}`}><MessageSquare className="w-4 h-4" /> Reply</a>
+              </Button>
+              <Button variant="outline" size="sm" className="h-11 rounded-xl text-xs" onClick={() => setSelectedMsg(null)}>
+                Close
+              </Button>
+            </div>
+          </div>
+        )}
+      </Sheet>
+
+      {/* ── Product add / edit ── */}
+      <Sheet
+        open={isProductOpen}
+        onClose={() => setIsProductOpen(false)}
+        title={editingProduct?.id ? "Edit Product" : "Add Product"}
+        description="Changes sync to Firestore instantly."
+      >
+        {editingProduct && (
+          <form onSubmit={saveProductHandler} className="space-y-4 admin-form-scroll max-h-[65dvh] pr-0.5">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2 space-y-1.5">
+                <Label className="text-xs font-semibold">Category</Label>
+                <Input
+                  value={editingProduct.categorySlug}
+                  onChange={(e) => setEditingProduct({ ...editingProduct, categorySlug: normalizeCategorySlug(e.target.value) })}
+                  placeholder="e.g. car-tags"
+                  list="cat-slugs"
+                  required
+                  className="h-11 text-sm rounded-xl"
+                />
+                <datalist id="cat-slugs">{catOptions.map((s) => <option key={s} value={s} />)}</datalist>
+                <p className="text-[10px] text-muted-foreground">Lowercase with hyphens — e.g. car-tags</p>
+              </div>
+
+              <div className="col-span-2 space-y-1.5">
+                <Label className="text-xs font-semibold">Title</Label>
+                <Input value={editingProduct.title} onChange={(e) => setEditingProduct({ ...editingProduct, title: e.target.value })}
+                  placeholder="Product title" required className="h-11 text-sm rounded-xl" />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Price</Label>
+                <Input value={editingProduct.price} onChange={(e) => setEditingProduct({ ...editingProduct, price: e.target.value })}
+                  placeholder="499 or ₹499" required className="h-11 text-sm rounded-xl" />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Original Price</Label>
+                <Input value={editingProduct.originalPrice} onChange={(e) => setEditingProduct({ ...editingProduct, originalPrice: e.target.value })}
+                  placeholder="599" className="h-11 text-sm rounded-xl" />
+              </div>
+            </div>
+
+            {/* image upload */}
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold">Product Image</Label>
+              <Input type="file" accept="image/*" onChange={handleImageUpload} disabled={isUploadingImage}
+                className="h-11 text-sm rounded-xl file:mr-3 file:rounded-lg file:border-0 file:bg-primary/10 file:text-primary file:text-xs file:font-medium file:h-7 file:px-3" />
+              <Input value={editingProduct.image} onChange={(e) => setEditingProduct({ ...editingProduct, image: e.target.value })}
+                placeholder="Or paste image URL" className="h-11 text-sm rounded-xl" />
+              {isUploadingImage && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Loader2 className="w-3 h-3 animate-spin" /> Uploading…
                 </div>
-              </form>
-            )}
-          </DialogContent>
-        </Dialog>
-      </div>
+              )}
+              {editingProduct.image && (
+                <div className="w-20 h-20 rounded-xl border overflow-hidden bg-muted">
+                  <img src={editingProduct.image} alt="Preview" className="w-full h-full object-cover" />
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Emoji (fallback if no image)</Label>
+              <Input value={editingProduct.emoji ?? ""} onChange={(e) => setEditingProduct({ ...editingProduct, emoji: e.target.value })}
+                placeholder="🚗" maxLength={5} className="h-11 text-sm rounded-xl w-24" />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Key Features (one per line)</Label>
+              <Textarea
+                rows={4}
+                value={editingProduct.features.join("\n")}
+                onChange={(e) => setEditingProduct({ ...editingProduct, features: e.target.value.split("\n") })}
+                placeholder={"Premium quality card\nFits car's front mirror"}
+                required
+                className="text-sm rounded-xl resize-none"
+              />
+            </div>
+
+            <label className="flex items-center gap-3 p-3 rounded-xl border cursor-pointer hover:bg-muted/40 transition-colors">
+              <Checkbox checked={editingProduct.popular} onCheckedChange={(c) => setEditingProduct({ ...editingProduct, popular: !!c })} />
+              <div>
+                <p className="text-sm font-medium">Mark as Popular</p>
+                <p className="text-xs text-muted-foreground">Shows a "Popular" badge on this product</p>
+              </div>
+            </label>
+
+            <div className="grid grid-cols-2 gap-3 pt-2 border-t">
+              <Button type="button" variant="outline" className="h-11 rounded-xl" onClick={() => setIsProductOpen(false)}>Cancel</Button>
+              <Button type="submit" className="h-11 rounded-xl gap-2" disabled={savingProductId !== null}>
+                {savingProductId ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                Save Product
+              </Button>
+            </div>
+          </form>
+        )}
+      </Sheet>
+
+      {/* ── Create category ── */}
+      <Sheet open={isCategoryOpen} onClose={() => setIsCategoryOpen(false)} title="New Category" description="Metadata shown on the storefront.">
+        <form onSubmit={async (e) => {
+          e.preventDefault();
+          try {
+            await saveProductCategory(newCatName || newCatIcon || String(Date.now()), { name: newCatName, icon: newCatIcon, description: newCatDesc, proTip: newCatTip });
+            toast.success("Category created");
+            setIsCategoryOpen(false);
+            setNewCatName(""); setNewCatIcon(""); setNewCatDesc(""); setNewCatTip("");
+          } catch (err) { console.error(err); toast.error("Failed to create category"); }
+        }} className="space-y-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold">Name</Label>
+            <Input value={newCatName} onChange={(e) => setNewCatName(e.target.value)} placeholder="e.g. Pet Tags" required className="h-11 text-sm rounded-xl" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold">Emoji icon</Label>
+            <Input value={newCatIcon} onChange={(e) => setNewCatIcon(e.target.value)} placeholder="🐾" className="h-11 text-sm rounded-xl w-24" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold">Description</Label>
+            <Textarea value={newCatDesc} onChange={(e) => setNewCatDesc(e.target.value)} placeholder="Brief description shown on the products page" rows={2} className="text-sm rounded-xl resize-none" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold">Pro Tip</Label>
+            <Input value={newCatTip} onChange={(e) => setNewCatTip(e.target.value)} placeholder="Quick tip shown below features" className="h-11 text-sm rounded-xl" />
+          </div>
+          <div className="grid grid-cols-2 gap-3 pt-2 border-t">
+            <Button type="button" variant="outline" className="h-11 rounded-xl" onClick={() => setIsCategoryOpen(false)}>Cancel</Button>
+            <Button type="submit" className="h-11 rounded-xl">Create</Button>
+          </div>
+        </form>
+      </Sheet>
+
+      {/* ── Rename category ── */}
+      <Sheet open={isRenameOpen} onClose={() => { setIsRenameOpen(false); setRenameTarget(null); }} title="Rename Category">
+        <form onSubmit={async (e) => {
+          e.preventDefault();
+          if (!renameTarget) return;
+          try { await renameCategory(renameTarget, renameName); toast.success("Category renamed"); setIsRenameOpen(false); setRenameTarget(null); }
+          catch (err) { console.error(err); toast.error("Failed to rename"); }
+        }} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold">New Name</Label>
+            <Input value={renameName} onChange={(e) => setRenameName(e.target.value)} placeholder="e.g. Pet Tags" required className="h-11 text-sm rounded-xl" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Button type="button" variant="outline" className="h-11 rounded-xl" onClick={() => { setIsRenameOpen(false); setRenameTarget(null); }}>Cancel</Button>
+            <Button type="submit" className="h-11 rounded-xl">Save</Button>
+          </div>
+        </form>
+      </Sheet>
+
+      {/* ── Move product ── */}
+      <Sheet open={isMoveOpen} onClose={() => { setIsMoveOpen(false); setMoveProductId(null); setMoveSlug(""); }} title="Move Product" description="Select a category to move this product to.">
+        <form onSubmit={async (e) => {
+          e.preventDefault();
+          if (!moveProductId || !moveSlug) return;
+          try { await moveProductsToCategory([moveProductId], moveSlug); toast.success("Product moved"); setIsMoveOpen(false); setMoveProductId(null); setMoveSlug(""); }
+          catch (err) { console.error(err); toast.error("Failed to move product"); }
+        }} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold">Target Category</Label>
+            <Select value={moveSlug} onValueChange={setMoveSlug}>
+              <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="Choose category" /></SelectTrigger>
+              <SelectContent>
+                {catOptions.map((slug) => (
+                  <SelectItem key={slug} value={slug}>{categoryMeta[slug]?.name ?? categoryNameFromSlug(slug)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Button type="button" variant="outline" className="h-11 rounded-xl" onClick={() => { setIsMoveOpen(false); setMoveProductId(null); setMoveSlug(""); }}>Cancel</Button>
+            <Button type="submit" className="h-11 rounded-xl">Move</Button>
+          </div>
+        </form>
+      </Sheet>
+
+      {/* ── Copy product ── */}
+      <Sheet open={isCopyOpen} onClose={() => { setIsCopyOpen(false); setCopyProductId(null); setCopySlug(""); }} title="Copy Product" description="Duplicate this product to another category.">
+        <form onSubmit={copyProductHandler} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold">Target Category</Label>
+            <Select value={copySlug} onValueChange={setCopySlug}>
+              <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="Choose category" /></SelectTrigger>
+              <SelectContent>
+                {catOptions.map((slug) => (
+                  <SelectItem key={slug} value={slug}>{categoryMeta[slug]?.name ?? categoryNameFromSlug(slug)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Button type="button" variant="outline" className="h-11 rounded-xl" onClick={() => { setIsCopyOpen(false); setCopyProductId(null); setCopySlug(""); }}>Cancel</Button>
+            <Button type="submit" className="h-11 rounded-xl" disabled={savingProductId === copyProductId}>Copy</Button>
+          </div>
+        </form>
+      </Sheet>
+
+      {/* ── FAQ add / edit ── */}
+      <Sheet
+        open={isFaqOpen}
+        onClose={() => setIsFaqOpen(false)}
+        title={editingFaq?.id ? "Edit FAQ" : "Add FAQ"}
+        description="Updates the public FAQ page instantly."
+      >
+        {editingFaq && (
+          <form onSubmit={saveFaqHandler} className="space-y-4 admin-form-scroll max-h-[60dvh] pr-0.5">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Question</Label>
+              <Input value={editingFaq.question} onChange={(e) => setEditingFaq({ ...editingFaq, question: e.target.value })}
+                placeholder="Enter the question" required className="h-11 text-sm rounded-xl" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Answer</Label>
+              <Textarea rows={4} value={editingFaq.answer} onChange={(e) => setEditingFaq({ ...editingFaq, answer: e.target.value })}
+                placeholder="Enter the answer" required className="text-sm rounded-xl resize-none" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Category</Label>
+                <Input value={editingFaq.category} onChange={(e) => setEditingFaq({ ...editingFaq, category: e.target.value })}
+                  placeholder="General Questions" list="faq-cats" required className="h-11 text-sm rounded-xl" />
+                <datalist id="faq-cats">{faqCategories.map((c) => <option key={c} value={c} />)}</datalist>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Sort Order</Label>
+                <Input type="number" value={editingFaq.sortOrder}
+                  onChange={(e) => setEditingFaq({ ...editingFaq, sortOrder: parseInt(e.target.value, 10) || 0 })}
+                  required className="h-11 text-sm rounded-xl" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3 pt-2 border-t">
+              <Button type="button" variant="outline" className="h-11 rounded-xl" onClick={() => setIsFaqOpen(false)}>Cancel</Button>
+              <Button type="submit" className="h-11 rounded-xl gap-2" disabled={savingFaqId !== null}>
+                {savingFaqId ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                Save FAQ
+              </Button>
+            </div>
+          </form>
+        )}
+      </Sheet>
+
     </MainLayout>
   );
 }
