@@ -1,3 +1,5 @@
+"use strict";
+
 const crypto = require("crypto");
 const cors = require("cors");
 const Razorpay = require("razorpay");
@@ -7,6 +9,10 @@ const twilio = require("twilio");
 const { onRequest } = require("firebase-functions/v2/https");
 const { onDocumentUpdated } = require("firebase-functions/v2/firestore");
 const { defineSecret } = require("firebase-functions/params");
+const { buildInvoiceDataFromPrebooking, buildInvoicePdfBuffer } = require("./invoiceUtils");
+const { buildInvoiceEmailHtml } = require("./invoiceEmail");
+
+// ─── Secrets ──────────────────────────────────────────────────────────────────
 
 const RAZORPAY_KEY_ID = defineSecret("RAZORPAY_KEY_ID");
 const RAZORPAY_KEY_SECRET = defineSecret("RAZORPAY_KEY_SECRET");
@@ -16,22 +22,23 @@ const SMTP_USER = defineSecret("SMTP_USER");
 const SMTP_PASS = defineSecret("SMTP_PASS");
 const SMTP_FROM = defineSecret("SMTP_FROM");
 
+// ─── Firebase init ────────────────────────────────────────────────────────────
+
 if (!admin.apps.length) {
   admin.initializeApp();
 }
 
 const db = admin.firestore();
+
+// ─── CORS ─────────────────────────────────────────────────────────────────────
+
 const ALLOWED_ORIGINS = [
   "https://plzpingme.com",
   "https://www.plzpingme.com",
-  "https://nfc.plzpingme.com",
-  "http://plzpingme.com",
-  "http://nfc.plzpingme.com",
   "http://localhost:5173",
   "http://localhost:3000",
   "http://localhost:8080",
   "http://localhost:8081",
-  "http://nfc.localhost:8080",
 ];
 
 const isPrivateNetworkIP = (origin) => {
@@ -39,11 +46,9 @@ const isPrivateNetworkIP = (origin) => {
   try {
     const url = new URL(origin);
     const hostname = url.hostname;
-    // Allow localhost and 127.0.0.1
-    if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]" || hostname.endsWith(".localhost")) {
+    if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]") {
       return true;
     }
-    // Allow private network IPs: 192.168.*, 10.*, 172.16-31.*
     if (/^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)\d+\.\d+/.test(hostname)) {
       return true;
     }
@@ -55,28 +60,31 @@ const isPrivateNetworkIP = (origin) => {
 
 const corsHandler = cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl)
     if (!origin) return callback(null, true);
-
-    const isAllowedOrigin = ALLOWED_ORIGINS.indexOf(origin) !== -1;
-    const isFirebaseDomain = origin.endsWith(".web.app") || origin.endsWith(".firebaseapp.com");
-    const isProjectDomain = origin.endsWith(".plzpingme.com") || origin === "https://plzpingme.com" || origin === "http://plzpingme.com";
-
-    if (isAllowedOrigin || isFirebaseDomain || isProjectDomain || isPrivateNetworkIP(origin)) {
+    if (
+      ALLOWED_ORIGINS.indexOf(origin) !== -1 ||
+      origin.endsWith(".web.app") ||
+      origin.endsWith(".firebaseapp.com") ||
+      isPrivateNetworkIP(origin)
+    ) {
       callback(null, true);
     } else {
       callback(new Error("Not allowed by CORS"));
     }
   },
 });
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
 const NFC_PROFILES_COLLECTION = "nfcProfiles";
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const getCount = async (collectionRef, queryConstraints = []) => {
   let queryRef = collectionRef;
   for (const constraint of queryConstraints) {
     queryRef = queryRef.where(constraint.field, constraint.op, constraint.value);
   }
-
   const snapshot = await queryRef.get();
   return snapshot.size;
 };
@@ -84,43 +92,25 @@ const getCount = async (collectionRef, queryConstraints = []) => {
 const normalizeUsername = (value) => String(value || "").trim().toLowerCase();
 
 const asOptionalText = (value) => {
-  if (typeof value !== "string") {
-    return undefined;
-  }
-
+  if (typeof value !== "string") return undefined;
   const trimmed = value.trim();
   return trimmed || undefined;
 };
 
 const toMillis = (value) => {
-  if (!value) {
-    return 0;
-  }
-
-  if (typeof value.toMillis === "function") {
-    return value.toMillis();
-  }
-
-  if (typeof value.seconds === "number") {
-    return value.seconds * 1000;
-  }
-
+  if (!value) return 0;
+  if (typeof value.toMillis === "function") return value.toMillis();
+  if (typeof value.seconds === "number") return value.seconds * 1000;
   return 0;
 };
 
 const mapProjects = (projectsValue) => {
-  if (!Array.isArray(projectsValue)) {
-    return undefined;
-  }
-
+  if (!Array.isArray(projectsValue)) return undefined;
   const projects = projectsValue
     .filter((project) => project && typeof project === "object")
     .map((project) => {
       const name = asOptionalText(project.name);
-      if (!name) {
-        return null;
-      }
-
+      if (!name) return null;
       return {
         name,
         description: asOptionalText(project.description),
@@ -130,24 +120,17 @@ const mapProjects = (projectsValue) => {
       };
     })
     .filter(Boolean);
-
   return projects.length > 0 ? projects : undefined;
 };
 
 const mapDocuments = (documentsValue) => {
-  if (!Array.isArray(documentsValue)) {
-    return undefined;
-  }
-
+  if (!Array.isArray(documentsValue)) return undefined;
   const documents = documentsValue
     .filter((doc) => doc && typeof doc === "object")
     .map((doc) => {
       const title = asOptionalText(doc.title);
       const url = asOptionalText(doc.url);
-      if (!title || !url) {
-        return null;
-      }
-
+      if (!title || !url) return null;
       return {
         title,
         url,
@@ -155,21 +138,16 @@ const mapDocuments = (documentsValue) => {
       };
     })
     .filter(Boolean);
-
   return documents.length > 0 ? documents : undefined;
 };
 
 const mapDocToPublicProfileCandidate = (docSnap) => {
   const data = docSnap.data() || {};
   const nfcProfile = data.nfcProfile && typeof data.nfcProfile === "object" ? data.nfcProfile : null;
-  if (!nfcProfile) {
-    return null;
-  }
+  if (!nfcProfile) return null;
 
   const username = normalizeUsername(nfcProfile.username);
-  if (!username) {
-    return null;
-  }
+  if (!username) return null;
 
   const profile = {
     orderId: docSnap.id,
@@ -207,6 +185,7 @@ const mapDocToPublicProfileCandidate = (docSnap) => {
   };
 };
 
+// ─── Mail transporter ─────────────────────────────────────────────────────────
 
 const getMailTransporter = () => {
   const host = (SMTP_HOST.value() || process.env.SMTP_HOST || "").trim();
@@ -214,9 +193,7 @@ const getMailTransporter = () => {
   const user = (SMTP_USER.value() || process.env.SMTP_USER || "").trim();
   const pass = (SMTP_PASS.value() || process.env.SMTP_PASS || "").trim();
 
-  if (!host || !user || !pass) {
-    return null;
-  }
+  if (!host || !user || !pass) return null;
 
   return nodemailer.createTransport({
     host,
@@ -226,98 +203,13 @@ const getMailTransporter = () => {
   });
 };
 
+// ─── NFC helpers ──────────────────────────────────────────────────────────────
+
 const normalizeNfcUsername = (rawUsername = "") => rawUsername.trim().toLowerCase();
 
 const sanitizeText = (value) => {
   if (typeof value !== "string") return "";
   return value.trim();
-};
-
-const escapePdfText = (value) => {
-  return String(value || "")
-    .replace(/\\/g, "\\\\")
-    .replace(/\(/g, "\\(")
-    .replace(/\)/g, "\\)")
-    .replace(/\r?\n/g, " ");
-};
-
-const buildInvoicePdfBuffer = ({
-  invoiceTitle,
-  invoiceNumber,
-  invoiceDate,
-  customerName,
-  customerEmail,
-  billingAddress,
-  orderId,
-  paymentId,
-  paymentGateway,
-  currency,
-  amount,
-  items,
-}) => {
-  const lines = [
-    invoiceTitle,
-    "------------------------------------------------------------",
-    `Invoice Number: ${invoiceNumber}`,
-    `Invoice Date: ${invoiceDate}`,
-    "",
-    `Customer Name: ${customerName}`,
-    `Customer Email: ${customerEmail}`,
-    `Billing Address: ${billingAddress}`,
-    "",
-    `Order ID: ${orderId}`,
-    `Payment ID: ${paymentId}`,
-    `Payment Gateway: ${paymentGateway}`,
-    `Currency: ${currency}`,
-    `Amount Paid: INR ${Number(amount || 0).toFixed(2)}`,
-    "",
-    "Items:",
-    ...((Array.isArray(items) && items.length)
-      ? items.map((item, index) => {
-          const quantity = Number(item.quantity || 1);
-          const price = Number(item.price || 0).toFixed(2);
-          const total = (quantity * Number(item.price || 0)).toFixed(2);
-          return `${index + 1}. ${item.title || "Item"} | Qty: ${quantity} | Unit: INR ${price} | Total: INR ${total}`;
-        })
-      : ["No items listed"]),
-    "",
-    `Total Amount Due: INR ${Number(amount || 0).toFixed(2)}`,
-    "",
-    "Thank you for choosing PingME.",
-    "For support, contact support@pingme.com",
-  ];
-
-  const pageLines = lines.map((line, index) => {
-    const y = 820 - index * 16;
-    return `BT /F1 10 Tf 50 ${y} Td (${escapePdfText(line)}) Tj ET`;
-  });
-
-  const content = pageLines.join("\n");
-  const contentLength = Buffer.byteLength(content, "utf8");
-
-  const objects = [
-    "%PDF-1.3\n",
-    "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n",
-    "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n",
-    "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>\nendobj\n",
-    "4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n",
-    `5 0 obj\n<< /Length ${contentLength} >>\nstream\n${content}\nendstream\nendobj\n`,
-  ];
-
-  let offset = 0;
-  const xrefEntries = ["0000000000 65535 f \n"];
-  const objectStrings = objects.map((object) => {
-    const result = object;
-    xrefEntries.push(`${offset.toString().padStart(10, "0")} 00000 n \n`);
-    offset += Buffer.byteLength(result, "utf8");
-    return result;
-  });
-
-  const xref = `xref\n0 ${objects.length + 1}\n${xrefEntries.join("")} `;
-  const trailer = `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${offset}\n%%EOF`;
-  const pdf = objectStrings.join("") + xref + trailer;
-
-  return Buffer.from(pdf, "utf8");
 };
 
 const buildPublicNfcProfilePayload = ({ profileId, profile }) => {
@@ -351,55 +243,49 @@ const buildPublicNfcProfilePayload = ({ profileId, profile }) => {
     ...(profile?.appointmentBookingLink ? { appointmentBookingLink: sanitizeText(profile.appointmentBookingLink) } : {}),
     ...(Array.isArray(profile?.projects)
       ? {
-          projects: profile.projects
-            .filter((project) => project && sanitizeText(project.name))
-            .map((project) => ({
-              name: sanitizeText(project.name),
-              ...(project.description ? { description: sanitizeText(project.description) } : {}),
-              ...(project.link ? { link: sanitizeText(project.link) } : {}),
-              ...(project.photo ? { photo: sanitizeText(project.photo) } : {}),
-              ...(project.type ? { type: sanitizeText(project.type) } : {}),
-            })),
-        }
+        projects: profile.projects
+          .filter((p) => p && sanitizeText(p.name))
+          .map((p) => ({
+            name: sanitizeText(p.name),
+            ...(p.description ? { description: sanitizeText(p.description) } : {}),
+            ...(p.link ? { link: sanitizeText(p.link) } : {}),
+            ...(p.photo ? { photo: sanitizeText(p.photo) } : {}),
+            ...(p.type ? { type: sanitizeText(p.type) } : {}),
+          })),
+      }
       : {}),
     ...(Array.isArray(profile?.documents)
       ? {
-          documents: profile.documents
-            .filter((doc) => doc && sanitizeText(doc.title) && sanitizeText(doc.url))
-            .map((doc) => ({
-              title: sanitizeText(doc.title),
-              url: sanitizeText(doc.url),
-              ...(doc.type ? { type: sanitizeText(doc.type) } : {}),
-            })),
-        }
+        documents: profile.documents
+          .filter((d) => d && sanitizeText(d.title) && sanitizeText(d.url))
+          .map((d) => ({
+            title: sanitizeText(d.title),
+            url: sanitizeText(d.url),
+            ...(d.type ? { type: sanitizeText(d.type) } : {}),
+          })),
+      }
       : {}),
   };
 };
 
 const isConfirmedNfcProfileRecord = (data) => {
-  if (!data || typeof data !== "object") {
-    return false;
-  }
-
-  if (data.status === "confirmed") {
-    return true;
-  }
-
+  if (!data || typeof data !== "object") return false;
+  if (data.status === "confirmed") return true;
   return data.updatedSource && data.updatedSource !== "prePaymentDraft";
 };
 
-const syncProfileToNfcProfilesCollection = async ({ profileId, profile, source = "unknown", status = "confirmed" }) => {
-  if (!profileId || !profile) {
-    return { synced: false, reason: "Missing profileId or profile" };
-  }
+const syncProfileToNfcProfilesCollection = async ({
+  profileId,
+  profile,
+  source = "unknown",
+  status = "confirmed",
+}) => {
+  if (!profileId || !profile) return { synced: false, reason: "Missing profileId or profile" };
 
   const payload = buildPublicNfcProfilePayload({ profileId, profile });
-  if (!payload.name) {
-    return { synced: false, reason: "Profile name is required" };
-  }
+  if (!payload.name) return { synced: false, reason: "Profile name is required" };
 
   const targetRef = db.collection(NFC_PROFILES_COLLECTION).doc(String(profileId));
-
   await targetRef.set(
     {
       ...payload,
@@ -414,6 +300,8 @@ const syncProfileToNfcProfilesCollection = async ({ profileId, profile, source =
   return { synced: true, username: payload.username };
 };
 
+// ─── Booking confirmation email (rich HTML + proper PDF) ──────────────────────
+
 const sendBookingConfirmationEmail = async ({
   email,
   fullName,
@@ -423,17 +311,12 @@ const sendBookingConfirmationEmail = async ({
   payment,
   billingAddress,
 }) => {
-  if (!email) {
-    return;
-  }
+  if (!email) return;
 
   const transporter = getMailTransporter();
   const fromEmail = (
-    SMTP_FROM.value() ||
-    SMTP_USER.value() ||
-    process.env.SMTP_FROM ||
-    process.env.SMTP_USER ||
-    ""
+    SMTP_FROM.value() || SMTP_USER.value() ||
+    process.env.SMTP_FROM || process.env.SMTP_USER || ""
   ).trim();
 
   if (!transporter || !fromEmail) {
@@ -441,63 +324,72 @@ const sendBookingConfirmationEmail = async ({
     return;
   }
 
-  const itemsLabel = Array.isArray(items) && items.length
-    ? items.map((item) => `${item?.title || "Item"} x${item?.quantity || 1}`).join(", ")
-    : "-";
+  // Parse billing address back into parts (best-effort)
+  // billingAddress arrives as "street, city, state - pincode"
+  const addrParts = (billingAddress || "").split(",").map((s) => s.trim());
+  const street = addrParts[0] || "";
+  const cityState = addrParts[1] || "";
+  const [city = "", statePin = ""] = cityState.split(/\s+-\s+/);
+  const [state = "", pincode = ""] = statePin.split(/\s+/);
 
-  const totalLabel = Number(totalAmount || 0).toFixed(2);
-  const invoiceNumber = bookingId || `INV-${Date.now()}`;
-  const invoiceDate = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" });
+  // Build structured invoice object
+  const prebooking = {
+    fullName: fullName || "Customer",
+    address: street,
+    city: city.trim(),
+    state: state.trim(),
+    pincode: pincode.trim(),
+    items: (items || []).map((item) => ({
+      title: item?.title || "Item",
+      price: item?.price || 0,
+      originalPrice: item?.price || 0,
+      quantity: item?.quantity || 1,
+    })),
+    payment: {
+      currency: payment?.currency || "INR",
+      orderId: payment?.orderId || bookingId,
+      paidAt: new Date().toISOString(),
+    },
+  };
 
-  const invoiceBuffer = buildInvoicePdfBuffer({
-    invoiceTitle: "PINGME INVOICE",
-    invoiceNumber,
-    invoiceDate,
-    customerName: fullName || "Customer",
-    customerEmail: email,
-    billingAddress: billingAddress || "Not provided",
-    orderId: payment?.orderId || bookingId,
-    paymentId: payment?.paymentId || "N/A",
-    paymentGateway: payment?.gateway || "Razorpay",
-    currency: payment?.currency || "INR",
-    amount: payment?.amount || totalAmount || 0,
-    items,
+  const invoice = buildInvoiceDataFromPrebooking(prebooking, {
+    invoiceNumber: bookingId,
+    paymentMode: payment?.gateway || "Razorpay",
   });
+
+  // Override with actual booking data
+  invoice.contact.email = email;
+  invoice.billTo.name = fullName || "Customer";
+  invoice.shipTo.name = fullName || "Customer";
+
+  const html = buildInvoiceEmailHtml(invoice);
+  const pdfBuffer = await buildInvoicePdfBuffer(invoice);
 
   await transporter.sendMail({
     from: fromEmail,
     to: email,
-    subject: `Booking Confirmed - ${bookingId}`,
+    subject: `Booking Confirmed — ${bookingId}`,
     text: [
       `Hi ${fullName || "Customer"},`,
       "",
       "Your booking is confirmed.",
       `Booking ID: ${bookingId}`,
-      `Items: ${itemsLabel}`,
-      `Total Paid: INR ${totalLabel}`,
+      `Total Paid: INR ${Number(totalAmount || 0).toFixed(2)}`,
       "",
       "Please find your invoice attached to this email.",
       "",
       "Thank you for choosing PingME.",
     ].join("\n"),
-    html: `
-      <p>Hi ${fullName || "Customer"},</p>
-      <p>Your booking is confirmed.</p>
-      <p><strong>Booking ID:</strong> ${bookingId}</p>
-      <p><strong>Items:</strong> ${itemsLabel}</p>
-      <p><strong>Total Paid:</strong> INR ${totalLabel}</p>
-      <p>Please find your invoice attached to this email.</p>
-      <p>Thank you for choosing PingME.</p>
-    `,
-    attachments: [
-      {
-        filename: `pingme-invoice-${invoiceNumber}.pdf`,
-        content: invoiceBuffer,
-        contentType: "application/pdf",
-      },
-    ],
+    html,
+    attachments: [{
+      filename: `pingme-invoice-${bookingId}.pdf`,
+      content: pdfBuffer,
+      contentType: "application/pdf",
+    }],
   });
 };
+
+// ─── Razorpay client ──────────────────────────────────────────────────────────
 
 const getRazorpayClient = () => {
   const keyId = (RAZORPAY_KEY_ID.value() || process.env.RAZORPAY_KEY_ID || "").trim();
@@ -507,27 +399,25 @@ const getRazorpayClient = () => {
     throw new Error("Razorpay keys are not configured in Cloud Functions env.");
   }
 
-  return new Razorpay({
-    key_id: keyId,
-    key_secret: keySecret,
-  });
+  return new Razorpay({ key_id: keyId, key_secret: keySecret });
 };
+
+// ─── Auth helper ──────────────────────────────────────────────────────────────
 
 const authenticate = async (req) => {
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return null;
-  }
+  if (!authHeader || !authHeader.startsWith("Bearer ")) return null;
 
   const idToken = authHeader.split("Bearer ")[1];
   try {
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
-    return decodedToken;
+    return await admin.auth().verifyIdToken(idToken);
   } catch (error) {
     console.error("Authentication failed:", error);
     return null;
   }
 };
+
+// ─── Cloud Functions ──────────────────────────────────────────────────────────
 
 exports.createOrder = onRequest({
   region: "asia-south1",
@@ -539,15 +429,11 @@ exports.createOrder = onRequest({
       return;
     }
 
-    // Attempt to authenticate, but do not reject if unauthenticated.
-    // This allows guest checkouts and avoids 401s during dev/testing.
     let decodedToken = null;
     try {
       decodedToken = await authenticate(req);
     } catch (authErr) {
-      // Log and continue as guest
       console.warn("createOrder: authentication failed, proceeding as guest", authErr);
-      decodedToken = null;
     }
 
     try {
@@ -810,10 +696,7 @@ exports.syncNfcProfileDraft = onRequest({
         return;
       }
 
-      res.status(200).json({
-        success: true,
-        username: result.username,
-      });
+      res.status(200).json({ success: true, username: result.username });
     } catch (error) {
       console.error("syncNfcProfileDraft error", error);
       res.status(500).send("Failed to sync NFC profile.");
@@ -904,10 +787,7 @@ exports.getPublicNfcProfile = onRequest({
 
       const profile = confirmedDoc.data();
       res.status(200).json({
-        profile: {
-          ...profile,
-          orderId: confirmedDoc.id,
-        },
+        profile: { ...profile, orderId: confirmedDoc.id },
       });
     } catch (error) {
       console.error("getPublicNfcProfile error", error);
@@ -915,6 +795,8 @@ exports.getPublicNfcProfile = onRequest({
     }
   });
 });
+
+// ─── Firestore triggers ───────────────────────────────────────────────────────
 
 const syncBookingNfcProfilesFromDocument = async (after, bookingId) => {
   const paymentOrderId = after?.payment?.orderId || bookingId;
@@ -949,7 +831,6 @@ exports.syncBookingNfcProfileToNfcCard = onDocumentUpdated({
   if (!after?.nfcProfile && !(Array.isArray(after?.nfcLineProfiles) && after.nfcLineProfiles.length > 0)) {
     return;
   }
-
   try {
     await syncBookingNfcProfilesFromDocument(after, event.params?.bookingId);
   } catch (error) {
@@ -965,7 +846,6 @@ exports.syncLegacyPrebookingNfcProfileToNfcCard = onDocumentUpdated({
   if (!after?.nfcProfile && !(Array.isArray(after?.nfcLineProfiles) && after.nfcLineProfiles.length > 0)) {
     return;
   }
-
   try {
     await syncBookingNfcProfilesFromDocument(after, event.params?.prebookingId);
   } catch (error) {

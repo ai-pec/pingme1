@@ -9,6 +9,7 @@
     "build": "vite build && node scripts/generate-static-html.mjs",
     "build:dev": "vite build --mode development",
     "build:nfc": "vite build --config vite.config.nfc.ts",
+    "build:all": "npm run build && npm run build:nfc && cp -r dist-nfc/. dist/",
     "deploy:rules": "firebase deploy --only firestore:rules --project nfc-card-31edd",
     "lint": "eslint .",
     "preview": "vite preview",

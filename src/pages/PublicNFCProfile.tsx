@@ -5,6 +5,7 @@ import {
   Link as LinkIcon, Mail, Phone, Globe, MapPin,
   UserPlus, Nfc, Share2, X as XIcon, Copy, Check,
   MessageCircle, Calendar, CreditCard, FileText, Image, Video, Award,
+  Send, Loader2,
 } from "lucide-react";
 import { fetchPublicNfcProfile, normalizeNfcUsername, type PublicNfcProfile } from "@/lib/publicNfcService";
 import { toast } from "sonner";
@@ -103,6 +104,193 @@ const DetailIcon = ({ type }: { type: "email" | "phone" | "website" | "address" 
     </div>
   );
 };
+
+/* ── Share Back Modal ── */
+interface ShareBackModalProps {
+  cardOwnerUsername: string;
+  cardOwnerName: string;
+  onClose: () => void;
+}
+
+function ShareBackModal({ cardOwnerUsername, cardOwnerName, onClose }: ShareBackModalProps) {
+  const [name,        setName]        = useState("");
+  const [email,       setEmail]       = useState("");
+  const [phone,       setPhone]       = useState("");
+  const [company,     setCompany]     = useState("");
+  const [submitting,  setSubmitting]  = useState(false);
+  const [submitted,   setSubmitted]   = useState(false);
+
+  const getPaymentApiBaseUrl = () => {
+    const base = import.meta.env.VITE_PAYMENT_API_BASE_URL as string | undefined;
+    return typeof base === "string" ? base.replace(/\/$/, "") : "";
+  };
+
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || !email.trim()) return;
+
+    const baseUrl = getPaymentApiBaseUrl();
+    if (!baseUrl) {
+      toast.error("Service is temporarily unavailable.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const res = await fetch(`${baseUrl}/sendReverseContactEmail`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cardOwnerUsername,
+          cardOwnerName,
+          visitorName:    name.trim(),
+          visitorEmail:   email.trim(),
+          visitorPhone:   phone.trim()   || undefined,
+          visitorCompany: company.trim() || undefined,
+        }),
+      });
+
+      if (!res.ok) {
+        const txt = await res.text().catch(() => "");
+        throw new Error(txt || "Failed to send.");
+      }
+
+      setSubmitted(true);
+      toast.success("Your info was shared! 🎉");
+      setTimeout(onClose, 2200);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Something went wrong. Please try again.";
+      toast.error(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  }, [name, email, phone, company, cardOwnerUsername, cardOwnerName, onClose]);
+
+  const handleOverlayClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) onClose();
+  }, [onClose]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  return (
+    <div
+      className="nfc-shareback-overlay"
+      onClick={handleOverlayClick}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Share your contact info back"
+    >
+      <div className="nfc-shareback-modal">
+
+        {/* Close */}
+        <button className="nfc-shareback-close" onClick={onClose} aria-label="Close">
+          <XIcon size={16} />
+        </button>
+
+        {submitted ? (
+          /* ── Success state ── */
+          <div className="nfc-shareback-success">
+            <div className="nfc-shareback-success-icon">🎉</div>
+            <h2 className="nfc-shareback-success-title">Info Shared!</h2>
+            <p className="nfc-shareback-success-text">
+              <strong>{cardOwnerName}</strong> will receive your contact details shortly.
+            </p>
+          </div>
+        ) : (
+          /* ── Form state ── */
+          <>
+            <div className="nfc-shareback-header">
+              <div className="nfc-shareback-icon-wrap">
+                <Send size={20} />
+              </div>
+              <h2 className="nfc-shareback-title">Share your info back</h2>
+              <p className="nfc-shareback-subtitle">
+                Let <strong>{cardOwnerName}</strong> know who you are. Your details will be sent directly to them.
+              </p>
+            </div>
+
+            <form className="nfc-shareback-form" onSubmit={handleSubmit} noValidate>
+              <div className="nfc-shareback-field">
+                <label className="nfc-shareback-label" htmlFor="sb-name">Full Name <span aria-hidden="true">*</span></label>
+                <input
+                  id="sb-name"
+                  className="nfc-shareback-input"
+                  type="text"
+                  placeholder="Your full name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  autoComplete="name"
+                  autoFocus
+                />
+              </div>
+
+              <div className="nfc-shareback-field">
+                <label className="nfc-shareback-label" htmlFor="sb-email">Email Address <span aria-hidden="true">*</span></label>
+                <input
+                  id="sb-email"
+                  className="nfc-shareback-input"
+                  type="email"
+                  placeholder="your@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoComplete="email"
+                />
+              </div>
+
+              <div className="nfc-shareback-field">
+                <label className="nfc-shareback-label" htmlFor="sb-phone">Phone Number</label>
+                <input
+                  id="sb-phone"
+                  className="nfc-shareback-input"
+                  type="tel"
+                  placeholder="+91 98765 43210"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  autoComplete="tel"
+                />
+              </div>
+
+              <div className="nfc-shareback-field">
+                <label className="nfc-shareback-label" htmlFor="sb-company">Company / Organisation</label>
+                <input
+                  id="sb-company"
+                  className="nfc-shareback-input"
+                  type="text"
+                  placeholder="Your company name"
+                  value={company}
+                  onChange={(e) => setCompany(e.target.value)}
+                  autoComplete="organization"
+                />
+              </div>
+
+              <div className="nfc-shareback-actions">
+                <button
+                  type="submit"
+                  className="nfc-shareback-submit-btn"
+                  disabled={submitting || !name.trim() || !email.trim()}
+                >
+                  {submitting ? <Loader2 className="nfc-shareback-spinner" size={16} /> : <Send size={15} />}
+                  {submitting ? "Sending…" : "Share My Info"}
+                </button>
+                <button type="button" className="nfc-shareback-skip-btn" onClick={onClose}>
+                  Maybe Later
+                </button>
+              </div>
+            </form>
+          </>
+        )}
+
+      </div>
+    </div>
+  );
+}
+
 
 /* ── Share Sheet ── */
 interface ShareSheetProps {
@@ -288,6 +476,7 @@ export default function PublicNFCProfile() {
   const [error,          setError]          = useState<string>("");
   const [profile,        setProfile]        = useState<PublicNfcProfile | null>(null);
   const [shareSheetOpen, setShareSheetOpen] = useState(false);
+  const [shareBackOpen,  setShareBackOpen]  = useState(false);
 
   useEffect(() => {
     let isCancelled = false;
@@ -313,13 +502,13 @@ export default function PublicNFCProfile() {
   }, [normalizedUsername]);
 
   useEffect(() => {
-    if (shareSheetOpen) {
+    if (shareSheetOpen || shareBackOpen) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
     }
     return () => { document.body.style.overflow = ""; };
-  }, [shareSheetOpen]);
+  }, [shareSheetOpen, shareBackOpen]);
 
   const tagList = useMemo(
     () => (profile?.businessTags || "").split(",").map((t) => t.trim()).filter(Boolean),
@@ -383,6 +572,9 @@ export default function PublicNFCProfile() {
 
     // Final fallback: direct vCard download (always works)
     downloadVCard();
+
+    // After contact is saved, prompt visitor to share their info back
+    setShareBackOpen(true);
   };
 
 
@@ -733,6 +925,14 @@ export default function PublicNFCProfile() {
           url={window.location.href}
           name={profile?.name || normalizedUsername || "NFC Profile"}
           onClose={() => setShareSheetOpen(false)}
+        />
+      )}
+
+      {shareBackOpen && profile && (
+        <ShareBackModal
+          cardOwnerUsername={profile.username}
+          cardOwnerName={profile.name || normalizedUsername || "this person"}
+          onClose={() => setShareBackOpen(false)}
         />
       )}
     </div>
