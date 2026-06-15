@@ -78,10 +78,7 @@ export const getOwnedNfcProfileDocIds = (params: {
 
 export const isNfcLineProfileComplete = (profile: NFCProfile | undefined): boolean => {
   if (!profile) return false;
-  if (!profile.username?.trim()) return false;
   if (!profile.name?.trim()) return false;
-  if (!profile.email?.trim() || !profile.email.includes("@")) return false;
-  if (!profile.phone?.trim()) return false;
   return true;
 };
 

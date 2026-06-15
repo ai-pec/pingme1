@@ -11,7 +11,7 @@ const esc = (v) =>
         .replace(/"/g, "&quot;");
 
 const fmtMoney = (v, currency) =>
-    `${currency === "INR" ? "Rs." : currency + "\u00a0"}${Number(v).toFixed(2)}`;
+    `${currency === "INR" ? "Rs." : currency + "&#160;"}${Number(v).toFixed(2)}`;
 
 const FONT = "font-family:Helvetica,Arial,sans-serif;";
 const BRAND = "#1a1a2e";
@@ -39,9 +39,9 @@ const buildHeader = (inv) => {
       <div style="font-size:11px;color:#c9d1e9;line-height:1.6;">
         ${addressHtml}
         <div style="margin-top:6px;">
-          <span style="margin-right:14px;">GSTIN: ${esc(inv.company.gstin)}</span>
-          <span style="margin-right:14px;">PAN: ${esc(inv.company.pan)}</span>
-          <span>CIN: ${esc(inv.company.cin)}</span>
+          <span style="margin-right:14px;">GSTIN:&#160;${esc(inv.company.gstin)}</span>
+          <span style="margin-right:14px;">PAN:&#160;${esc(inv.company.pan)}</span>
+          <span>CIN:&#160;${esc(inv.company.cin)}</span>
         </div>
       </div>
     </td>
@@ -49,10 +49,10 @@ const buildHeader = (inv) => {
       <img src="${qrSrc}" width="90" height="90" alt="QR Code"
         style="display:block;margin-left:auto;border:3px solid #ffffff;border-radius:4px;" />
       <div style="${FONT}font-size:11px;font-weight:700;color:#ffffff;margin-top:6px;text-align:right;">
-        ${esc(inv.invoiceNumber)}
+        ${esc(inv.invoiceNumber || inv.orderId || "")}
       </div>
       <div style="${FONT}font-size:10px;color:#c9d1e9;text-align:right;">
-        ${esc(inv.invoiceType.toUpperCase())}
+        ${esc((inv.invoiceType || "Tax Invoice").toUpperCase())}
       </div>
     </td>
   </tr>
@@ -99,7 +99,7 @@ const buildParties = (inv) => {
         ${esc(p.name)}
       </div>
       <div style="font-size:11px;color:${MUTED};line-height:1.6;">${addrHtml}</div>
-      ${p.gstin ? `<div style="font-size:11px;color:${MUTED};margin-top:4px;">GSTIN: ${esc(p.gstin)}</div>` : ""}
+      ${p.gstin ? `<div style="font-size:11px;color:${MUTED};margin-top:4px;">GSTIN:&#160;${esc(p.gstin)}</div>` : ""}
     </td>`;
     };
 
@@ -115,10 +115,10 @@ const buildParties = (inv) => {
 
 const buildItemsTable = (inv) => {
     const headers = [
-        { label: "PRODUCT / SKU", align: "left" },
+        { label: "PRODUCT&#160;/&#160;SKU", align: "left" },
         { label: "TITLE", align: "left" },
         { label: "QTY", align: "right" },
-        { label: "GROSS AMT", align: "right" },
+        { label: "GROSS&#160;AMT", align: "right" },
         { label: "DISCOUNT", align: "right" },
         { label: "TOTAL", align: "right" },
     ];
@@ -145,7 +145,7 @@ const buildItemsTable = (inv) => {
         ${fmtMoney(item.grossAmount, inv.currency)}</td>
       <td style="${FONT}padding:10px;font-size:12px;color:#e04b4b;
             text-align:right;border-bottom:1px solid ${BORDER};">
-        ${item.discount > 0 ? "-\u00a0" + fmtMoney(item.discount, inv.currency) : "—"}</td>
+        ${item.discount > 0 ? "-&#160;" + fmtMoney(item.discount, inv.currency) : "&#8212;"}</td>
       <td style="${FONT}padding:10px;font-size:12px;font-weight:700;color:${TEXT};
             text-align:right;border-bottom:1px solid ${BORDER};">
         ${fmtMoney(item.total, inv.currency)}</td>
@@ -160,6 +160,7 @@ const buildItemsTable = (inv) => {
 </table>`;
 };
 
+// FIX: replaced flexbox layout with table layout for reliable email client rendering
 const buildTotals = (inv) => {
     const totalsRows = [
         ["Total Quantity", String(inv.totals.totalQuantity)],
@@ -171,27 +172,42 @@ const buildTotals = (inv) => {
         border-right:1px solid ${BORDER};">
     <div style="font-size:9px;font-weight:700;color:${MUTED};
           text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Notes</div>
-    <div style="font-size:11px;color:${MUTED};line-height:1.7;">
-      <div>Currency: ${esc(inv.currency)}</div>
-      <div>GST inclusive in price</div>
-      <div>Payment: ${esc(inv.paymentMode)}</div>
-    </div>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td style="${FONT}font-size:11px;color:${MUTED};line-height:1.8;
+              padding:0;">Currency:&#160;${esc(inv.currency)}</td>
+      </tr>
+      <tr>
+        <td style="${FONT}font-size:11px;color:${MUTED};line-height:1.8;
+              padding:0;">GST&#160;inclusive&#160;in&#160;price</td>
+      </tr>
+      <tr>
+        <td style="${FONT}font-size:11px;color:${MUTED};line-height:1.8;
+              padding:0;">Payment:&#160;${esc(inv.paymentMode)}</td>
+      </tr>
+    </table>
   </td>`;
 
     const totalsHtml = `
   <td style="${FONT}padding:16px;vertical-align:top;width:50%;">
     ${totalsRows.map(([label, val]) => `
-      <div style="display:flex;justify-content:space-between;
-            font-size:12px;color:${TEXT};margin-bottom:8px;">
-        <span>${esc(label)}</span>
-        <span style="font-weight:600;">${esc(val)}</span>
-      </div>`).join("")}
+      <table width="100%" cellpadding="0" cellspacing="0" border="0"
+        style="margin-bottom:8px;">
+        <tr>
+          <td style="${FONT}font-size:12px;color:${TEXT};padding:0;">${esc(label)}</td>
+          <td style="${FONT}font-size:12px;font-weight:600;color:${TEXT};
+                text-align:right;padding:0;">${val}</td>
+        </tr>
+      </table>`).join("")}
     <div style="height:1px;background:${BORDER};margin:8px 0;"></div>
-    <div style="display:flex;justify-content:space-between;
-          font-size:14px;font-weight:700;color:${BRAND};">
-      <span>Grand Total</span>
-      <span>${fmtMoney(inv.totals.grandTotal, inv.currency)}</span>
-    </div>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td style="${FONT}font-size:14px;font-weight:700;color:${BRAND};
+              padding:0;">Grand&#160;Total</td>
+        <td style="${FONT}font-size:14px;font-weight:700;color:${BRAND};
+              text-align:right;padding:0;">${fmtMoney(inv.totals.grandTotal, inv.currency)}</td>
+      </tr>
+    </table>
   </td>`;
 
     return `
@@ -217,8 +233,8 @@ const buildFooter = (inv) => `
       <div style="font-size:9px;font-weight:700;color:${MUTED};
             text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Contact</div>
       <div style="font-size:11px;color:${MUTED};line-height:1.6;">
-        <div>&#9993; ${esc(inv.contact.email)}</div>
-        <div>&#128222; ${esc(inv.contact.phone)}</div>
+        <div>&#9993;&#160;${esc(inv.contact.email)}</div>
+        <div>&#128222;&#160;${esc(inv.contact.phone)}</div>
       </div>
     </td>
   </tr>
@@ -232,14 +248,14 @@ const buildSignatory = (inv) => `
     <td style="${FONT}padding:16px 20px;vertical-align:bottom;">
       <div style="width:120px;height:1px;background:${TEXT};margin-bottom:4px;"></div>
       <div style="font-size:10px;color:${MUTED};text-transform:uppercase;
-            letter-spacing:.5px;">Authorized Signatory</div>
+            letter-spacing:.5px;">Authorized&#160;Signatory</div>
       <div style="font-size:12px;font-weight:700;color:${TEXT};margin-top:2px;">
         ${esc(inv.authorizedSignatory || inv.company.name)}
       </div>
     </td>
     <td style="${FONT}padding:16px 20px;text-align:right;vertical-align:middle;">
       <div style="font-size:11px;color:${MUTED};">${esc(inv.company.name)}</div>
-      <div style="font-size:10px;color:${MUTED};">Page 1 of 1</div>
+      <div style="font-size:10px;color:${MUTED};">Page&#160;1&#160;of&#160;1</div>
     </td>
   </tr>
 </table>`;
@@ -252,7 +268,7 @@ const buildInvoiceEmailHtml = (inv) => `
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Invoice ${esc(inv.invoiceNumber)} - ${esc(inv.company.name)}</title>
+  <title>Invoice ${esc(inv.invoiceNumber || inv.orderId || "")} - ${esc(inv.company.name)}</title>
 </head>
 <body style="margin:0;padding:0;background:#eef0f4;">
   <table width="100%" cellpadding="0" cellspacing="0" border="0"

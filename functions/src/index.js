@@ -41,17 +41,37 @@ const ALLOWED_ORIGINS = [
   "http://localhost:8081",
 ];
 
-const isPrivateNetworkIP = (origin) => {
-  if (!origin) return false;
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
   try {
     const url = new URL(origin);
     const hostname = url.hostname;
-    if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]") {
+
+    // Exact match in ALLOWED_ORIGINS
+    if (ALLOWED_ORIGINS.indexOf(origin) !== -1) {
       return true;
     }
+
+    // Allow plzpingme.com and all its subdomains
+    if (hostname === "plzpingme.com" || hostname.endsWith(".plzpingme.com")) {
+      return true;
+    }
+
+    // Allow localhost and all its subdomains
+    if (hostname === "localhost" || hostname.endsWith(".localhost") || hostname === "127.0.0.1" || hostname === "[::1]") {
+      return true;
+    }
+
+    // Allow Firebase domains
+    if (hostname.endsWith(".web.app") || hostname.endsWith(".firebaseapp.com")) {
+      return true;
+    }
+
+    // Allow private network IPs
     if (/^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)\d+\.\d+/.test(hostname)) {
       return true;
     }
+
     return false;
   } catch (e) {
     return false;
@@ -61,12 +81,7 @@ const isPrivateNetworkIP = (origin) => {
 const corsHandler = cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
-    if (
-      ALLOWED_ORIGINS.indexOf(origin) !== -1 ||
-      origin.endsWith(".web.app") ||
-      origin.endsWith(".firebaseapp.com") ||
-      isPrivateNetworkIP(origin)
-    ) {
+    if (isAllowedOrigin(origin)) {
       callback(null, true);
     } else {
       callback(new Error("Not allowed by CORS"));
@@ -357,8 +372,7 @@ const sendBookingConfirmationEmail = async ({
     paymentMode: payment?.gateway || "Razorpay",
   });
 
-  // Override with actual booking data
-  invoice.contact.email = email;
+  // Override customer name in bill/ship sections
   invoice.billTo.name = fullName || "Customer";
   invoice.shipTo.name = fullName || "Customer";
 
@@ -792,6 +806,168 @@ exports.getPublicNfcProfile = onRequest({
     } catch (error) {
       console.error("getPublicNfcProfile error", error);
       res.status(500).send("Failed to load public NFC profile.");
+    }
+  });
+});
+
+exports.sendReverseContactEmail = onRequest({
+  region: "asia-south1",
+  secrets: [
+    SMTP_HOST,
+    SMTP_PORT,
+    SMTP_USER,
+    SMTP_PASS,
+    SMTP_FROM,
+  ],
+}, (req, res) => {
+  corsHandler(req, res, async () => {
+    if (req.method !== "POST") {
+      res.status(405).send("Method Not Allowed");
+      return;
+    }
+
+    try {
+      const {
+        cardOwnerUsername,
+        cardOwnerName,
+        visitorName,
+        visitorEmail,
+        visitorPhone,
+        visitorCompany,
+      } = req.body || {};
+
+      if (!cardOwnerUsername || !visitorName || !visitorEmail) {
+        res.status(400).send("cardOwnerUsername, visitorName, and visitorEmail are required.");
+        return;
+      }
+
+      // 1. Fetch card owner's email
+      const username = normalizeNfcUsername(cardOwnerUsername);
+      const snapshot = await db
+        .collection(NFC_PROFILES_COLLECTION)
+        .where("username", "==", username)
+        .get();
+
+      if (snapshot.empty) {
+        res.status(404).send("Card owner profile not found.");
+        return;
+      }
+
+      const confirmedDoc = snapshot.docs.find((docSnap) => isConfirmedNfcProfileRecord(docSnap.data()));
+      if (!confirmedDoc) {
+        res.status(404).send("Card owner profile not found.");
+        return;
+      }
+
+      const profile = confirmedDoc.data();
+      const orderId = confirmedDoc.id;
+
+      // Robust owner email resolution:
+      // Try resolving via booking -> users collection
+      let ownerEmail = null;
+      if (orderId) {
+        const bookingId = orderId.includes("_") ? orderId.split("_")[0] : orderId;
+        try {
+          const bookingDoc = await db.collection("booking").doc(bookingId).get();
+          if (bookingDoc.exists) {
+            const bookingData = bookingDoc.data();
+            const userId = bookingData?.userId;
+            if (userId && userId !== "guest") {
+              const userDoc = await db.collection("users").doc(userId).get();
+              if (userDoc.exists) {
+                ownerEmail = userDoc.data()?.email;
+              }
+            }
+            if (!ownerEmail) {
+              ownerEmail = bookingData?.email;
+            }
+          }
+        } catch (dbErr) {
+          console.error("Error fetching booking/user for owner email", dbErr);
+        }
+      }
+
+      // Fallback to profile email
+      if (!ownerEmail) {
+        ownerEmail = profile.email;
+      }
+
+      if (!ownerEmail) {
+        res.status(400).send("Card owner has not configured an email address.");
+        return;
+      }
+
+      // 2. Send email to card owner
+      const transporter = getMailTransporter();
+      const fromEmail = (
+        SMTP_FROM.value() || SMTP_USER.value() ||
+        process.env.SMTP_FROM || process.env.SMTP_USER || ""
+      ).trim();
+
+      if (!transporter || !fromEmail) {
+        console.warn("sendReverseContactEmail skipped due to missing SMTP configuration.");
+        res.status(500).send("Email configuration error on server.");
+        return;
+      }
+
+      const subject = `${visitorName} shared their contact info with you!`;
+      const text = [
+        `Hi ${cardOwnerName || "there"},`,
+        "",
+        `${visitorName} recently scanned your PingME NFC card and shared their contact details with you:`,
+        "",
+        `Name: ${visitorName}`,
+        `Email: ${visitorEmail}`,
+        visitorPhone ? `Phone: ${visitorPhone}` : "",
+        visitorCompany ? `Company: ${visitorCompany}` : "",
+        "",
+        "Best regards,",
+        "Team PingME"
+      ].filter(Boolean).join("\n");
+
+      const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
+          <h2 style="color: #333;">New Contact Information Shared!</h2>
+          <p>Hi <strong>${cardOwnerName || "there"}</strong>,</p>
+          <p><strong>${visitorName}</strong> scanned your PingME NFC card and shared their contact details with you:</p>
+          <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <tr style="background-color: #f9f9f9;">
+              <td style="padding: 10px; font-weight: bold; width: 120px;">Name:</td>
+              <td style="padding: 10px;">${visitorName}</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px; font-weight: bold;">Email:</td>
+              <td style="padding: 10px;"><a href="mailto:${visitorEmail}">${visitorEmail}</a></td>
+            </tr>
+            ${visitorPhone ? `
+            <tr style="background-color: #f9f9f9;">
+              <td style="padding: 10px; font-weight: bold;">Phone:</td>
+              <td style="padding: 10px;"><a href="tel:${visitorPhone}">${visitorPhone}</a></td>
+            </tr>
+            ` : ""}
+            ${visitorCompany ? `
+            <tr>
+              <td style="padding: 10px; font-weight: bold;">Company:</td>
+              <td style="padding: 10px;">${visitorCompany}</td>
+            </tr>
+            ` : ""}
+          </table>
+          <p style="margin-top: 30px;">Best regards,<br><strong>Team PingME</strong></p>
+        </div>
+      `;
+
+      await transporter.sendMail({
+        from: fromEmail,
+        to: ownerEmail,
+        subject,
+        text,
+        html,
+      });
+
+      res.status(200).json({ success: true });
+    } catch (error) {
+      console.error("sendReverseContactEmail error", error);
+      res.status(500).send("Failed to send contact information.");
     }
   });
 });

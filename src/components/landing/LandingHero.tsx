@@ -1194,15 +1194,15 @@ const LandingHero = () => {
       {/* ============================================================
           CONTENT  — tighter section spacing throughout
       ============================================================ */}
-      <div className="w-full px-4 md:px-6 lg:px-10 xl:px-14 relative pt-6 pb-10 md:pt-10 md:pb-14 space-y-14 lg:space-y-18">
+      <div className="w-full px-4 md:px-6 lg:px-10 xl:px-14 relative pt-0 pb-10 md:pt-0 md:pb-14 space-y-14 lg:space-y-18">
 
         {/* === HERO =============================================== */}
         <section
           className="grid gap-6 lg:grid-cols-[1fr_0.82fr] lg:items-center"
-          style={{ minHeight: "88vh" }}
+          style={{ minHeight: "70vh" }}
         >
           {/* LEFT: Copy */}
-          <div className="space-y-6 lg:py-10 max-w-2xl">
+          <div className="space-y-6 lg:py-0 max-w-2xl">
 
             {/* Eyebrow */}
             <motion.div

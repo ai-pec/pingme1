@@ -547,31 +547,34 @@ export default function PublicNFCProfile() {
     };
 
     const nav: any = navigator;
+    let sharedSuccessfully = false;
 
     // Try file-share first (mobile browsers on HTTPS)
     if (typeof nav.canShare === "function" && nav.canShare({ files: [file] })) {
       try {
         await nav.share({ files: [file], title: profile.name || profile.username });
-        toast.success("Contact shared"); return;
+        toast.success("Contact shared");
+        sharedSuccessfully = true;
       } catch (err: any) {
-        if (err?.name === "AbortError") return; // user dismissed — no error needed
         // Permission denied or unsupported — fall through to text share / download
       }
     }
 
     // Try text share (also on HTTPS)
-    if (typeof nav.share === "function") {
+    if (!sharedSuccessfully && typeof nav.share === "function") {
       try {
         await nav.share({ title: profile.name || profile.username, text: vcard });
-        toast.success("Contact shared"); return;
+        toast.success("Contact shared");
+        sharedSuccessfully = true;
       } catch (err: any) {
-        if (err?.name === "AbortError") return; // user dismissed — no error needed
         // Permission denied or unsupported — fall through to download
       }
     }
 
     // Final fallback: direct vCard download (always works)
-    downloadVCard();
+    if (!sharedSuccessfully) {
+      downloadVCard();
+    }
 
     // After contact is saved, prompt visitor to share their info back
     setShareBackOpen(true);

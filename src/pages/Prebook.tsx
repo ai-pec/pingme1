@@ -12,6 +12,9 @@ import {
   Plus, Minus, Trash2, RotateCcw, Info, ChevronDown, ChevronUp,
   Receipt, Globe, Linkedin, Twitter, Instagram, Facebook,
   AtSign, Edit3, Eye, Link2, Camera, Zap, Star,
+  Briefcase,
+  ImageIcon,
+  Youtube,
 } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -58,8 +61,21 @@ const PAYMENT_METHODS = [
 const SESSION_KEY = "pingme_checkout_draft";
 
 const emptyNfcProfile = () => ({
-  name: "", email: "", phone: "", bio: "", website: "",
-  linkedin: "", twitter: "", instagram: "", facebook: "", username: "",
+  // Identity
+  name: "", username: "", bio: "",
+  // Professional
+  companyName: "", jobTitle: "", businessOverview: "",
+  // Contact
+  email: "", phone: "", website: "",
+  // Social Links
+  linkedin: "", instagram: "", facebook: "", youtube: "", twitter: "",
+  // Payment & Booking
+  upiId: "", razorpayLink: "", appointmentBookingLink: "",
+  // Location
+  address: "", googleMapsLink: "",
+  // Portfolio & Documents (arrays)
+  projects: [] as Array<{ name: string; type: string; link: string; description: string }>,
+  documents: [] as Array<{ title: string; url: string; type: string }>,
 });
 
 type DeliveryFieldKey = "fullName" | "phone" | "address" | "city" | "state" | "pincode";
@@ -828,12 +844,16 @@ function getInitials(name: string): string {
 
 function calcProfileCompletion(p: ReturnType<typeof emptyNfcProfile>) {
   const items = [
-    { label: "Name",     done: !!p.name?.trim() },
-    { label: "Username", done: !!p.username?.trim() },
-    { label: "Bio",      done: !!p.bio?.trim() },
-    { label: "Phone",    done: !!p.phone?.trim() },
-    { label: "Email",    done: !!p.email?.trim() },
-    { label: "A link",   done: !!(p.website || p.linkedin || p.twitter || p.instagram || p.facebook) },
+    { label: "Name",             done: !!p.name?.trim() },
+    { label: "Bio",              done: !!p.bio?.trim() },
+    { label: "Phone",            done: !!p.phone?.trim() },
+    { label: "Email",            done: !!p.email?.trim() },
+    { label: "Social / Website", done: !!(p.website || p.linkedin || p.twitter || p.instagram || p.facebook || (p as any).youtube) },
+    { label: "Business Info",    done: !!(((p as any).companyName || (p as any).jobTitle || (p as any).businessOverview)) },
+    { label: "Payment / Booking",done: !!(((p as any).upiId || (p as any).razorpayLink || (p as any).appointmentBookingLink)) },
+    { label: "Location",         done: !!(((p as any).address || (p as any).googleMapsLink)) },
+    { label: "Portfolio",        done: !!(p.projects?.length) },
+    { label: "Documents",        done: !!(p.documents?.length) },
   ];
   const done = items.filter(i => i.done).length;
   return { pct: Math.round((done / items.length) * 100), items };
@@ -902,6 +922,7 @@ function NfcCardPreview({ profile }: { profile: ReturnType<typeof emptyNfcProfil
     profile.twitter   && { icon: Twitter,   label: "Twitter"   },
     profile.instagram && { icon: Instagram, label: "Instagram" },
     profile.facebook  && { icon: Facebook,  label: "Facebook"  },
+    (profile as any).youtube && { icon: Youtube, label: "YouTube" },
   ].filter(Boolean) as { icon: any; label: string }[];
 
   const { pct, items } = calcProfileCompletion(profile);
@@ -979,23 +1000,31 @@ function NfcProfileEditor({
   const set = (key: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     onChange({ ...profile, [key]: e.target.value });
 
-  const handleNameBlur = () => {
-    if (!profile.username && profile.name.trim()) {
-      const base = profile.name.trim().split(" ")[0].toLowerCase().replace(/[^a-z0-9]/g, "");
-      onChange({ ...profile, username: base });
-    }
-  };
-
   const isComplete = isNfcLineProfileComplete(profile);
   const { pct } = calcProfileCompletion(profile);
 
   const socialFields = [
-    { key: "linkedin",  icon: Linkedin,  cls: "social-li",  placeholder: "linkedin.com/in/yourname"  },
-    { key: "twitter",   icon: Twitter,   cls: "social-tw",  placeholder: "twitter.com/yourhandle"   },
-    { key: "instagram", icon: Instagram, cls: "social-ig",  placeholder: "instagram.com/yourhandle" },
-    { key: "facebook",  icon: Facebook,  cls: "social-fb",  placeholder: "facebook.com/yourname"    },
-    { key: "website",   icon: Globe,     cls: "social-web", placeholder: "yourwebsite.com"           },
+    { key: "linkedin",  icon: Linkedin,  cls: "social-li",  placeholder: "linkedin.com/in/yourname",   label: "LinkedIn"   },
+    { key: "instagram", icon: Instagram, cls: "social-ig",  placeholder: "instagram.com/yourhandle",  label: "Instagram"  },
+    { key: "facebook",  icon: Facebook,  cls: "social-fb",  placeholder: "facebook.com/yourname",      label: "Facebook"   },
+    { key: "youtube",   icon: Youtube,   cls: "social-yt",  placeholder: "youtube.com/@yourchannel",   label: "YouTube"    },
+    { key: "twitter",   icon: Twitter,   cls: "social-tw",  placeholder: "x.com/yourhandle",           label: "X / Twitter"},
+    { key: "website",   icon: Globe,     cls: "social-web", placeholder: "yourwebsite.com",            label: "Website"    },
   ];
+
+  const addProject = () =>
+    onChange({ ...profile, projects: [...(profile.projects || []), { name: "", type: "image", link: "", description: "" }] });
+  const updateProject = (i: number, key: string, val: string) =>
+    onChange({ ...profile, projects: (profile.projects || []).map((p, idx) => idx === i ? { ...p, [key]: val } : p) });
+  const removeProject = (i: number) =>
+    onChange({ ...profile, projects: (profile.projects || []).filter((_, idx) => idx !== i) });
+
+  const addDocument = () =>
+    onChange({ ...profile, documents: [...(profile.documents || []), { title: "", url: "", type: "company_profile" }] });
+  const updateDocument = (i: number, key: string, val: string) =>
+    onChange({ ...profile, documents: (profile.documents || []).map((d, idx) => idx === i ? { ...d, [key]: val } : d) });
+  const removeDocument = (i: number) =>
+    onChange({ ...profile, documents: (profile.documents || []).filter((_, idx) => idx !== i) });
 
   return (
     <div className="fade-up">
@@ -1026,7 +1055,7 @@ function NfcProfileEditor({
           <div className="section-card">
             <div className="section-card-title"><User />Identity</div>
             <p className="nfc-section-sub">
-              This is how you appear when someone taps your NFC card. Your username becomes your public profile URL.
+              This is how you appear when someone taps your NFC card.
             </p>
 
             <div className="nfc-identity-hero">
@@ -1045,27 +1074,7 @@ function NfcProfileEditor({
                     placeholder="e.g. Arjun Sharma"
                     value={profile.name}
                     onChange={set("name")}
-                    onBlur={handleNameBlur}
                   />
-                </Field>
-                <Field label="Username" required hint="Letters, numbers, underscores only">
-                  <div className="username-input-wrap">
-                    <span className="username-prefix">@</span>
-                    <input
-                      className={`field-input ${profile.username ? "valid" : ""}`}
-                      placeholder="yourhandle"
-                      value={profile.username}
-                      onChange={(e) =>
-                        onChange({ ...profile, username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "") })
-                      }
-                      style={{ fontFamily: "'SF Mono','Fira Code',monospace", fontSize: 13, letterSpacing: ".01em" }}
-                    />
-                    {profile.username && (
-                      <span className="username-status-icon">
-                        <CheckCircle2 size={14} color="var(--success)" />
-                      </span>
-                    )}
-                  </div>
                 </Field>
               </div>
             </div>
@@ -1099,23 +1108,145 @@ function NfcProfileEditor({
 
           {/* Social links block */}
           <div className="section-card">
-            <div className="section-card-title"><Link2 />Links &amp; Socials</div>
-            <p className="nfc-section-sub">
-              Links appear as tappable pills on your profile page. Add whichever matter most to you.
-            </p>
-            {socialFields.map(({ key, icon: Icon, cls, placeholder }) => (
+            <div className="section-card-title"><Link2 />Social Links</div>
+            <p className="nfc-section-sub">Links appear as tappable pills on your profile page.</p>
+            {socialFields.map(({ key, icon: Icon, cls, placeholder, label }) => (
               <div key={key} className="social-link-row">
-                <div className={`social-platform-pill ${cls}`}>
+                <div className={`social-platform-pill ${cls}`} title={label}>
                   <Icon size={15} />
                 </div>
                 <input
                   className="field-input"
                   placeholder={placeholder}
-                  value={(profile as any)[key]}
+                  value={(profile as any)[key] || ""}
                   onChange={(e) => onChange({ ...profile, [key]: e.target.value })}
                 />
               </div>
             ))}
+          </div>
+
+          {/* Business info block */}
+          <div className="section-card">
+            <div className="section-card-title"><Briefcase />Business Info</div>
+            <div className="grid-2">
+              <Field label="Company Name" optional>
+                <input className="field-input" placeholder="Acme Corp"
+                  value={(profile as any).companyName || ""} onChange={set("companyName")} />
+              </Field>
+              <Field label="Job Title" optional>
+                <input className="field-input" placeholder="Product Designer"
+                  value={(profile as any).jobTitle || ""} onChange={set("jobTitle")} />
+              </Field>
+            </div>
+            <Field label="Business Overview" optional>
+              <textarea className="field-input"
+                placeholder="Describe your business, products, or services..."
+                value={(profile as any).businessOverview || ""} onChange={set("businessOverview")}
+                rows={3} style={{ minHeight: 70 }} />
+            </Field>
+          </div>
+
+          {/* Portfolio / Gallery block */}
+          <div className="section-card">
+            <div className="section-card-title"><ImageIcon />Portfolio / Gallery</div>
+            <p className="nfc-section-sub">Add images, videos, brochures, or certificates to showcase your work.</p>
+            {(profile.projects || []).map((proj, i) => (
+              <div key={i} style={{ border: "1px solid var(--border-color, #e5e7eb)", borderRadius: 10, padding: "12px 14px", marginBottom: 10, position: "relative", background: "#fafafa" }}>
+                <button onClick={() => removeProject(i)} style={{ position: "absolute", top: 8, right: 10, background: "none", border: "none", cursor: "pointer", color: "#ef4444", fontSize: 16 }} title="Remove">×</button>
+                <div className="grid-2" style={{ marginBottom: 8 }}>
+                  <Field label="Title" optional>
+                    <input className="field-input" placeholder="e.g. Product Brochure"
+                      value={proj.name} onChange={e => updateProject(i, "name", e.target.value)} />
+                  </Field>
+                  <Field label="Type" optional>
+                    <select className="field-input" value={proj.type} onChange={e => updateProject(i, "type", e.target.value)}
+                      style={{ height: 38 }}>
+                      <option value="image">Image</option>
+                      <option value="video">Video</option>
+                      <option value="brochure">Brochure</option>
+                      <option value="certificate">Certificate</option>
+                    </select>
+                  </Field>
+                </div>
+                <Field label="Link / URL" optional>
+                  <input className="field-input" placeholder="https://drive.google.com/..."
+                    value={proj.link} onChange={e => updateProject(i, "link", e.target.value)} />
+                </Field>
+                <Field label="Description" optional>
+                  <input className="field-input" placeholder="Brief description..."
+                    value={proj.description} onChange={e => updateProject(i, "description", e.target.value)} />
+                </Field>
+              </div>
+            ))}
+            <button onClick={addProject} style={{ fontSize: 13, fontWeight: 600, color: "var(--brand-gold, #C8820A)", background: "none", border: "1.5px dashed var(--brand-gold, #C8820A)", borderRadius: 8, padding: "7px 16px", cursor: "pointer", width: "100%", marginTop: 4 }}>
+              + Add Portfolio Item
+            </button>
+          </div>
+
+          {/* Documents block */}
+          <div className="section-card">
+            <div className="section-card-title"><FileText />Documents</div>
+            <p className="nfc-section-sub">Share company profile, catalogue, resume, or presentations.</p>
+            {(profile.documents || []).map((doc, i) => (
+              <div key={i} style={{ border: "1px solid var(--border-color, #e5e7eb)", borderRadius: 10, padding: "12px 14px", marginBottom: 10, position: "relative", background: "#fafafa" }}>
+                <button onClick={() => removeDocument(i)} style={{ position: "absolute", top: 8, right: 10, background: "none", border: "none", cursor: "pointer", color: "#ef4444", fontSize: 16 }} title="Remove">×</button>
+                <div className="grid-2" style={{ marginBottom: 8 }}>
+                  <Field label="Document Title" optional>
+                    <input className="field-input" placeholder="e.g. Company Profile"
+                      value={doc.title} onChange={e => updateDocument(i, "title", e.target.value)} />
+                  </Field>
+                  <Field label="Type" optional>
+                    <select className="field-input" value={doc.type} onChange={e => updateDocument(i, "type", e.target.value)}
+                      style={{ height: 38 }}>
+                      <option value="company_profile">Company Profile</option>
+                      <option value="catalogue">Catalogue</option>
+                      <option value="resume">Resume</option>
+                      <option value="presentation">Presentation</option>
+                    </select>
+                  </Field>
+                </div>
+                <Field label="Link / URL" optional>
+                  <input className="field-input" placeholder="https://drive.google.com/..."
+                    value={doc.url} onChange={e => updateDocument(i, "url", e.target.value)} />
+                </Field>
+              </div>
+            ))}
+            <button onClick={addDocument} style={{ fontSize: 13, fontWeight: 600, color: "var(--brand-gold, #C8820A)", background: "none", border: "1.5px dashed var(--brand-gold, #C8820A)", borderRadius: 8, padding: "7px 16px", cursor: "pointer", width: "100%", marginTop: 4 }}>
+              + Add Document
+            </button>
+          </div>
+
+          {/* Payment & Booking block */}
+          <div className="section-card">
+            <div className="section-card-title"><CreditCard />Payment &amp; Booking</div>
+            <p className="nfc-section-sub">Let people pay or book appointments directly from your NFC card.</p>
+            <Field label="UPI ID" optional>
+              <input className="field-input" placeholder="yourname@upi"
+                value={(profile as any).upiId || ""} onChange={set("upiId")} />
+            </Field>
+            <Field label="Razorpay Payment Link" optional>
+              <input className="field-input" placeholder="https://rzp.io/l/yourlink"
+                value={(profile as any).razorpayLink || ""} onChange={set("razorpayLink")} />
+            </Field>
+            <Field label="Appointment Booking Link" optional>
+              <input className="field-input" placeholder="https://calendly.com/yourname"
+                value={(profile as any).appointmentBookingLink || ""} onChange={set("appointmentBookingLink")} />
+            </Field>
+          </div>
+
+          {/* Location block */}
+          <div className="section-card">
+            <div className="section-card-title"><MapPin />Location</div>
+            <Field label="Address" optional>
+              <textarea className="field-input"
+                placeholder="123, MG Road, Sector 5, Chandigarh - 160001"
+                value={(profile as any).address || ""} onChange={set("address")}
+                rows={2} style={{ minHeight: 58 }} />
+            </Field>
+            <Field label="Google Maps Link" optional>
+              <input className="field-input" placeholder="https://maps.google.com/?q=..."
+                value={(profile as any).googleMapsLink || ""} onChange={set("googleMapsLink")} />
+            </Field>
           </div>
 
           {/* Actions */}
@@ -1133,7 +1264,7 @@ function NfcProfileEditor({
 
           {!isComplete && (
             <p style={{ fontSize: 11.5, color: "var(--error)", marginTop: 8, display: "flex", alignItems: "center", gap: 5 }}>
-              <AlertCircle size={12} />Name and username are required before saving.
+              <AlertCircle size={12} />Name is required before saving.
             </p>
           )}
         </div>
