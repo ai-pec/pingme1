@@ -485,7 +485,15 @@ export default function PublicNFCProfile() {
         setLoading(true);
         setError("");
         const result = await fetchPublicNfcProfile(normalizedUsername);
-        if (!isCancelled) setProfile(result);
+        if (!isCancelled) {
+          setProfile(result);
+          // Track NFC profile visit in background (non-blocking)
+          const basePaymentUrl = (import.meta.env.VITE_PAYMENT_API_BASE_URL || "").replace(/\/$/, "");
+          if (basePaymentUrl) {
+            fetch(`${basePaymentUrl}/trackNfcVisit?username=${encodeURIComponent(normalizedUsername)}`, { method: "POST" })
+              .catch(err => console.error("trackNfcVisit call failed", err));
+          }
+        }
       } catch (err: unknown) {
         if (!isCancelled) {
           setError(getErrorMessage(err, "Unable to load profile."));

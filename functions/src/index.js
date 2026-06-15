@@ -95,6 +95,45 @@ const NFC_PROFILES_COLLECTION = "nfcProfiles";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+const parseUserAgent = (userAgent) => {
+  const ua = userAgent || "";
+  let device = "Desktop";
+  let os = "Unknown";
+  let browser = "Unknown";
+
+  if (/tablet|ipad|playbook|silk/i.test(ua)) {
+    device = "Tablet";
+  } else if (/mobile|iphone|ipod|android|blackberry|opera mini|iemobile|webos/i.test(ua)) {
+    device = "Mobile";
+  }
+
+  if (/ipad|iphone|ipod/i.test(ua)) {
+    os = "iOS";
+  } else if (/android/i.test(ua)) {
+    os = "Android";
+  } else if (/macintosh|mac os x/i.test(ua)) {
+    os = "macOS";
+  } else if (/windows/i.test(ua)) {
+    os = "Windows";
+  } else if (/linux/i.test(ua)) {
+    os = "Linux";
+  }
+
+  if (/chrome|crios/i.test(ua) && !/edg/i.test(ua) && !/opr/i.test(ua)) {
+    browser = "Chrome";
+  } else if (/safari/i.test(ua) && !/chrome|crios|chromium/i.test(ua)) {
+    browser = "Safari";
+  } else if (/firefox|fxios/i.test(ua)) {
+    browser = "Firefox";
+  } else if (/edg/i.test(ua)) {
+    browser = "Edge";
+  } else if (/opr|opera/i.test(ua)) {
+    browser = "Opera";
+  }
+
+  return { device, os, browser };
+};
+
 const getCount = async (collectionRef, queryConstraints = []) => {
   let queryRef = collectionRef;
   for (const constraint of queryConstraints) {
@@ -968,6 +1007,230 @@ exports.sendReverseContactEmail = onRequest({
     } catch (error) {
       console.error("sendReverseContactEmail error", error);
       res.status(500).send("Failed to send contact information.");
+    }
+  });
+});
+
+exports.trackNfcVisit = onRequest({
+  region: "asia-south1",
+}, (req, res) => {
+  corsHandler(req, res, async () => {
+    // Accept both GET and POST
+    if (req.method !== "GET" && req.method !== "POST") {
+      res.status(405).send("Method Not Allowed");
+      return;
+    }
+
+    try {
+      const username = normalizeNfcUsername(String(req.query?.username || req.body?.username || ""));
+      if (!username) {
+        res.status(400).send("username is required.");
+        return;
+      }
+
+      const uaString = req.headers["user-agent"] || "";
+      const parsedUa = parseUserAgent(uaString);
+
+      // Increment profile visit count if the profile exists
+      const snapshot = await db
+        .collection(NFC_PROFILES_COLLECTION)
+        .where("username", "==", username)
+        .get();
+
+      const confirmedDoc = snapshot.docs.find((docSnap) => isConfirmedNfcProfileRecord(docSnap.data()));
+      if (confirmedDoc) {
+        await confirmedDoc.ref.update({
+          visitCount: admin.firestore.FieldValue.increment(1)
+        });
+      }
+
+      // Record the visit detail log
+      await db.collection("nfcVisits").add({
+        username,
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        userAgent: uaString,
+        device: parsedUa.device,
+        os: parsedUa.os,
+        browser: parsedUa.browser
+      });
+
+      res.status(200).json({ success: true });
+    } catch (error) {
+      console.error("trackNfcVisit error", error);
+      res.status(500).send("Failed to track visit.");
+    }
+  });
+});
+
+exports.getNfcVisitAnalytics = onRequest({
+  region: "asia-south1",
+}, (req, res) => {
+  corsHandler(req, res, async () => {
+    if (req.method !== "GET") {
+      res.status(405).send("Method Not Allowed");
+      return;
+    }
+
+    const decodedToken = await authenticate(req);
+    if (!decodedToken) {
+      res.status(401).send("Unauthorized");
+      return;
+    }
+
+    const userId = decodedToken.uid;
+    const userEmail = decodedToken.email || null;
+
+    try {
+      const ownedUsernames = new Set();
+
+      const processBookingDoc = (docSnap) => {
+        const data = docSnap.data();
+        if (!data) return;
+
+        if (data.nfcProfile?.username) {
+          ownedUsernames.add(normalizeNfcUsername(data.nfcProfile.username));
+        }
+        if (Array.isArray(data.nfcLineProfiles)) {
+          for (const line of data.nfcLineProfiles) {
+            if (line?.nfcProfile?.username) {
+              ownedUsernames.add(normalizeNfcUsername(line.nfcProfile.username));
+            }
+          }
+        }
+      };
+
+      // Query bookings by userId
+      const [bookingsByUid, legacyByUid] = await Promise.all([
+        db.collection("booking").where("userId", "==", userId).get(),
+        db.collection("prebookings").where("userId", "==", userId).get(),
+      ]);
+      bookingsByUid.docs.forEach(processBookingDoc);
+      legacyByUid.docs.forEach(processBookingDoc);
+
+      // Query bookings by email if available
+      if (userEmail) {
+        const [bookingsByEmail, legacyByEmail] = await Promise.all([
+          db.collection("booking").where("email", "==", userEmail).get(),
+          db.collection("prebookings").where("email", "==", userEmail).get(),
+        ]);
+        bookingsByEmail.docs.forEach(processBookingDoc);
+        legacyByEmail.docs.forEach(processBookingDoc);
+      }
+
+      const usernamesArr = Array.from(ownedUsernames);
+
+      if (usernamesArr.length === 0) {
+        res.status(200).json({
+          ownedUsernames: [],
+          selectedUsername: null,
+          analytics: {
+            totalVisits: 0,
+            deviceBreakdown: {},
+            osBreakdown: {},
+            browserBreakdown: {},
+            trafficOverTime: [],
+            recentVisits: []
+          }
+        });
+        return;
+      }
+
+      // Optional username filter
+      const requestedUsername = req.query?.username ? normalizeNfcUsername(String(req.query.username)) : null;
+      let selectedUsername = null;
+      let queryRef = db.collection("nfcVisits");
+
+      if (requestedUsername) {
+        if (!ownedUsernames.has(requestedUsername)) {
+          res.status(403).send("Forbidden: You do not own this profile.");
+          return;
+        }
+        selectedUsername = requestedUsername;
+        queryRef = queryRef.where("username", "==", requestedUsername);
+      } else {
+        selectedUsername = "all";
+        // Limit query to first 30 owned usernames due to 'in' clause limit
+        queryRef = queryRef.where("username", "in", usernamesArr.slice(0, 30));
+      }
+
+      const visitsSnapshot = await queryRef.get();
+
+      // Process and aggregate in memory to avoid composite index requirements
+      const visits = visitsSnapshot.docs.map(docSnap => {
+        const data = docSnap.data();
+        return {
+          id: docSnap.id,
+          username: data.username,
+          timestamp: data.timestamp ? data.timestamp.toDate() : new Date(),
+          device: data.device || "Unknown",
+          os: data.os || "Unknown",
+          browser: data.browser || "Unknown"
+        };
+      });
+
+      // Sort in memory (descending order)
+      visits.sort((a, b) => b.timestamp - a.timestamp);
+
+      // Aggregate statistics
+      const totalVisits = visits.length;
+      const deviceBreakdown = {};
+      const osBreakdown = {};
+      const browserBreakdown = {};
+
+      // Initialize the last 30 days traffic map with 0s
+      const trafficMap = {};
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().split("T")[0];
+        trafficMap[dateStr] = 0;
+      }
+
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      visits.forEach(v => {
+        deviceBreakdown[v.device] = (deviceBreakdown[v.device] || 0) + 1;
+        osBreakdown[v.os] = (osBreakdown[v.os] || 0) + 1;
+        browserBreakdown[v.browser] = (browserBreakdown[v.browser] || 0) + 1;
+
+        if (v.timestamp >= thirtyDaysAgo) {
+          const dateStr = v.timestamp.toISOString().split("T")[0];
+          if (trafficMap[dateStr] !== undefined) {
+            trafficMap[dateStr]++;
+          }
+        }
+      });
+
+      const trafficOverTime = Object.keys(trafficMap).map(date => ({
+        date,
+        count: trafficMap[date]
+      }));
+
+      const recentVisits = visits.slice(0, 15).map(v => ({
+        id: v.id,
+        username: v.username,
+        timestamp: v.timestamp.toISOString(),
+        device: v.device,
+        os: v.os,
+        browser: v.browser
+      }));
+
+      res.status(200).json({
+        ownedUsernames: usernamesArr,
+        selectedUsername,
+        analytics: {
+          totalVisits,
+          deviceBreakdown,
+          osBreakdown,
+          browserBreakdown,
+          trafficOverTime,
+          recentVisits
+        }
+      });
+    } catch (error) {
+      console.error("getNfcVisitAnalytics error", error);
+      res.status(500).send("Failed to get analytics.");
     }
   });
 });

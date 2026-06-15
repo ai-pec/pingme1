@@ -8,6 +8,8 @@ vite.config.*.timestamp-*
 # Build outputs
 dist/
 dist.zip
+dist-nfc/
+dist-nfc.zip
 
 # Logs
 npm-debug.log*

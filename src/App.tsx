@@ -38,6 +38,7 @@ const ForgotPassword = lazy(() => import("./pages/auth/ForgotPassword"));
 const VerifyEmail = lazy(() => import("./pages/auth/VerifyEmail"));
 const CompletePhone = lazy(() => import("./pages/auth/CompletePhone"));
 const Profile = lazy(() => import("./pages/Profile"));
+const NfcVisitsDashboard = lazy(() => import("./pages/NfcVisitsDashboard"));
 const Admin = lazy(() => import("./pages/Admin"));
 const PublicNFCProfile = lazy(() => import("./pages/PublicNFCProfile"));
 const NFCLanding = lazy(() => import("./pages/NFCLanding"));
@@ -156,6 +157,15 @@ const App = () => (
                   element={
                     <ProtectedRoute>
                       <Profile />
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/profile/visits"
+                  element={
+                    <ProtectedRoute>
+                      <NfcVisitsDashboard />
                     </ProtectedRoute>
                   }
                 />

@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { User, Shield, LogOut } from "lucide-react";
+import { User, Shield, LogOut, BarChart2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -90,6 +90,12 @@ export default function UserAvatar() {
           <Link to="/profile" className="flex items-center cursor-pointer">
             <User className="mr-2 h-4 w-4" />
             Profile
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to="/profile/visits" className="flex items-center cursor-pointer">
+            <BarChart2 className="mr-2 h-4 w-4" />
+            Your NFC profile visits
           </Link>
         </DropdownMenuItem>
         {showAdmin && (
