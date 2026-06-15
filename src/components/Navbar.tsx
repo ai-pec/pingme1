@@ -723,6 +723,13 @@ const Navbar = () => {
                       NFC Profile Visits
                     </Link>
                     <Link
+                      to="/profile/leads"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="mobile-menu-item block py-3 px-4 rounded-lg border-2 border-gray-300 text-gray-700 font-semibold text-center hover:border-yellow-400 hover:text-yellow-600"
+                    >
+                      NFC Leads & Outreach
+                    </Link>
+                    <Link
                       to="/admin"
                       onClick={() => setMobileMenuOpen(false)}
                       className="mobile-menu-item block py-3 px-4 rounded-lg border-2 border-gray-300 text-gray-700 font-semibold text-center hover:border-yellow-400 hover:text-yellow-600"

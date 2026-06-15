@@ -134,6 +134,108 @@ const parseUserAgent = (userAgent) => {
   return { device, os, browser };
 };
 
+const generateLeadIntelligence = async (ownerProfile, visitorDetails, apiKey) => {
+  if (!apiKey) {
+    throw new Error("Missing GEMINI_API_KEY configuration");
+  }
+
+  const cardOwnerName = ownerProfile?.name || "Card Owner";
+  const ownerBio = ownerProfile?.bio || "";
+  const ownerCompany = ownerProfile?.companyName || "";
+  const ownerJobTitle = ownerProfile?.jobTitle || "";
+  const ownerBusinessOverview = ownerProfile?.businessOverview || "";
+
+  const visitorName = visitorDetails?.visitorName || "Visitor";
+  const visitorEmail = visitorDetails?.visitorEmail || "";
+  const visitorPhone = visitorDetails?.visitorPhone || "";
+  const visitorCompany = visitorDetails?.visitorCompany || "";
+
+  const prompt = `
+You are an AI Lead Assistant for PingME, a smart NFC business card platform.
+A visitor has scanned an NFC card and shared their contact details. Your goal is to analyze the lead and draft a personalized outreach email for the card owner to send to the visitor.
+
+--- CARD OWNER BUSINESS PROFILE ---
+Name: ${cardOwnerName}
+Bio: ${ownerBio || "Not specified"}
+Services/Offerings: ${ownerBusinessOverview || ownerBio || "Not specified"}
+Company/Organization: ${ownerCompany || "Not specified"}
+Role: ${ownerJobTitle || "Not specified"}
+
+--- VISITOR LEAD DETAILS ---
+Name: ${visitorName}
+Email: ${visitorEmail}
+Phone: ${visitorPhone || "Not specified"}
+Company: ${visitorCompany || "Not specified"}
+
+Instructions:
+1. Generate a brief "leadAssessment" (max 30 words) summarizing why this lead is valuable or what a good angle for collaboration might be.
+2. Generate a "personalizedEmailSubject" that is professional, catchy, and references their meeting/scan context.
+3. Generate a "personalizedEmailBody" in HTML format (use standard tags like <p>, <br>, <strong>). Address it from the owner (${cardOwnerName}) to the visitor (${visitorName}). Do not include any HTML markdown wrappers like \`\`\`html. Output pure HTML tags.
+`;
+
+  const makeRequest = async (model) => {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
+        }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "OBJECT",
+            properties: {
+              leadAssessment: { type: "STRING" },
+              personalizedEmailSubject: { type: "STRING" },
+              personalizedEmailBody: { type: "STRING" }
+            },
+            required: ["leadAssessment", "personalizedEmailSubject", "personalizedEmailBody"]
+          }
+        }
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Gemini API (${model}) returned error: ${response.status} - ${errorText}`);
+    }
+
+    const result = await response.json();
+    const textContent = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!textContent) {
+      throw new Error(`Empty response from Gemini API (${model})`);
+    }
+
+    return JSON.parse(textContent);
+  };
+
+  try {
+    console.log("Attempting AI generation with gemini-2.5-flash...");
+    return await makeRequest("gemini-2.5-flash");
+  } catch (error) {
+    console.warn(`Primary model gemini-2.5-flash failed: ${error.message}. Retrying with gemini-1.5-flash...`);
+    return await makeRequest("gemini-1.5-flash");
+  }
+};
+
+const getGeminiApiKey = async () => {
+  try {
+    const docSnap = await db.collection("config").doc("gemini").get();
+    if (docSnap.exists) {
+      const data = docSnap.data();
+      return data?.apiKey || data?.apikey || null;
+    }
+  } catch (err) {
+    console.error("Failed to fetch GEMINI_API_KEY from Firestore config:", err);
+  }
+  return null;
+};
+
 const getCount = async (collectionRef, queryConstraints = []) => {
   let queryRef = collectionRef;
   for (const constraint of queryConstraints) {
@@ -904,6 +1006,7 @@ exports.sendReverseContactEmail = onRequest({
       // Robust owner email resolution:
       // Try resolving via booking -> users collection
       let ownerEmail = null;
+      let ownerUid = null;
       if (orderId) {
         const bookingId = orderId.includes("_") ? orderId.split("_")[0] : orderId;
         try {
@@ -912,6 +1015,7 @@ exports.sendReverseContactEmail = onRequest({
             const bookingData = bookingDoc.data();
             const userId = bookingData?.userId;
             if (userId && userId !== "guest") {
+              ownerUid = userId;
               const userDoc = await db.collection("users").doc(userId).get();
               if (userDoc.exists) {
                 ownerEmail = userDoc.data()?.email;
@@ -929,6 +1033,18 @@ exports.sendReverseContactEmail = onRequest({
       // Fallback to profile email
       if (!ownerEmail) {
         ownerEmail = profile.email;
+      }
+
+      // If ownerUid wasn't resolved by bookingId, try to lookup by ownerEmail in users collection
+      if (!ownerUid && ownerEmail) {
+        try {
+          const userSnap = await db.collection("users").where("email", "==", ownerEmail).limit(1).get();
+          if (!userSnap.empty) {
+            ownerUid = userSnap.docs[0].id;
+          }
+        } catch (dbErr) {
+          console.error("Error matching owner email to user UID:", dbErr);
+        }
       }
 
       if (!ownerEmail) {
@@ -949,6 +1065,59 @@ exports.sendReverseContactEmail = onRequest({
         return;
       }
 
+      // Generate AI lead intelligence & outreach drafts if API key is configured
+      let aiSectionHtml = "";
+      let aiSectionText = "";
+      let aiResult = null;
+
+      try {
+        const apiKey = await getGeminiApiKey();
+        if (apiKey) {
+          aiResult = await generateLeadIntelligence(profile, {
+            visitorName,
+            visitorEmail,
+            visitorPhone,
+            visitorCompany
+          }, apiKey);
+
+          if (aiResult) {
+            aiSectionHtml = `
+              <div style="margin-top: 30px; padding: 20px; background-color: #fff9e6; border: 1px solid #ffe89e; border-radius: 12px; font-family: Arial, sans-serif;">
+                <h3 style="margin-top: 0; color: #d97706; font-size: 16px; display: flex; align-items: center; gap: 6px;">
+                  ✨ AI Lead Assistant Insights
+                </h3>
+                <p style="font-size: 13px; color: #444; line-height: 1.6; margin-bottom: 15px;">
+                  <strong>Lead Fit Assessment:</strong> ${aiResult.leadAssessment}
+                </p>
+                <div style="background-color: #ffffff; border: 1px dashed #d97706; padding: 15px; border-radius: 8px; font-size: 13px;">
+                  <p style="margin-top: 0; margin-bottom: 8px; font-weight: bold; color: #333;">
+                    Personalized Follow-up Draft:
+                  </p>
+                  <p style="margin-top: 0; margin-bottom: 12px; font-size: 12px; color: #666;">
+                    <strong>Subject:</strong> ${aiResult.personalizedEmailSubject}
+                  </p>
+                  <div style="border-top: 1px solid #eee; padding-top: 12px; color: #222; font-size: 13px; line-height: 1.5;">
+                    ${aiResult.personalizedEmailBody}
+                  </div>
+                </div>
+              </div>
+            `;
+
+            aiSectionText = `
+\n\n=== ✨ AI Lead Assistant Insights ===
+Lead Fit Assessment: ${aiResult.leadAssessment}
+
+Personalized Follow-up Draft:
+Subject: ${aiResult.personalizedEmailSubject}
+Body:
+${aiResult.personalizedEmailBody.replace(/<[^>]*>/g, "")}
+`;
+          }
+        }
+      } catch (aiErr) {
+        console.error("AI Lead Intelligence generation failed:", aiErr);
+      }
+
       const subject = `${visitorName} shared their contact info with you!`;
       const text = [
         `Hi ${cardOwnerName || "there"},`,
@@ -959,6 +1128,7 @@ exports.sendReverseContactEmail = onRequest({
         `Email: ${visitorEmail}`,
         visitorPhone ? `Phone: ${visitorPhone}` : "",
         visitorCompany ? `Company: ${visitorCompany}` : "",
+        aiSectionText,
         "",
         "Best regards,",
         "Team PingME"
@@ -991,6 +1161,7 @@ exports.sendReverseContactEmail = onRequest({
             </tr>
             ` : ""}
           </table>
+          ${aiSectionHtml}
           <p style="margin-top: 30px;">Best regards,<br><strong>Team PingME</strong></p>
         </div>
       `;
@@ -1002,6 +1173,27 @@ exports.sendReverseContactEmail = onRequest({
         text,
         html,
       });
+
+      // Save lead details to Firestore nfcLeads collection
+      try {
+        const leadData = {
+          cardOwnerUsername: username,
+          cardOwnerUid: ownerUid || null,
+          cardOwnerEmail: ownerEmail || null,
+          visitorName: visitorName || "",
+          visitorEmail: visitorEmail || "",
+          visitorPhone: visitorPhone || "",
+          visitorCompany: visitorCompany || "",
+          leadAssessment: aiResult?.leadAssessment || "N/A",
+          personalizedEmailSubject: aiResult?.personalizedEmailSubject || "N/A",
+          personalizedEmailBody: aiResult?.personalizedEmailBody || "N/A",
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        };
+        await db.collection("nfcLeads").add(leadData);
+        console.log(`Lead saved successfully in Firestore nfcLeads for username: ${username}`);
+      } catch (dbErr) {
+        console.error("Error saving lead details to Firestore:", dbErr);
+      }
 
       res.status(200).json({ success: true });
     } catch (error) {
@@ -1231,6 +1423,122 @@ exports.getNfcVisitAnalytics = onRequest({
     } catch (error) {
       console.error("getNfcVisitAnalytics error", error);
       res.status(500).send("Failed to get analytics.");
+    }
+  });
+});
+
+exports.getNfcLeads = onRequest({
+  region: "asia-south1",
+}, (req, res) => {
+  corsHandler(req, res, async () => {
+    if (req.method !== "GET") {
+      res.status(405).send("Method Not Allowed");
+      return;
+    }
+
+    const decodedToken = await authenticate(req);
+    if (!decodedToken) {
+      res.status(401).send("Unauthorized");
+      return;
+    }
+
+    const userId = decodedToken.uid;
+    const userEmail = decodedToken.email || null;
+
+    try {
+      const ownedUsernames = new Set();
+
+      const processBookingDoc = (docSnap) => {
+        const data = docSnap.data();
+        if (!data) return;
+
+        if (data.nfcProfile?.username) {
+          ownedUsernames.add(normalizeNfcUsername(data.nfcProfile.username));
+        }
+        if (Array.isArray(data.nfcLineProfiles)) {
+          for (const line of data.nfcLineProfiles) {
+            if (line?.nfcProfile?.username) {
+              ownedUsernames.add(normalizeNfcUsername(line.nfcProfile.username));
+            }
+          }
+        }
+      };
+
+      // Query bookings by userId
+      const [bookingsByUid, legacyByUid] = await Promise.all([
+        db.collection("booking").where("userId", "==", userId).get(),
+        db.collection("prebookings").where("userId", "==", userId).get(),
+      ]);
+      bookingsByUid.docs.forEach(processBookingDoc);
+      legacyByUid.docs.forEach(processBookingDoc);
+
+      // Query bookings by email if available
+      if (userEmail) {
+        const [bookingsByEmail, legacyByEmail] = await Promise.all([
+          db.collection("booking").where("email", "==", userEmail).get(),
+          db.collection("prebookings").where("email", "==", userEmail).get(),
+        ]);
+        bookingsByEmail.docs.forEach(processBookingDoc);
+        legacyByEmail.docs.forEach(processBookingDoc);
+      }
+
+      const usernamesArr = Array.from(ownedUsernames);
+
+      if (usernamesArr.length === 0) {
+        res.status(200).json({
+          ownedUsernames: [],
+          selectedUsername: null,
+          leads: []
+        });
+        return;
+      }
+
+      // Optional username filter
+      const requestedUsername = req.query?.username ? normalizeNfcUsername(String(req.query.username)) : null;
+      let selectedUsername = null;
+      let queryRef = db.collection("nfcLeads");
+
+      if (requestedUsername) {
+        if (!ownedUsernames.has(requestedUsername)) {
+          res.status(403).send("Forbidden: You do not own this profile.");
+          return;
+        }
+        selectedUsername = requestedUsername;
+        queryRef = queryRef.where("cardOwnerUsername", "==", requestedUsername);
+      } else {
+        selectedUsername = "all";
+        // Limit query to first 30 owned usernames due to 'in' clause limit
+        queryRef = queryRef.where("cardOwnerUsername", "in", usernamesArr.slice(0, 30));
+      }
+
+      const leadsSnapshot = await queryRef.get();
+      const leads = leadsSnapshot.docs.map(docSnap => {
+        const data = docSnap.data();
+        return {
+          id: docSnap.id,
+          cardOwnerUsername: data.cardOwnerUsername,
+          visitorName: data.visitorName || "",
+          visitorEmail: data.visitorEmail || "",
+          visitorPhone: data.visitorPhone || "",
+          visitorCompany: data.visitorCompany || "",
+          leadAssessment: data.leadAssessment || "N/A",
+          personalizedEmailSubject: data.personalizedEmailSubject || "N/A",
+          personalizedEmailBody: data.personalizedEmailBody || "N/A",
+          createdAt: data.createdAt ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
+        };
+      });
+
+      // Sort leads in memory (descending order, newest first)
+      leads.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+      res.status(200).json({
+        ownedUsernames: usernamesArr,
+        selectedUsername,
+        leads
+      });
+    } catch (error) {
+      console.error("getNfcLeads error", error);
+      res.status(500).send("Failed to get leads.");
     }
   });
 });
