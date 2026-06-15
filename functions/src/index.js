@@ -173,53 +173,62 @@ Instructions:
 3. Generate a "personalizedEmailBody" in HTML format (use standard tags like <p>, <br>, <strong>). Address it from the owner (${cardOwnerName}) to the visitor (${visitorName}). Do not include any HTML markdown wrappers like \`\`\`html. Output pure HTML tags.
 `;
 
-  const makeRequest = async (model) => {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }],
-        generationConfig: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: "OBJECT",
-            properties: {
-              leadAssessment: { type: "STRING" },
-              personalizedEmailSubject: { type: "STRING" },
-              personalizedEmailBody: { type: "STRING" }
-            },
-            required: ["leadAssessment", "personalizedEmailSubject", "personalizedEmailBody"]
+  const makeRequest = async (model, retries = 3) => {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: prompt
+            }]
+          }],
+          generationConfig: {
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: "OBJECT",
+              properties: {
+                leadAssessment: { type: "STRING" },
+                personalizedEmailSubject: { type: "STRING" },
+                personalizedEmailBody: { type: "STRING" }
+              },
+              required: ["leadAssessment", "personalizedEmailSubject", "personalizedEmailBody"]
+            }
           }
-        }
-      })
-    });
+        })
+      });
 
-    if (!response.ok) {
+      if (response.ok) {
+        const result = await response.json();
+        const textContent = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!textContent) {
+          throw new Error(`Empty response from Gemini API (${model})`);
+        }
+        return JSON.parse(textContent);
+      }
+
       const errorText = await response.text();
+      // Retry on rate limit (429) or server overload (503) with exponential backoff
+      if ((response.status === 429 || response.status === 503) && attempt < retries) {
+        const delay = Math.pow(2, attempt) * 3000; // 6s, 12s
+        console.warn(`Gemini API (${model}) returned ${response.status} on attempt ${attempt}. Retrying in ${delay}ms...`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+
       throw new Error(`Gemini API (${model}) returned error: ${response.status} - ${errorText}`);
     }
-
-    const result = await response.json();
-    const textContent = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!textContent) {
-      throw new Error(`Empty response from Gemini API (${model})`);
-    }
-
-    return JSON.parse(textContent);
   };
 
   try {
-    console.log("Attempting AI generation with gemini-2.5-flash...");
-    return await makeRequest("gemini-2.5-flash");
+    console.log("Attempting AI generation with gemini-2.0-flash...");
+    return await makeRequest("gemini-2.0-flash");
   } catch (error) {
-    console.warn(`Primary model gemini-2.5-flash failed: ${error.message}. Retrying with gemini-1.5-flash...`);
-    return await makeRequest("gemini-1.5-flash");
+    console.warn(`Primary model gemini-2.0-flash failed: ${error.message}. Retrying with gemini-2.0-flash-lite...`);
+    return await makeRequest("gemini-2.0-flash-lite");
   }
 };
 
@@ -953,6 +962,7 @@ exports.getPublicNfcProfile = onRequest({
 
 exports.sendReverseContactEmail = onRequest({
   region: "asia-south1",
+  timeoutSeconds: 120,
   secrets: [
     SMTP_HOST,
     SMTP_PORT,

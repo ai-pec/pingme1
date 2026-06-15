@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import MainLayout from "@/layouts/MainLayout";
@@ -25,11 +25,11 @@ interface LeadRecord {
   cardOwnerUsername: string;
   visitorName: string;
   visitorEmail: string;
-  visitorPhone: string;
-  visitorCompany: string;
-  leadAssessment: string;
-  personalizedEmailSubject: string;
-  personalizedEmailBody: string;
+  visitorPhone?: string;
+  visitorCompany?: string;
+  leadAssessment?: string;
+  personalizedEmailSubject?: string;
+  personalizedEmailBody?: string;
   createdAt: string;
 }
 
@@ -39,9 +39,13 @@ interface ApiResponse {
   leads: LeadRecord[];
 }
 
-const formatExactTime = (isoString: string) => {
+const formatExactTime = (isoString?: string) => {
+  if (!isoString) return "N/A";
   try {
     const dateObj = new Date(isoString);
+    if (isNaN(dateObj.getTime())) {
+      return isoString || "N/A";
+    }
     const day = dateObj.getDate();
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const month = monthNames[dateObj.getMonth()];
@@ -51,12 +55,12 @@ const formatExactTime = (isoString: string) => {
     const seconds = String(dateObj.getSeconds()).padStart(2, "0");
     return `${day} ${month} ${year}, ${hours}:${minutes}:${seconds}`;
   } catch {
-    return isoString;
+    return isoString || "N/A";
   }
 };
 
-const cleanHtmlToPlainText = (html: string) => {
-  if (!html) return "";
+const cleanHtmlToPlainText = (html?: string) => {
+  if (!html || typeof html !== "string") return "";
   return html
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<p>/gi, "")
@@ -70,6 +74,17 @@ export default function NfcLeadsDashboard() {
   const [selectedUsername, setSelectedUsername] = useState<string>("all");
   const [activeLead, setActiveLead] = useState<LeadRecord | null>(null);
   const [copiedMap, setCopiedMap] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (activeLead) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [activeLead]);
 
   const { data, isLoading, error, refetch, isRefetching } = useQuery<ApiResponse>({
     queryKey: ["nfcLeads", selectedUsername],
@@ -106,7 +121,7 @@ export default function NfcLeadsDashboard() {
   const handleExportCSV = () => {
     if (leads.length === 0) return;
 
-    const escapeCSV = (str: string) => `"${String(str || "").replace(/"/g, '""')}"`;
+    const escapeCSV = (str?: string) => `"${String(str || "").replace(/"/g, '""')}"`;
 
     const headers = [
       "ID",
@@ -121,18 +136,23 @@ export default function NfcLeadsDashboard() {
       "Follow-up Draft (Plain Text)"
     ];
 
-    const rows = leads.map((lead) => [
-      escapeCSV(lead.id),
-      escapeCSV(new Date(lead.createdAt).toLocaleString("en-IN")),
-      escapeCSV(`@${lead.cardOwnerUsername}`),
-      escapeCSV(lead.visitorName),
-      escapeCSV(lead.visitorEmail),
-      escapeCSV(lead.visitorPhone),
-      escapeCSV(lead.visitorCompany),
-      escapeCSV(lead.leadAssessment),
-      escapeCSV(lead.personalizedEmailSubject),
-      escapeCSV(cleanHtmlToPlainText(lead.personalizedEmailBody))
-    ]);
+    const rows = leads.map((lead) => {
+      const dateStr = lead.createdAt && !isNaN(new Date(lead.createdAt).getTime())
+        ? new Date(lead.createdAt).toLocaleString("en-IN")
+        : "N/A";
+      return [
+        escapeCSV(lead.id),
+        escapeCSV(dateStr),
+        escapeCSV(`@${lead.cardOwnerUsername}`),
+        escapeCSV(lead.visitorName),
+        escapeCSV(lead.visitorEmail),
+        escapeCSV(lead.visitorPhone),
+        escapeCSV(lead.visitorCompany),
+        escapeCSV(lead.leadAssessment),
+        escapeCSV(lead.personalizedEmailSubject),
+        escapeCSV(cleanHtmlToPlainText(lead.personalizedEmailBody))
+      ];
+    });
 
     const csvContent =
       "data:text/csv;charset=utf-8," +
@@ -152,11 +172,44 @@ export default function NfcLeadsDashboard() {
 
   // Copy to Clipboard trigger
   const handleCopyToClipboard = (text: string, key: string) => {
-    void navigator.clipboard.writeText(text);
-    setCopiedMap((prev) => ({ ...prev, [key]: true }));
-    setTimeout(() => {
-      setCopiedMap((prev) => ({ ...prev, [key]: false }));
-    }, 2000);
+    const fallbackCopy = (txt: string) => {
+      const textarea = document.createElement("textarea");
+      textarea.value = txt;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand("copy");
+      } catch (err) {
+        console.error("Fallback copy failed", err);
+      }
+      document.body.removeChild(textarea);
+    };
+
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+      navigator.clipboard.writeText(text)
+        .then(() => {
+          setCopiedMap((prev) => ({ ...prev, [key]: true }));
+          setTimeout(() => {
+            setCopiedMap((prev) => ({ ...prev, [key]: false }));
+          }, 2000);
+        })
+        .catch((err) => {
+          console.error("Clipboard write failed, using fallback", err);
+          fallbackCopy(text);
+          setCopiedMap((prev) => ({ ...prev, [key]: true }));
+          setTimeout(() => {
+            setCopiedMap((prev) => ({ ...prev, [key]: false }));
+          }, 2000);
+        });
+    } else {
+      fallbackCopy(text);
+      setCopiedMap((prev) => ({ ...prev, [key]: true }));
+      setTimeout(() => {
+        setCopiedMap((prev) => ({ ...prev, [key]: false }));
+      }, 2000);
+    }
   };
 
   // Dashboard calculations
@@ -366,18 +419,18 @@ export default function NfcLeadsDashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {leads.map((lead) => (
-                        <tr key={lead.id} className="cursor-pointer" onClick={() => setActiveLead(lead)}>
+                      {leads.map((lead, index) => (
+                        <tr key={lead.id || `lead-${index}`} className="cursor-pointer" onClick={() => setActiveLead(lead)}>
                           <td className="font-semibold text-stone-800">
                             {lead.visitorName}
                           </td>
                           <td className="text-stone-600">
-                            {lead.visitorCompany || "-"}
+                            {lead.visitorCompany && lead.visitorCompany !== "N/A" ? lead.visitorCompany : "-"}
                           </td>
                           <td>
                             <div className="flex flex-col gap-0.5 text-xs text-stone-500">
                               <span>{lead.visitorEmail}</span>
-                              {lead.visitorPhone && <span>{lead.visitorPhone}</span>}
+                              {lead.visitorPhone && lead.visitorPhone !== "N/A" && <span>{lead.visitorPhone}</span>}
                             </div>
                           </td>
                           <td className="text-stone-600">
@@ -451,7 +504,7 @@ export default function NfcLeadsDashboard() {
               <div className="drawer-content">
                 {/* Meta details card */}
                 <div className="space-y-3 p-4 bg-stone-50 rounded-xl border border-stone-200 text-sm">
-                  {activeLead.visitorCompany && (
+                  {activeLead.visitorCompany && activeLead.visitorCompany !== "N/A" && (
                     <div className="flex items-center gap-2">
                       <Briefcase className="w-4 h-4 text-stone-400 shrink-0" />
                       <span className="text-stone-600">Company:</span>
@@ -468,7 +521,7 @@ export default function NfcLeadsDashboard() {
                       {activeLead.visitorEmail}
                     </a>
                   </div>
-                  {activeLead.visitorPhone && (
+                  {activeLead.visitorPhone && activeLead.visitorPhone !== "N/A" && (
                     <div className="flex items-center gap-2">
                       <Phone className="w-4 h-4 text-stone-400 shrink-0" />
                       <span className="text-stone-600">Phone:</span>
@@ -482,67 +535,78 @@ export default function NfcLeadsDashboard() {
                   )}
                   <div className="flex items-center gap-2 pt-1 border-t border-stone-200/60 text-xs text-stone-400">
                     <Calendar className="w-3.5 h-3.5" />
-                    <span>Captured on {new Date(activeLead.createdAt).toLocaleString("en-IN")}</span>
+                    <span>
+                      Captured on{" "}
+                      {activeLead.createdAt && !isNaN(new Date(activeLead.createdAt).getTime())
+                        ? new Date(activeLead.createdAt).toLocaleString("en-IN")
+                        : "N/A"}
+                    </span>
                   </div>
                 </div>
 
                 {/* AI Assessment block */}
-                <div className="ai-assessment-box">
-                  <h3 className="ai-box-title">
-                    <Sparkles className="w-4 h-4 text-amber-500 fill-amber-500 animate-pulse" />
-                    AI Lead Assistant Assessment
-                  </h3>
-                  <p className="ai-box-desc">{activeLead.leadAssessment}</p>
-                </div>
+                {activeLead.leadAssessment && activeLead.leadAssessment !== "N/A" && (
+                  <div className="ai-assessment-box">
+                    <h3 className="ai-box-title">
+                      <Sparkles className="w-4 h-4 text-amber-500 fill-amber-500 animate-pulse" />
+                      AI Lead Assistant Assessment
+                    </h3>
+                    <p className="ai-box-desc">{activeLead.leadAssessment}</p>
+                  </div>
+                )}
 
                 {/* AI Follow-up Email template */}
-                <div className="email-outreach-panel">
-                  <h3 className="text-sm font-bold text-stone-800 mb-3 flex items-center gap-1.5">
-                    <Mail className="w-4 h-4 text-stone-400" />
-                    Suggested Outreach Follow-up
-                  </h3>
+                {activeLead.personalizedEmailBody && activeLead.personalizedEmailBody !== "N/A" && (
+                  <div className="email-outreach-panel">
+                    <h3 className="text-sm font-bold text-stone-800 mb-3 flex items-center gap-1.5">
+                      <Mail className="w-4 h-4 text-stone-400" />
+                      Suggested Outreach Follow-up
+                    </h3>
 
-                  <div className="email-meta-row space-y-1">
-                    <div>
-                      <strong>To:</strong> {activeLead.visitorName} ({activeLead.visitorEmail})
+                    <div className="email-meta-row space-y-1">
+                      <div>
+                        <strong>To:</strong> {activeLead.visitorName} ({activeLead.visitorEmail})
+                      </div>
+                      {activeLead.personalizedEmailSubject && activeLead.personalizedEmailSubject !== "N/A" && (
+                        <div>
+                          <strong>Subject:</strong> {activeLead.personalizedEmailSubject}
+                        </div>
+                      )}
                     </div>
-                    <div>
-                      <strong>Subject:</strong> {activeLead.personalizedEmailSubject}
-                    </div>
+
+                    <div
+                      className="email-preview-body"
+                      dangerouslySetInnerHTML={{ __html: activeLead.personalizedEmailBody }}
+                    />
+
+                    {/* Clipboard copy triggers */}
+                    <button
+                      onClick={() =>
+                        handleCopyToClipboard(
+                          `Subject: ${activeLead.personalizedEmailSubject || ""}\n\n${cleanHtmlToPlainText(
+                            activeLead.personalizedEmailBody
+                          )}`,
+                          "outreach"
+                        )
+                      }
+                      className={`copy-draft-btn ${
+                        copiedMap["outreach"]
+                          ? "copy-draft-btn-copied"
+                          : "copy-draft-btn-default"
+                      }`}
+                    >
+                      {copiedMap["outreach"] ? (
+                        <>
+                          <Check className="w-4 h-4" /> Copied!
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4" /> Copy Subject & Body
+                        </>
+                      )}
+                    </button>
                   </div>
-
-                  <div
-                    className="email-preview-body"
-                    dangerouslySetInnerHTML={{ __html: activeLead.personalizedEmailBody }}
-                  />
-
-                  {/* Clipboard copy triggers */}
-                  <button
-                    onClick={() =>
-                      handleCopyToClipboard(
-                        `Subject: ${activeLead.personalizedEmailSubject}\n\n${cleanHtmlToPlainText(
-                          activeLead.personalizedEmailBody
-                        )}`,
-                        "outreach"
-                      )
-                    }
-                    className={`copy-draft-btn ${
-                      copiedMap["outreach"]
-                        ? "copy-draft-btn-copied"
-                        : "copy-draft-btn-default"
-                    }`}
-                  >
-                    {copiedMap["outreach"] ? (
-                      <>
-                        <Check className="w-4 h-4" /> Copied!
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-4 h-4" /> Copy Subject & Body
-                      </>
-                    )}
-                  </button>
-                </div>
+                )}
               </div>
             </motion.div>
           </>
