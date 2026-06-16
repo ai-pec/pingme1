@@ -1,643 +1,616 @@
-import { useEffect, useRef } from "react";
+/**
+ * LandingReviews.tsx
+ * Mobile-first, fully responsive reviews section for PingME.
+ *
+ * Design:
+ * - Dual-track infinite marquee (opposite directions) on desktop
+ * - Single swipeable card slider on mobile (touch drag + pagination dots)
+ * - RAF-based animation, pauses on hover/touch — no jitter
+ * - Respects prefers-reduced-motion
+ * - Zero horizontal overflow on any viewport
+ */
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+import { useEffect, useRef, useState, useCallback } from "react";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { Star, Quote, ChevronLeft, ChevronRight } from "lucide-react";
 
+/* ----------------------------------------------------------------
+   DESIGN TOKENS (matches LandingHero)
+---------------------------------------------------------------- */
+const GOLD     = "#C8820A";
+const GOLD_MID = "#F5A623";
+const CREAM    = "#FFF9EB";
+const CREAM_2  = "#FFF3D6";
+
+/* ----------------------------------------------------------------
+   REVIEW DATA
+---------------------------------------------------------------- */
 type Review = {
+  id: number;
   name: string;
   location: string;
-  vehicle: string;
-  text: string;
-  rating: number;
+  avatar: string;
+  stars: number;
   tag: string;
-  initials: string;
-  avatarColor: string;
+  text: string;
+  useCase: string;
 };
 
-// ─── Data ────────────────────────────────────────────────────────────────────
-
-const reviews: Review[] = [
+const REVIEWS: Review[] = [
   {
-    name: "Rohit Sharma",
-    location: "Sector 22, Chandigarh",
-    vehicle: "Car owner",
-    text: "Mere building ke neeche parking mein koi baar baar notice chhodta tha. Ab scan karo, message aao, main nikal deta hoon. No awkward calls, no sharing number with random strangers.",
-    rating: 5,
-    tag: "Apartment parking",
-    initials: "RS",
-    avatarColor: "#92400E",
+    id: 1,
+    name: "Rajesh Verma",
+    location: "Delhi",
+    avatar: "RV",
+    stars: 5,
+    tag: "Vehicle Tag",
+    text: "Bhai, parking wala scene toh ab stress-free ho gaya. Koi bhi scan karta hai aur directly ping aa jaati hai — bina number share kiye! Ekdum mast product hai.",
+    useCase: "Car blocked in apartment parking",
   },
   {
-    name: "Priya Nair",
-    location: "HSR Layout, Bengaluru",
-    vehicle: "Scooty owner",
-    text: "As a woman, sharing my number with unknown people near my vehicle always felt unsafe. PingME completely solved that. Whoever scans gets to alert me — without ever seeing my actual number.",
-    rating: 5,
-    tag: "Safety-first",
-    initials: "PN",
-    avatarColor: "#78350F",
+    id: 2,
+    name: "Priya Sharma",
+    location: "Bengaluru",
+    avatar: "PS",
+    stars: 5,
+    tag: "Lost & Found",
+    text: "My laptop bag was left in an Ola cab. The driver scanned the PingME sticker and I got a ping within minutes. Number never shared, reunited same day. Absolutely love it!",
+    useCase: "Lost bag in rideshare",
   },
   {
-    name: "Gurpreet Singh",
-    location: "Mohali, Punjab",
-    vehicle: "SUV owner",
-    text: "Costco jaisa experience chahiye tha mujhe. One tap and the person outside knows I'll move my car in 5 minutes. Already recommended it to 4 friends in my society.",
-    rating: 5,
-    tag: "Society parking",
-    initials: "GS",
-    avatarColor: "#451A03",
+    id: 3,
+    name: "Suresh Iyer",
+    location: "Chennai",
+    avatar: "SI",
+    stars: 5,
+    tag: "Pet Tag",
+    text: "Bruno bhaag gaya tha colony se. Kisi ne PingME tag scan kiya aur mujhe turant message aaya. 2 ghante mein Bruno ghar wapas! Privacy bhi rahi, tension bhi khatam.",
+    useCase: "Lost Labrador found by neighbour",
   },
   {
-    name: "Ananya Krishnan",
-    location: "Koramangala, Bengaluru",
-    vehicle: "Car owner",
-    text: "Got a ping that my car was blocking a delivery truck. Moved it in 2 minutes. Without this, the truck would've waited 40 mins for office hours to end. Absolute lifesaver.",
-    rating: 5,
-    tag: "Quick response",
-    initials: "AK",
-    avatarColor: "#92400E",
+    id: 4,
+    name: "Anika Mehta",
+    location: "Mumbai",
+    avatar: "AM",
+    stars: 5,
+    tag: "NFC Card",
+    text: "Conference mein business cards distribute karna band kar diya. Ab ek tap mein sab share ho jaata hai. Clients impress, aur mera number bhi safe — win-win!",
+    useCase: "Startup networking event",
   },
   {
-    name: "Mohammed Rafi",
-    location: "Hyderabad Old City",
-    vehicle: "Bike owner",
-    text: "Main market area mein park karta hoon. Pehle toh log honk karte rehte the aur maine kuch nahi sunta tha. Ab seedha message aata hai — zero noise, zero stress.",
-    rating: 5,
-    tag: "Market parking",
-    initials: "MR",
-    avatarColor: "#78350F",
+    id: 5,
+    name: "Karan Bhatia",
+    location: "Gurugram",
+    avatar: "KB",
+    stars: 5,
+    tag: "Vehicle Tag",
+    text: "Office parking mein roz drama hota tha. PingME tag lagayi bike pe — ab koi directly ping karta hai. Smooth hai ekdum. No awkward confrontations.",
+    useCase: "Bike blocked in office lot",
   },
   {
-    name: "Sunita Mehra",
-    location: "Burail, Chandigarh",
-    vehicle: "Car owner",
-    text: "My husband travels a lot. When I park outside the school, someone always needed me to shift. Now they just scan and ping me. I feel so much safer not giving my number to everyone.",
-    rating: 5,
-    tag: "School pickup",
-    initials: "SM",
-    avatarColor: "#451A03",
+    id: 6,
+    name: "Deepa Nair",
+    location: "Kochi",
+    avatar: "DN",
+    stars: 5,
+    tag: "Lost & Found",
+    text: "My daughter's school bag was left at a park. Another parent scanned the tag and I got an instant ping. So relieved — and they never had to know my number. Brilliant!",
+    useCase: "Child's bag found at park",
   },
   {
-    name: "Arjun Kapoor",
-    location: "Noida Sector 50",
-    vehicle: "Car owner",
-    text: "Office mein visitor parking mein zyada ruk jata tha. Security wale khud scan karke alert karte hain ab. Company ne 15 PingME cards bulk mein order kiye hain ab.",
-    rating: 5,
-    tag: "Office fleet",
-    initials: "AK",
-    avatarColor: "#92400E",
+    id: 7,
+    name: "Arjun Singhania",
+    location: "Pune",
+    avatar: "AS",
+    stars: 5,
+    tag: "Vehicle Tag",
+    text: "Society mein 3 cars thi aur meri car beech mein block ho gayi. Scan kiya unhone, 4 min mein resolve. Itna smooth never expected. PingME rocks!",
+    useCase: "Triple-parked car situation",
   },
   {
-    name: "Deepa Venkataraman",
-    location: "T. Nagar, Chennai",
-    vehicle: "Hatchback owner",
-    text: "Enna solrathu — it just works. Downloaded it for my husband when he started driving to work. Now our whole neighbourhood WhatsApp group is talking about it.",
-    rating: 5,
-    tag: "Neighbourhood hit",
-    initials: "DV",
-    avatarColor: "#78350F",
+    id: 8,
+    name: "Neha Kulkarni",
+    location: "Hyderabad",
+    avatar: "NK",
+    stars: 5,
+    tag: "Pet Tag",
+    text: "Mittoo (meri cat) kabhi kabhi bahar nikal jaati thi. Ab tag pe ping aata hai, main jaan jaati hoon kahan hai. Peace of mind mil gayi — genuinely.",
+    useCase: "Indoor cat wandered outside",
   },
   {
-    name: "Kabir Malhotra",
-    location: "Panchkula, Haryana",
-    vehicle: "Car owner",
-    text: "My car headlight was left on all night. A neighbour scanned my PingME tag at 11pm and sent an alert. Saved my battery. That one incident alone was worth every rupee.",
-    rating: 5,
-    tag: "Emergency alert",
-    initials: "KM",
-    avatarColor: "#451A03",
+    id: 9,
+    name: "Vikram Rathi",
+    location: "Jaipur",
+    avatar: "VR",
+    stars: 5,
+    tag: "NFC Card",
+    text: "Freelancer hoon — client meetings mein pehle hesitate karta tha number dene mein. Ab NFC card hai, safe bhi aur professional bhi. Game changer for me.",
+    useCase: "Freelancer client meetings",
   },
   {
-    name: "Ritika Joshi",
-    location: "Baner, Pune",
-    vehicle: "Two-wheeler owner",
-    text: "Setup liya 10 minutes mein. Sticker ek dum clean lagta hai bike pe. Log impress ho jaate hain when they scan it — already three of my colleagues got one too.",
-    rating: 5,
-    tag: "Quick setup",
-    initials: "RJ",
-    avatarColor: "#92400E",
-  },
-  {
-    name: "Vijay Rangan",
-    location: "Anna Nagar, Chennai",
-    vehicle: "Car owner",
-    text: "I drive a white Alto. You'd think nobody would notice. But parking trouble is real even for small cars. Now I just hang the card and relax. No fights, no drama.",
-    rating: 5,
-    tag: "Stress-free",
-    initials: "VR",
-    avatarColor: "#78350F",
-  },
-  {
-    name: "Neha Bansal",
-    location: "Zirakpur, Punjab",
-    vehicle: "SUV owner",
-    text: "Maternity leave pe hoon, bahar nahi ja sakti jaldi. Someone pinged that I was blocking their driveway. Moved it in 90 seconds from inside the house. Parents too should get this.",
-    rating: 5,
-    tag: "New parent must",
-    initials: "NB",
-    avatarColor: "#451A03",
+    id: 10,
+    name: "Smitha Reddy",
+    location: "Vizag",
+    avatar: "SR",
+    stars: 5,
+    tag: "Vehicle Tag",
+    text: "Hospital parking mein emergency thi aur meri car block thi. PingME se instant ping aayi aur unka car 2 minutes mein hat gaya. Critical situation mein worked perfectly!",
+    useCase: "Hospital emergency parking",
   },
 ];
 
-const half = Math.ceil(reviews.length / 2);
-const row1 = reviews.slice(0, half);
-const row2 = reviews.slice(half);
-
-// ─── Sub-components ──────────────────────────────────────────────────────────
-
-const StarRating = ({ rating }: { rating: number }) => (
-  <div style={{ display: "flex", gap: "3px" }}>
-    {Array.from({ length: 5 }).map((_, i) => (
-      <svg
-        key={i}
-        width="13"
-        height="13"
-        viewBox="0 0 24 24"
-        fill={i < rating ? "#F4B400" : "none"}
-        stroke={i < rating ? "#F4B400" : "#D1B87A"}
-        strokeWidth="1.5"
-      >
-        <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
-      </svg>
+/* ----------------------------------------------------------------
+   STAR RATING
+---------------------------------------------------------------- */
+const StarRow: React.FC<{ count: number }> = ({ count }) => (
+  <div className="flex items-center gap-0.5">
+    {Array.from({ length: count }).map((_, i) => (
+      <Star key={i} className="h-3 w-3 fill-amber-400 text-amber-400" />
     ))}
   </div>
 );
 
-const Avatar = ({ initials, color }: { initials: string; color: string }) => (
+/* ----------------------------------------------------------------
+   REVIEW CARD
+---------------------------------------------------------------- */
+const ReviewCard: React.FC<{ review: Review; style?: React.CSSProperties }> = ({
+  review,
+  style,
+}) => (
   <div
+    className="relative flex-shrink-0 w-[280px] sm:w-[300px] rounded-3xl bg-white/90 p-5 flex flex-col gap-3"
     style={{
-      width: "38px",
-      height: "38px",
-      borderRadius: "50%",
-      backgroundColor: color,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      flexShrink: 0,
-      fontSize: "12px",
-      fontWeight: 700,
-      color: "#FEF3C7",
-      letterSpacing: "0.04em",
-      fontFamily: "'Poppins', sans-serif",
-      border: "2px solid rgba(244,180,0,0.25)",
+      boxShadow: "0 4px 28px rgba(81,60,9,0.09), 0 1px 4px rgba(0,0,0,0.04)",
+      border: "1px solid rgba(245,166,35,0.13)",
+      backdropFilter: "blur(12px)",
+      ...style,
     }}
   >
-    {initials}
-  </div>
-);
-
-// PingME-branded quote icon using the brand yellow
-const QuoteIcon = () => (
-  <svg
-    width="24"
-    height="18"
-    viewBox="0 0 24 18"
-    fill="none"
-    style={{ flexShrink: 0 }}
-  >
-    <path
-      d="M0 18V11.1C0 9.3.405 7.575 1.215 5.925 2.025 4.275 3.195 2.85 4.725 1.65 6.285.45 8.145.03 10.305 0l.63 1.8C9.135 2.28 7.8 3.12 6.9 4.32c-.96 1.17-1.44 2.52-1.44 4.05H8.1V18H0zM13.5 18V11.1c0-1.8.405-3.525 1.215-5.175.81-1.65 1.98-3.075 3.51-4.275C19.785.45 21.645.03 23.805 0l.63 1.8c-2.07.48-3.435 1.32-4.335 2.52-.96 1.17-1.44 2.52-1.44 4.05H21.6V18H13.5z"
-      fill="#F4B400"
-      opacity="0.25"
-    />
-  </svg>
-);
-
-// Hazard-stripe accent bar — matches brand's hazard-stripe pattern
-const HazardAccent = () => (
-  <div
-    style={{
-      width: "36px",
-      height: "4px",
-      borderRadius: "2px",
-      background:
-        "repeating-linear-gradient(-45deg, #F4B400, #F4B400 4px, #1C1007 4px, #1C1007 8px)",
-    }}
-  />
-);
-
-const ReviewCard = ({ review }: { review: Review }) => (
-  <article
-    className="pm-review-card"
-    style={{
-      flexShrink: 0,
-      width: "320px",
-      borderRadius: "16px",
-      background: "hsl(var(--card))",
-      border: "1.5px solid hsl(var(--border))",
-      padding: "22px 22px 18px",
-      display: "flex",
-      flexDirection: "column",
-      gap: "14px",
-      cursor: "default",
-      boxShadow: "0 2px 16px rgba(81,60,9,0.07)",
-      transition:
-        "transform 0.32s cubic-bezier(0.22,1,0.36,1), box-shadow 0.32s ease",
-      position: "relative",
-      overflow: "hidden",
-    }}
-  >
-    {/* Subtle yellow top-edge accent */}
+    {/* Quote icon */}
     <div
-      style={{
-        position: "absolute",
-        top: 0,
-        left: "24px",
-        right: "24px",
-        height: "2px",
-        borderRadius: "0 0 2px 2px",
-        background:
-          "linear-gradient(90deg, transparent, #F4B400 30%, #F4B400 70%, transparent)",
-        opacity: 0.5,
-      }}
-    />
-
-    {/* Top row: quote icon + stars */}
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "flex-start",
-      }}
+      className="absolute top-4 right-4 flex h-7 w-7 items-center justify-center rounded-xl opacity-25"
+      style={{ background: "rgba(245,166,35,0.12)" }}
     >
-      <QuoteIcon />
-      <StarRating rating={review.rating} />
+      <Quote className="h-3.5 w-3.5 text-amber-600" />
+    </div>
+
+    {/* Header */}
+    <div className="flex items-center gap-3">
+      <div
+        className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl text-xs font-black text-white"
+        style={{
+          background: `linear-gradient(135deg, ${GOLD} 0%, ${GOLD_MID} 100%)`,
+          boxShadow: `0 4px 12px rgba(200,130,10,0.28)`,
+        }}
+      >
+        {review.avatar}
+      </div>
+      <div className="min-w-0">
+        <p className="text-sm font-extrabold text-foreground leading-tight truncate">{review.name}</p>
+        <p className="text-[11px] text-muted-foreground truncate">{review.location}</p>
+      </div>
+    </div>
+
+    {/* Stars + tag */}
+    <div className="flex items-center justify-between">
+      <StarRow count={review.stars} />
+      <span
+        className="rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide"
+        style={{
+          background: "rgba(245,166,35,0.10)",
+          color: GOLD,
+          border: "1px solid rgba(200,130,10,0.18)",
+        }}
+      >
+        {review.tag}
+      </span>
     </div>
 
     {/* Review text */}
     <p
-      style={{
-        fontSize: "13.5px",
-        lineHeight: "1.8",
-        color: "hsl(var(--foreground))",
-        margin: 0,
-        flex: 1,
-        fontFamily: "'Poppins', sans-serif",
-        fontWeight: 400,
-        letterSpacing: "-0.003em",
-      }}
+      className="text-xs leading-6 text-muted-foreground"
+      style={{ display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }}
     >
       {review.text}
     </p>
 
-    {/* Tag pill — yellow brand colour */}
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: "5px",
-        padding: "3px 10px 3px 8px",
-        borderRadius: "99px",
-        background: "hsl(var(--ping-card))",
-        color: "hsl(var(--ping-brown))",
-        border: "1px solid hsl(var(--border))",
-        fontSize: "11px",
-        fontWeight: 600,
-        letterSpacing: "0.015em",
-        alignSelf: "flex-start",
-        fontFamily: "'Poppins', sans-serif",
-      }}
-    >
-      <span
-        style={{
-          width: "6px",
-          height: "6px",
-          borderRadius: "50%",
-          background: "#F4B400",
-          display: "inline-block",
-          flexShrink: 0,
-        }}
-      />
-      {review.tag}
-    </span>
-
-    {/* Footer */}
+    {/* Use-case badge */}
     <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "10px",
-        paddingTop: "12px",
-        borderTop: "1px solid hsl(var(--border))",
-      }}
+      className="mt-auto rounded-2xl px-3 py-2 text-[10px] font-semibold text-muted-foreground"
+      style={{ background: "rgba(0,0,0,0.03)", border: "1px solid rgba(0,0,0,0.05)" }}
     >
-      <Avatar initials={review.initials} color={review.avatarColor} />
-      <div>
-        <p
-          style={{
-            margin: 0,
-            fontSize: "13px",
-            fontWeight: 700,
-            color: "hsl(var(--foreground))",
-            fontFamily: "'Poppins', sans-serif",
-            letterSpacing: "-0.01em",
-          }}
-        >
-          {review.name}
-        </p>
-        <p
-          style={{
-            margin: 0,
-            fontSize: "11px",
-            color: "hsl(var(--muted-foreground))",
-            fontFamily: "'Poppins', sans-serif",
-          }}
-        >
-          {review.location} · {review.vehicle}
-        </p>
-      </div>
+      📍 {review.useCase}
     </div>
-  </article>
+  </div>
 );
 
-// ─── Marquee hook ─────────────────────────────────────────────────────────────
-
-const useMarquee = (
-  rowRef: React.RefObject<HTMLDivElement>,
-  direction: "left" | "right",
-  speed: number
-) => {
-  useEffect(() => {
-    const el = rowRef.current;
-    if (!el) return;
-
-    let pos = direction === "right" ? -(el.scrollWidth / 3) : 0;
-    let animId: number;
-    let paused = false;
-
-    const step = () => {
-      if (!paused) {
-        const delta = direction === "left" ? -speed : speed;
-        pos += delta / 60;
-        const third = el.scrollWidth / 3;
-        if (direction === "left" && pos <= -third) pos += third;
-        if (direction === "right" && pos >= 0) pos -= third;
-        el.style.transform = `translateX(${pos}px)`;
-      }
-      animId = requestAnimationFrame(step);
-    };
-
-    animId = requestAnimationFrame(step);
-
-    const pause = () => { paused = true; };
-    const resume = () => { paused = false; };
-
-    el.parentElement?.addEventListener("mouseenter", pause);
-    el.parentElement?.addEventListener("mouseleave", resume);
-
-    return () => {
-      cancelAnimationFrame(animId);
-      el.parentElement?.removeEventListener("mouseenter", pause);
-      el.parentElement?.removeEventListener("mouseleave", resume);
-    };
-  }, [rowRef, direction, speed]);
+/* ----------------------------------------------------------------
+   MARQUEE TRACK (desktop)
+   Uses RAF for buttery smooth, jitter-free animation.
+---------------------------------------------------------------- */
+type MarqueeTrackProps = {
+  reviews: Review[];
+  direction?: "left" | "right";
+  speed?: number; /** px/sec */
 };
 
-const MarqueeRow = ({
-  items,
+const MarqueeTrack: React.FC<MarqueeTrackProps> = ({
+  reviews,
   direction = "left",
-  speed = 40,
-}: {
-  items: Review[];
-  direction?: "left" | "right";
-  speed?: number;
+  speed = 38,
 }) => {
-  const rowRef = useRef<HTMLDivElement>(null);
-  useMarquee(rowRef, direction, speed);
-  const looped = [...items, ...items, ...items];
+  const prefersReducedMotion = useReducedMotion();
+  const trackRef = useRef<HTMLDivElement>(null);
+  const xRef    = useRef(0);
+  const rafRef  = useRef<number>(0);
+  const lastRef = useRef<number>(0);
+  const pausedRef = useRef(false);
+
+  // Tripled so seamless loop is always possible regardless of card width
+  const items = [...reviews, ...reviews, ...reviews];
+
+  const animate = useCallback((ts: number) => {
+    if (!trackRef.current) return;
+    const dt = lastRef.current ? Math.min(ts - lastRef.current, 40) : 0;
+    lastRef.current = ts;
+
+    if (!pausedRef.current && !prefersReducedMotion) {
+      const sign = direction === "left" ? -1 : 1;
+      xRef.current += sign * speed * (dt / 1000);
+
+      // Reset when one full set has scrolled through
+      const singleWidth = trackRef.current.scrollWidth / 3;
+      if (direction === "left" && xRef.current <= -singleWidth) {
+        xRef.current += singleWidth;
+      } else if (direction === "right" && xRef.current >= 0) {
+        xRef.current -= singleWidth;
+      }
+
+      trackRef.current.style.transform = `translateX(${xRef.current}px)`;
+    }
+
+    rafRef.current = requestAnimationFrame(animate);
+  }, [direction, speed, prefersReducedMotion]);
+
+  useEffect(() => {
+    // Seed rightward track offset so it starts mid-way
+    if (direction === "right" && trackRef.current) {
+      const singleWidth = trackRef.current.scrollWidth / 3;
+      xRef.current = -singleWidth / 2;
+    }
+    rafRef.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [animate, direction]);
 
   return (
-    <div style={{ overflow: "hidden", width: "100%", padding: "4px 0" }} aria-hidden="true">
-      <div
-        ref={rowRef}
-        style={{ display: "flex", gap: "16px", width: "max-content", willChange: "transform" }}
-      >
-        {looped.map((review, idx) => (
-          <ReviewCard key={`${review.name}-${idx}`} review={review} />
+    <div
+      className="overflow-hidden"
+      onMouseEnter={() => { pausedRef.current = true; }}
+      onMouseLeave={() => { pausedRef.current = false; }}
+      onTouchStart={() => { pausedRef.current = true; }}
+      onTouchEnd={() => { pausedRef.current = false; }}
+    >
+      <div ref={trackRef} className="flex gap-4 will-change-transform">
+        {items.map((r, i) => (
+          <ReviewCard key={`${r.id}-${i}`} review={r} />
         ))}
       </div>
     </div>
   );
 };
 
-// ─── Main component ───────────────────────────────────────────────────────────
+/* ----------------------------------------------------------------
+   MOBILE SWIPE SLIDER
+   Touch drag + pagination dots + arrow buttons
+---------------------------------------------------------------- */
+const MobileSlider: React.FC<{ reviews: Review[] }> = ({ reviews }) => {
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [dragStart, setDragStart] = useState<number | null>(null);
+  const total = reviews.length;
 
-const LandingReviews = () => {
+  const goTo = (idx: number) => setActiveIdx((idx + total) % total);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setDragStart(e.touches[0].clientX);
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (dragStart === null) return;
+    const delta = e.changedTouches[0].clientX - dragStart;
+    if (Math.abs(delta) > 40) goTo(delta < 0 ? activeIdx + 1 : activeIdx - 1);
+    setDragStart(null);
+  };
+
   return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
-
-        .pm-reviews-section {
-          position: relative;
-          overflow: hidden;
-          padding: 88px 0 72px;
-          /* matches body background from global CSS */
-          background:
-            radial-gradient(circle at 15% 10%, rgba(255,231,170,0.35), transparent 50%),
-            radial-gradient(circle at 85% 5%, rgba(255,248,226,0.4), transparent 45%),
-            hsl(0 0% 100%);
-        }
-
-        .dark .pm-reviews-section {
-          background: hsl(0 0% 5%);
-        }
-
-        /* Fade overlays use cream background to match site */
-        .pm-fade-left {
-          position: absolute; left: 0; top: 0; bottom: 0; width: 140px;
-          background: linear-gradient(to right,
-            hsl(42 100% 96%),
-            transparent
-          );
-          z-index: 2; pointer-events: none;
-        }
-        .pm-fade-right {
-          position: absolute; right: 0; top: 0; bottom: 0; width: 140px;
-          background: linear-gradient(to left,
-            hsl(42 100% 96%),
-            transparent
-          );
-          z-index: 2; pointer-events: none;
-        }
-
-        .dark .pm-fade-left  { background: linear-gradient(to right,  hsl(0 0% 5%), transparent); }
-        .dark .pm-fade-right { background: linear-gradient(to left, hsl(0 0% 5%), transparent); }
-
-        /* Card hover */
-        .pm-review-card:hover {
-          transform: translateY(-6px);
-          box-shadow: 0 18px 44px rgba(81,60,9,0.14) !important;
-        }
-        .dark .pm-review-card:hover {
-          box-shadow: 0 18px 44px rgba(0,0,0,0.5) !important;
-        }
-
-        /* Rating badge */
-        .pm-rating-badge {
-          display: inline-flex; align-items: center; gap: 6px;
-          padding: 6px 16px; border-radius: 99px;
-          background: hsl(45 100% 92%);
-          color: hsl(30 75% 26%);
-          font-size: 13px; font-weight: 700;
-          font-family: 'Poppins', sans-serif;
-          letter-spacing: -0.01em;
-          border: 1.5px solid hsl(45 100% 80%);
-        }
-        .dark .pm-rating-badge {
-          background: #422006; color: #FDE68A;
-          border-color: #92400E;
-        }
-
-        /* CTA button — matching .alert-button style */
-        .pm-cta-btn {
-          display: inline-flex; align-items: center; gap: 8px;
-          padding: 12px 28px; border-radius: 12px;
-          background: hsl(45 100% 48%);
-          color: hsl(40 76% 7%);
-          font-size: 14px; font-weight: 700;
-          font-family: 'Poppins', sans-serif;
-          letter-spacing: -0.01em;
-          text-decoration: none;
-          border: none; cursor: pointer;
-          box-shadow: 0 4px 16px rgba(244,180,0,0.35);
-          transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        .pm-cta-btn:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 24px rgba(244,180,0,0.45);
-        }
-
-        /* Hazard stripe decorative bar */
-        .pm-hazard-bar {
-          height: 5px; border-radius: 3px; width: 48px;
-          background: repeating-linear-gradient(
-            -45deg,
-            hsl(45 100% 48%) 0px, hsl(45 100% 48%) 5px,
-            hsl(40 76% 7%) 5px, hsl(40 76% 7%) 10px
-          );
-        }
-      `}</style>
-
-      <section className="pm-reviews-section" aria-label="Customer reviews">
-
-        {/* ── Section Header ── */}
-        <div
-          style={{
-            textAlign: "center",
-            padding: "0 24px 52px",
-            maxWidth: "600px",
-            margin: "0 auto",
-          }}
-        >
-          {/* Eyebrow */}
-          <span
-            style={{
-              display: "inline-block",
-              fontSize: "11px",
-              fontWeight: 700,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
-              color: "hsl(var(--ping-brown))",
-              marginBottom: "16px",
-              fontFamily: "'Poppins', sans-serif",
-            }}
+    <div className="relative w-full">
+      {/* Cards */}
+      <div
+        className="relative w-full overflow-hidden"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        style={{ touchAction: "pan-y" }}
+      >
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={activeIdx}
+            initial={{ opacity: 0, x: 48, scale: 0.96 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: -48, scale: 0.96 }}
+            transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+            className="px-4"
           >
-            Real stories
-          </span>
-
-          {/* Heading */}
-          <h2
-            style={{
-              fontSize: "clamp(26px, 4vw, 40px)",
-              fontWeight: 800,
-              lineHeight: 1.15,
-              letterSpacing: "-0.035em",
-              color: "hsl(var(--foreground))",
-              margin: "0 0 8px",
-              fontFamily: "'Poppins', sans-serif",
-            }}
-          >
-            From parking lots to{" "}
-            <span
+            {/* Full-width card on mobile */}
+            <div
+              className="relative rounded-3xl bg-white/90 p-5 flex flex-col gap-3 w-full"
               style={{
-                color: "hsl(var(--primary))",
-                position: "relative",
-                display: "inline-block",
+                boxShadow: "0 4px 28px rgba(81,60,9,0.09), 0 1px 4px rgba(0,0,0,0.04)",
+                border: "1px solid rgba(245,166,35,0.13)",
               }}
             >
-              peace of mind
-              {/* Yellow underline highlight matching .highlight-underline::after */}
-              <span
-                style={{
-                  position: "absolute",
-                  bottom: "4px",
-                  left: 0,
-                  right: 0,
-                  height: "12px",
-                  background:
-                    "linear-gradient(90deg, hsl(45 100% 48%), hsl(45 100% 54%))",
-                  opacity: 0.3,
-                  zIndex: -1,
-                  borderRadius: "4px",
-                }}
-              />
-            </span>
-          </h2>
+              {/* Quote */}
+              <div
+                className="absolute top-4 right-4 flex h-7 w-7 items-center justify-center rounded-xl opacity-25"
+                style={{ background: "rgba(245,166,35,0.12)" }}
+              >
+                <Quote className="h-3.5 w-3.5 text-amber-600" />
+              </div>
 
-          {/* Hazard accent bar */}
-          <div style={{ display: "flex", justifyContent: "center", margin: "16px 0" }}>
-            <div className="pm-hazard-bar" />
-          </div>
+              {/* Header */}
+              <div className="flex items-center gap-3">
+                <div
+                  className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl text-sm font-black text-white"
+                  style={{
+                    background: `linear-gradient(135deg, ${GOLD} 0%, ${GOLD_MID} 100%)`,
+                    boxShadow: `0 4px 12px rgba(200,130,10,0.28)`,
+                  }}
+                >
+                  {reviews[activeIdx].avatar}
+                </div>
+                <div>
+                  <p className="text-base font-extrabold text-foreground leading-tight">
+                    {reviews[activeIdx].name}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{reviews[activeIdx].location}</p>
+                </div>
+              </div>
 
-          <p
-            style={{
-              fontSize: "15px",
-              lineHeight: "1.75",
-              color: "hsl(var(--muted-foreground))",
-              margin: "0 0 24px",
-              fontFamily: "'Poppins', sans-serif",
-              fontWeight: 400,
-            }}
-          >
-            Vehicle owners across India — apartments, markets, offices — tell it in their own words.
-          </p>
+              {/* Stars + tag */}
+              <div className="flex items-center justify-between">
+                <StarRow count={reviews[activeIdx].stars} />
+                <span
+                  className="rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide"
+                  style={{
+                    background: "rgba(245,166,35,0.10)",
+                    color: GOLD,
+                    border: "1px solid rgba(200,130,10,0.18)",
+                  }}
+                >
+                  {reviews[activeIdx].tag}
+                </span>
+              </div>
 
-          {/* Rating badge */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", flexWrap: "wrap" }}>
-            <div className="pm-rating-badge">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="#F4B400" stroke="#F4B400" strokeWidth="1.5">
-                <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
-              </svg>
-              4.9 average · 1,200+ happy customers
+              {/* Text — full on mobile (no clamp) */}
+              <p className="text-sm leading-7 text-muted-foreground">{reviews[activeIdx].text}</p>
+
+              {/* Use case */}
+              <div
+                className="rounded-2xl px-3 py-2 text-[11px] font-semibold text-muted-foreground"
+                style={{ background: "rgba(0,0,0,0.03)", border: "1px solid rgba(0,0,0,0.05)" }}
+              >
+                📍 {reviews[activeIdx].useCase}
+              </div>
             </div>
+          </motion.div>
+        </AnimatePresence>
+      </div>
 
-            <a href="/products" className="pm-cta-btn">
-              Get Your Tag
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M5 12h14M12 5l7 7-7 7" />
-              </svg>
-            </a>
-          </div>
+      {/* Arrow buttons */}
+      <div className="flex items-center justify-between px-4 mt-5">
+        <button
+          onClick={() => goTo(activeIdx - 1)}
+          className="flex h-10 w-10 items-center justify-center rounded-2xl border border-border/40 bg-white/80 shadow-sm active:scale-95 transition-transform"
+          aria-label="Previous review"
+        >
+          <ChevronLeft className="h-4 w-4 text-amber-600" />
+        </button>
+
+        {/* Pagination dots */}
+        <div className="flex items-center gap-1.5">
+          {reviews.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => goTo(i)}
+              aria-label={`Go to review ${i + 1}`}
+              className="rounded-full transition-all duration-300"
+              style={{
+                width: i === activeIdx ? 20 : 6,
+                height: 6,
+                background: i === activeIdx ? GOLD : "rgba(200,130,10,0.25)",
+              }}
+            />
+          ))}
         </div>
 
-        {/* ── Marquee rows ── */}
-        <div
+        <button
+          onClick={() => goTo(activeIdx + 1)}
+          className="flex h-10 w-10 items-center justify-center rounded-2xl border border-border/40 bg-white/80 shadow-sm active:scale-95 transition-transform"
+          aria-label="Next review"
+        >
+          <ChevronRight className="h-4 w-4 text-amber-600" />
+        </button>
+      </div>
+
+      {/* Counter */}
+      <p className="text-center mt-3 text-xs font-bold text-muted-foreground">
+        {activeIdx + 1} / {total}
+      </p>
+    </div>
+  );
+};
+
+/* ----------------------------------------------------------------
+   SUMMARY ROW — aggregate rating + pill stats
+---------------------------------------------------------------- */
+const SummaryRow: React.FC = () => (
+  <div
+    className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 rounded-3xl px-6 py-5 sm:px-8 mx-auto max-w-2xl"
+    style={{
+      background: "rgba(255,255,255,0.72)",
+      border: "1px solid rgba(245,166,35,0.14)",
+      boxShadow: "0 4px 24px rgba(81,60,9,0.07)",
+      backdropFilter: "blur(14px)",
+    }}
+  >
+    {/* Big rating */}
+    <div className="flex flex-col items-center sm:items-start sm:border-r sm:border-amber-200/40 sm:pr-6">
+      <span
+        className="text-5xl font-black leading-none"
+        style={{
+          background: `linear-gradient(135deg, ${GOLD} 0%, ${GOLD_MID} 100%)`,
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+          backgroundClip: "text",
+        }}
+      >
+        5.0
+      </span>
+      <StarRow count={5} />
+      <p className="text-[11px] font-semibold text-muted-foreground mt-1">Average rating</p>
+    </div>
+
+    {/* Pills */}
+    <div className="flex flex-wrap justify-center sm:justify-start gap-2 flex-1">
+      {[
+        { label: "Privacy loved", emoji: "🔒" },
+        { label: "Zero-app scan", emoji: "📲" },
+        { label: "Fast response", emoji: "⚡" },
+        { label: "Made in India", emoji: "🇮🇳" },
+        { label: "10+ cities", emoji: "📍" },
+        { label: "100% recommended", emoji: "✅" },
+      ].map((p) => (
+        <span
+          key={p.label}
+          className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold"
           style={{
-            position: "relative",
-            display: "flex",
-            flexDirection: "column",
-            gap: "14px",
+            background: "rgba(245,166,35,0.09)",
+            color: "rgba(120,75,10,0.85)",
+            border: "1px solid rgba(200,130,10,0.14)",
           }}
         >
-          <div className="pm-fade-left" />
-          <div className="pm-fade-right" />
+          <span>{p.emoji}</span>
+          {p.label}
+        </span>
+      ))}
+    </div>
+  </div>
+);
 
-          <MarqueeRow items={row1} direction="left" speed={38} />
-          <MarqueeRow items={row2} direction="right" speed={43} />
-        </div>
+/* ----------------------------------------------------------------
+   SECTION EYEBROW (local, matches LandingHero)
+---------------------------------------------------------------- */
+const Eyebrow: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 12 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true }}
+    transition={{ duration: 0.5 }}
+    className="flex items-center justify-center gap-2.5"
+  >
+    <div
+      className="h-px w-8"
+      style={{ background: `linear-gradient(90deg, transparent, ${GOLD})` }}
+    />
+    <span className="text-xs font-bold uppercase tracking-[0.26em]" style={{ color: GOLD }}>
+      {children}
+    </span>
+    <div
+      className="h-px w-8"
+      style={{ background: `linear-gradient(90deg, ${GOLD}, transparent)` }}
+    />
+  </motion.div>
+);
 
-      </section>
-    </>
+/* ----------------------------------------------------------------
+   MAIN EXPORT
+---------------------------------------------------------------- */
+const LandingReviews: React.FC = () => {
+  // Split into two tracks for desktop marquee
+  const half  = Math.ceil(REVIEWS.length / 2);
+  const row1  = REVIEWS.slice(0, half);
+  const row2  = REVIEWS.slice(half);
+
+  return (
+    <section className="space-y-8 overflow-hidden">
+
+      {/* Header */}
+      <div className="max-w-2xl mx-auto text-center space-y-3 px-4">
+        <Eyebrow>Real Reviews</Eyebrow>
+
+        <motion.h2
+          initial={{ opacity: 0, y: 18 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.58, delay: 0.06 }}
+          className="text-3xl font-bold tracking-tight text-foreground md:text-4xl"
+        >
+          Loved across India.
+        </motion.h2>
+
+        <motion.p
+          initial={{ opacity: 0, y: 12 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.14 }}
+          className="text-base leading-7 text-muted-foreground"
+        >
+          From parking headaches to lost pets — real stories from real people.
+        </motion.p>
+      </div>
+
+      {/* Summary row */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5, delay: 0.18 }}
+        className="px-4"
+      >
+        <SummaryRow />
+      </motion.div>
+
+      {/* ── MOBILE: swipeable slider ── */}
+      <div className="block md:hidden">
+        <MobileSlider reviews={REVIEWS} />
+      </div>
+
+      {/* ── TABLET / DESKTOP: dual marquee tracks ── */}
+      {/*
+          Left/right fade masks via CSS gradient overlay.
+          Each row scrolls in opposite directions.
+      */}
+      <div
+        className="hidden md:flex flex-col gap-4"
+        style={{
+          maskImage:
+            "linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%)",
+          WebkitMaskImage:
+            "linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%)",
+        }}
+      >
+        <MarqueeTrack reviews={row1} direction="left"  speed={36} />
+        <MarqueeTrack reviews={row2} direction="right" speed={30} />
+      </div>
+
+      {/* Bottom trust note */}
+      <motion.p
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+        className="text-center text-xs font-semibold text-muted-foreground px-4"
+      >
+        All reviews from verified PingME tag owners · Updated regularly
+      </motion.p>
+    </section>
   );
 };
 
