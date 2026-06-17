@@ -12,7 +12,11 @@ import {
   updateEmail,
   reauthenticateWithCredential,
   EmailAuthProvider,
+  fetchSignInMethodsForEmail,
+  linkWithCredential,
+  signInWithCredential,
   type User,
+  type AuthCredential,
 } from "./firebase";
 
 type AuthServiceError = Error & {
@@ -45,12 +49,39 @@ export async function signInWithEmail(email: string, password: string) {
   return signInWithEmailAndPassword(auth, email, password);
 }
 
-// Sign in with Google
+// Sign in with Google.
+// If the Google email already has an email/password account (e.g. imported users),
+// we link the Google credential to that existing account so the UID stays the same
+// and the user's NFC orders remain visible regardless of which method they use.
 export async function signInWithGoogle() {
   try {
     return await signInWithPopup(auth, googleProvider);
   } catch (error: unknown) {
     const code = (error as AuthServiceError)?.code;
+
+    // Account already exists with email/password — link Google to it
+    if (code === "auth/account-exists-with-different-credential") {
+      const credential = (error as AuthServiceError & { credential?: AuthCredential })?.credential;
+      const email = (error as AuthServiceError & { customData?: { email?: string } })?.customData?.email;
+
+      if (credential && email) {
+        // Find which sign-in methods exist for this email
+        const methods = await fetchSignInMethodsForEmail(auth, email);
+
+        if (methods.includes("password")) {
+          // Return a special error that the UI can catch to prompt for password,
+          // then call linkGoogleToEmailAccount to complete the linking.
+          const linkError = new Error(
+            "This email is registered with a password. Enter your password to link your Google account."
+          ) as Error & { code: string; credential: AuthCredential; email: string };
+          linkError.code = "auth/needs-password-for-linking";
+          linkError.credential = credential;
+          linkError.email = email;
+          throw linkError;
+        }
+      }
+    }
+
     if (
       code === "auth/popup-blocked" ||
       code === "auth/operation-not-supported-in-this-environment"
@@ -60,6 +91,21 @@ export async function signInWithGoogle() {
     }
     throw error;
   }
+}
+
+// Call this after collecting the user's password when Google sign-in hits
+// auth/needs-password-for-linking. Signs in with email+password then links
+// the Google credential, so both methods work under the same UID going forward.
+export async function linkGoogleToEmailAccount(
+  email: string,
+  password: string,
+  googleCredential: AuthCredential
+) {
+  // Sign in with the existing email/password account to get its UID
+  const userCredential = await signInWithEmailAndPassword(auth, email, password);
+  // Link the Google provider so future Google sign-ins resolve to this same UID
+  await linkWithCredential(userCredential.user, googleCredential);
+  return userCredential;
 }
 
 // Sign out
@@ -125,6 +171,8 @@ export function getAuthErrorMessage(errorCode: string): string {
       return "Google sign-in popup is not supported in this browser context. Open the site in Chrome/Safari and try again.";
     case "auth/google-account-not-registered":
       return "You have not signed up with this Google account yet. Please complete signup first.";
+    case "auth/needs-password-for-linking":
+      return "This email is registered with a password. Enter your password to link your Google account.";
     case "auth/network-request-failed":
       return "Network error. Please check your connection.";
     default:

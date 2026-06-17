@@ -14,7 +14,11 @@ import {
   updateEmail,
   reauthenticateWithCredential,
   EmailAuthProvider,
+  fetchSignInMethodsForEmail,
+  linkWithCredential,
+  signInWithCredential,
   type User,
+  type AuthCredential,
 } from "firebase/auth";
 import { initializeFirestore, persistentLocalCache } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
@@ -125,7 +129,11 @@ export {
   updateEmail,
   reauthenticateWithCredential,
   EmailAuthProvider,
+  fetchSignInMethodsForEmail,
+  linkWithCredential,
+  signInWithCredential,
   type User,
+  type AuthCredential,
 };
 
 export default app;

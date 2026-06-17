@@ -10,6 +10,7 @@ import {
   signUpWithEmail,
   signInWithEmail,
   signInWithGoogle,
+  linkGoogleToEmailAccount,
   logOut,
   sendPasswordReset,
   resendVerificationEmail,
@@ -25,6 +26,7 @@ import {
   userProfileExists,
   syncEmailVerification,
 } from "@/lib/userService";
+import type { AuthCredential } from "@/lib/firebase";
 import type { UserProfile, DeliveryAddress } from "@/types/user";
 
 const extractErrorCode = (error: unknown): string => {
@@ -41,6 +43,9 @@ interface AuthContextType {
   profile: UserProfile | null;
   loading: boolean;
   error: string | null;
+  // When Google sign-in hits an existing email/password account, this holds
+  // the pending Google credential + email so the UI can prompt for the password.
+  pendingGoogleLink: { credential: AuthCredential; email: string } | null;
   signUp: (
     email: string,
     password: string,
@@ -49,6 +54,8 @@ interface AuthContextType {
   ) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signInGoogle: (requireExistingProfile?: boolean) => Promise<void>;
+  // Complete Google account linking after the user supplies their password
+  completeLinkWithPassword: (password: string) => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   resendVerification: () => Promise<void>;
@@ -68,6 +75,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pendingGoogleLink, setPendingGoogleLink] = useState<{
+    credential: AuthCredential;
+    email: string;
+  } | null>(null);
 
   // Listen for auth state changes
   useEffect(() => {
@@ -157,11 +168,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch (err: unknown) {
       const code = extractErrorCode(err);
+
+      // The email already has an email/password account (imported users).
+      // Store the pending credential and surface the linking prompt to the UI.
+      if (code === "auth/needs-password-for-linking") {
+        const linkErr = err as Error & {
+          credential: AuthCredential;
+          email: string;
+        };
+        setPendingGoogleLink({
+          credential: linkErr.credential,
+          email: linkErr.email,
+        });
+        const message = getAuthErrorMessage(code);
+        setError(message);
+        const authError = new Error(message) as Error & { code?: string };
+        authError.code = code;
+        throw authError;
+      }
+
       const message = getAuthErrorMessage(code);
       setError(message);
       const authError = new Error(message) as Error & { code?: string };
       authError.code = code;
       throw authError;
+    }
+  };
+
+  // Called from the UI when the user enters their password to complete Google linking.
+  const completeLinkWithPassword = async (password: string) => {
+    if (!pendingGoogleLink) {
+      throw new Error("No pending Google link. Please try signing in with Google again.");
+    }
+    try {
+      setError(null);
+      await linkGoogleToEmailAccount(
+        pendingGoogleLink.email,
+        password,
+        pendingGoogleLink.credential
+      );
+      setPendingGoogleLink(null);
+      // onAuthStateChanged will fire and update user/profile automatically.
+    } catch (err: unknown) {
+      const message = getAuthErrorMessage(extractErrorCode(err));
+      setError(message);
+      throw new Error(message);
     }
   };
 
@@ -273,9 +324,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         profile,
         loading,
         error,
+        pendingGoogleLink,
         signUp,
         signIn,
         signInGoogle,
+        completeLinkWithPassword,
         logout,
         resetPassword,
         resendVerification,
