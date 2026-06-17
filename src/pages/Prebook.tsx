@@ -1088,30 +1088,6 @@ function NfcProfileEditor({
                     onChange={set("name")}
                   />
                 </Field>
-
-                <Field label="Username" required>
-                  <div className="username-input-wrap">
-                    <span className="username-prefix">@</span>
-                    <input
-                      className="field-input"
-                      placeholder="yourname"
-                      value={profile.username}
-                      onChange={handleUsernameChange}
-                    />
-                    <div className="username-status-icon">
-                      {usernameStatus?.[lineKey] === "checking" && <Loader2 className="w-4 h-4 animate-spin text-amber-500" />}
-                      {usernameStatus?.[lineKey] === "available" && <Check className="w-4 h-4 text-emerald-500" />}
-                      {usernameStatus?.[lineKey] === "taken" && <X className="w-4 h-4 text-red-500" />}
-                    </div>
-                  </div>
-                  {usernameStatus?.[lineKey] === "available" && (
-                    <div className="field-hint" style={{ color: "var(--success)" }}>✓ Username is available</div>
-                  )}
-                  {usernameStatus?.[lineKey] === "taken" && (
-                    <div className="field-error">{usernameError?.[lineKey] || "Username is already taken"}</div>
-                  )}
-                  <div className="field-hint">This will be your unique @username. Choose wisely — it cannot be changed later.</div>
-                </Field>
               </div>
             </div>
 
@@ -1124,6 +1100,38 @@ function NfcProfileEditor({
                 rows={2}
                 style={{ minHeight: 58 }}
               />
+            </Field>
+          </div>
+
+          {/* Username block */}
+          <div className="section-card">
+            <div className="section-card-title"><AtSign />Username</div>
+            <p className="nfc-section-sub">
+              Your unique @username will be your public profile URL.
+            </p>
+
+            <Field label="Choose Username" required>
+              <div className="username-input-wrap">
+                <span className="username-prefix">@</span>
+                <input
+                  className="field-input"
+                  placeholder="yourname"
+                  value={profile.username}
+                  onChange={handleUsernameChange}
+                />
+                <div className="username-status-icon">
+                  {usernameStatus?.[lineKey] === "checking" && <Loader2 className="w-4 h-4 animate-spin text-amber-500" />}
+                  {usernameStatus?.[lineKey] === "available" && <Check className="w-4 h-4 text-emerald-500" />}
+                  {usernameStatus?.[lineKey] === "taken" && <X className="w-4 h-4 text-red-500" />}
+                </div>
+              </div>
+              {usernameStatus?.[lineKey] === "available" && (
+                <div className="field-hint" style={{ color: "var(--success)" }}>✓ Username is available!</div>
+              )}
+              {usernameStatus?.[lineKey] === "taken" && (
+                <div className="field-error">{usernameError?.[lineKey] || "Username is already taken"}</div>
+              )}
+              <div className="field-hint">Choose carefully — this username cannot be changed later and will be your permanent public profile URL.</div>
             </Field>
           </div>
 
