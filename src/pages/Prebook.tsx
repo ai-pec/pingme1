@@ -988,7 +988,7 @@ function NfcCardPreview({ profile }: { profile: ReturnType<typeof emptyNfcProfil
 
 /* ─── Improved Inline NFC Profile Editor ─── */
 function NfcProfileEditor({
-  profile, onChange, onBack, onSave, isSaving, title, subtitle, lineKey, usernameStatus, usernameError, onUsernameChange,
+  profile, onChange, onBack, onSave, isSaving, title, subtitle, lineKey, usernameStatus, usernameError, usernameSuggestions, onUsernameChange,
 }: {
   profile: ReturnType<typeof emptyNfcProfile>;
   onChange: (p: ReturnType<typeof emptyNfcProfile>) => void;
@@ -1000,6 +1000,7 @@ function NfcProfileEditor({
   lineKey?: string;
   usernameStatus?: Record<string, string>;
   usernameError?: Record<string, string>;
+  usernameSuggestions?: Record<string, string[]>;
   onUsernameChange?: (username: string, lineKey: string) => void;
 }) {
   const set = (key: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -1126,7 +1127,45 @@ function NfcProfileEditor({
                     <div className="field-hint" style={{ color: "var(--success)" }}>✓ Username is available!</div>
                   )}
                   {usernameStatus?.[lineKey] === "taken" && (
-                    <div className="field-error">{usernameError?.[lineKey] || "Username is already taken"}</div>
+                    <>
+                      <div className="field-error">{usernameError?.[lineKey] || "Username is already taken"}</div>
+                      {usernameSuggestions?.[lineKey]?.length > 0 && (
+                        <div style={{ marginTop: "12px" }}>
+                          <p style={{ fontSize: "12px", fontWeight: "600", color: "var(--ink-muted)", marginBottom: "8px" }}>Try these instead:</p>
+                          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                            {usernameSuggestions[lineKey].map((suggestion, idx) => (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() => onChange({ ...profile, username: suggestion })}
+                                style={{
+                                  padding: "6px 12px",
+                                  backgroundColor: "rgba(201,146,42,0.1)",
+                                  color: "var(--gold-dim)",
+                                  border: "1px solid var(--border)",
+                                  borderRadius: "6px",
+                                  fontSize: "12px",
+                                  fontWeight: "600",
+                                  fontFamily: "monospace",
+                                  cursor: "pointer",
+                                  transition: "all .15s",
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = "var(--gold-pale)";
+                                  e.currentTarget.style.borderColor = "var(--gold)";
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = "rgba(201,146,42,0.1)";
+                                  e.currentTarget.style.borderColor = "var(--border)";
+                                }}
+                              >
+                                @{suggestion}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                   <div className="field-hint">Click "Verify" to check if username is available. This cannot be changed later.</div>
                 </Field>
@@ -1491,6 +1530,7 @@ const Prebook = () => {
   const [nfcProfilesByLine, setNfcProfilesByLine] = useState({});
   const [usernameStatus,    setUsernameStatus]    = useState({});  // { lineKey: "idle" | "checking" | "available" | "taken" }
   const [usernameError,     setUsernameError]     = useState({});  // { lineKey: errorMessage }
+  const [usernameSuggestions, setUsernameSuggestions] = useState({});  // { lineKey: [suggestions...] }
   const [submitting,        setSubmitting]        = useState(false);
   const [success,           setSuccess]           = useState(false);
   const [receiptOrder,      setReceiptOrder]      = useState(null);
@@ -1517,6 +1557,7 @@ const Prebook = () => {
 
     setUsernameStatus(prev => ({ ...prev, [lineKey]: "checking" }));
     setUsernameError(prev => ({ ...prev, [lineKey]: "" }));
+    setUsernameSuggestions(prev => ({ ...prev, [lineKey]: [] }));
 
     // Check immediately (no debounce since this is on button click)
     const checkAsync = async () => {
@@ -1525,14 +1566,25 @@ const Prebook = () => {
         if (result.available) {
           setUsernameStatus(prev => ({ ...prev, [lineKey]: "available" }));
           setUsernameError(prev => ({ ...prev, [lineKey]: "" }));
+          setUsernameSuggestions(prev => ({ ...prev, [lineKey]: [] }));
         } else {
           setUsernameStatus(prev => ({ ...prev, [lineKey]: "taken" }));
           setUsernameError(prev => ({ ...prev, [lineKey]: result.error || "Username is not available" }));
+          
+          // Generate suggestions when username is taken
+          try {
+            const suggestions = await generateUsernameSuggestions(username);
+            setUsernameSuggestions(prev => ({ ...prev, [lineKey]: suggestions }));
+          } catch (suggestionError) {
+            console.warn("Error generating suggestions:", suggestionError);
+            setUsernameSuggestions(prev => ({ ...prev, [lineKey]: [] }));
+          }
         }
       } catch (error) {
         console.error("Error checking username:", error);
         setUsernameStatus(prev => ({ ...prev, [lineKey]: "idle" }));
         setUsernameError(prev => ({ ...prev, [lineKey]: "Could not verify username" }));
+        setUsernameSuggestions(prev => ({ ...prev, [lineKey]: [] }));
       }
     };
 
@@ -1937,6 +1989,7 @@ const Prebook = () => {
                       lineKey={activeLineKey}
                       usernameStatus={usernameStatus}
                       usernameError={usernameError}
+                      usernameSuggestions={usernameSuggestions}
                       onUsernameChange={checkUsernameWithDebounce}
                     />
                   </div>
