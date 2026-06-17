@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Loader2 } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
@@ -16,11 +18,16 @@ type GoogleAuthError = Error & {
 };
 
 export default function GoogleAuthButton({ onSuccess, intent = "signin" }: GoogleAuthButtonProps) {
-  const { signInGoogle } = useAuth();
+  const { signInGoogle, completeLinkWithPassword, pendingGoogleLink } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+
+  // State for the inline password prompt shown when linking is needed
+  const [linkPassword, setLinkPassword] = useState("");
+  const [showLinkPassword, setShowLinkPassword] = useState(false);
+  const [linkLoading, setLinkLoading] = useState(false);
 
   const handleGoogleSignIn = async () => {
     try {
@@ -29,6 +36,14 @@ export default function GoogleAuthButton({ onSuccess, intent = "signin" }: Googl
       onSuccess?.();
     } catch (error: unknown) {
       const err = error as GoogleAuthError;
+
+      // Existing email/password account — show inline password prompt to link accounts
+      if (err?.code === "auth/needs-password-for-linking") {
+        // pendingGoogleLink is now set in AuthContext; the UI below will render
+        setLoading(false);
+        return;
+      }
+
       if (intent === "signin" && err?.code === "auth/google-account-not-registered") {
         toast({
           title: "Signup required",
@@ -54,6 +69,70 @@ export default function GoogleAuthButton({ onSuccess, intent = "signin" }: Googl
       setLoading(false);
     }
   };
+
+  const handleLinkSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!linkPassword) return;
+    try {
+      setLinkLoading(true);
+      await completeLinkWithPassword(linkPassword);
+      toast({
+        title: "Accounts linked",
+        description: "Your Google account is now linked. You can sign in with either method.",
+      });
+      setLinkPassword("");
+      onSuccess?.();
+    } catch (error: unknown) {
+      const err = error as GoogleAuthError;
+      toast({
+        title: "Linking failed",
+        description: err?.message || "Incorrect password. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLinkLoading(false);
+    }
+  };
+
+  // Show the inline linking prompt when we have a pending Google credential
+  if (pendingGoogleLink) {
+    return (
+      <form onSubmit={handleLinkSubmit} className="space-y-3">
+        <p className="text-sm text-muted-foreground">
+          An account already exists for{" "}
+          <span className="font-medium text-foreground">{pendingGoogleLink.email}</span>.
+          Enter your password to link your Google account.
+        </p>
+        <div className="space-y-1">
+          <Label htmlFor="link-password">Password</Label>
+          <div className="relative">
+            <Input
+              id="link-password"
+              type={showLinkPassword ? "text" : "password"}
+              value={linkPassword}
+              onChange={(e) => setLinkPassword(e.target.value)}
+              placeholder="Enter your password"
+              autoFocus
+              required
+            />
+            <button
+              type="button"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              onClick={() => setShowLinkPassword((v) => !v)}
+              tabIndex={-1}
+              aria-label={showLinkPassword ? "Hide password" : "Show password"}
+            >
+              {showLinkPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+        </div>
+        <Button type="submit" className="w-full" disabled={linkLoading || !linkPassword}>
+          {linkLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+          Link Google Account &amp; Sign In
+        </Button>
+      </form>
+    );
+  }
 
   return (
     <Button
