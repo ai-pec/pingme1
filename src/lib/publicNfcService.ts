@@ -178,6 +178,33 @@ export const checkUsernameUniqueness = async (
   }
 };
 
+export const checkUsernameAvailability = async (
+  username: string
+): Promise<{ available: boolean; error?: string }> => {
+  const normalizedUsername = normalizeNfcUsername(username);
+  
+  if (!normalizedUsername) {
+    return { available: false, error: "Username is required" };
+  }
+  
+  if (normalizedUsername.length < 3) {
+    return { available: false, error: "Username must be at least 3 characters" };
+  }
+  
+  try {
+    await fetchPublicNfcProfile(normalizedUsername);
+    // If we get here, the profile exists, so username is taken
+    return { available: false, error: "Username is already taken" };
+  } catch (err: unknown) {
+    if (err instanceof Error && err.message === "Profile not found.") {
+      // Username not in database = available
+      return { available: true };
+    }
+    // For other errors, assume we couldn't check
+    return { available: false, error: "Could not verify username availability" };
+  }
+};
+
 export const generateUsernameSuggestions = async (baseName: string): Promise<string[]> => {
   const normalizedBase = normalizeNfcUsername(baseName).replace(/[^a-z0-9]/g, "");
   const base = normalizedBase || "user";

@@ -15,6 +15,7 @@ import {
   Briefcase,
   ImageIcon,
   Youtube,
+  Check,
 } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,7 +28,7 @@ import {
   verifyRazorpayPaymentAndCreatePrebooking,
 } from "@/lib/paymentService";
 import { resolveProductImageUrl } from "@/lib/productCatalog";
-import { checkUsernameUniqueness, generateUsernameSuggestions } from "@/lib/publicNfcService";
+import { checkUsernameUniqueness, generateUsernameSuggestions, checkUsernameAvailability } from "@/lib/publicNfcService";
 import {
   expandNfcCartUnits,
   getNfcProfileDocId,
@@ -987,7 +988,7 @@ function NfcCardPreview({ profile }: { profile: ReturnType<typeof emptyNfcProfil
 
 /* ─── Improved Inline NFC Profile Editor ─── */
 function NfcProfileEditor({
-  profile, onChange, onBack, onSave, isSaving, title, subtitle,
+  profile, onChange, onBack, onSave, isSaving, title, subtitle, lineKey, usernameStatus, usernameError, onUsernameChange,
 }: {
   profile: ReturnType<typeof emptyNfcProfile>;
   onChange: (p: ReturnType<typeof emptyNfcProfile>) => void;
@@ -996,9 +997,20 @@ function NfcProfileEditor({
   isSaving: boolean;
   title: string;
   subtitle: string;
+  lineKey?: string;
+  usernameStatus?: Record<string, string>;
+  usernameError?: Record<string, string>;
+  onUsernameChange?: (username: string, lineKey: string) => void;
 }) {
   const set = (key: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     onChange({ ...profile, [key]: e.target.value });
+
+  const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange({ ...profile, username: e.target.value });
+    if (onUsernameChange && lineKey) {
+      onUsernameChange(e.target.value, lineKey);
+    }
+  };
 
   const isComplete = isNfcLineProfileComplete(profile);
   const { pct } = calcProfileCompletion(profile);
@@ -1075,6 +1087,30 @@ function NfcProfileEditor({
                     value={profile.name}
                     onChange={set("name")}
                   />
+                </Field>
+
+                <Field label="Username" required>
+                  <div className="username-input-wrap">
+                    <span className="username-prefix">@</span>
+                    <input
+                      className="field-input"
+                      placeholder="yourname"
+                      value={profile.username}
+                      onChange={handleUsernameChange}
+                    />
+                    <div className="username-status-icon">
+                      {usernameStatus?.[lineKey] === "checking" && <Loader2 className="w-4 h-4 animate-spin text-amber-500" />}
+                      {usernameStatus?.[lineKey] === "available" && <Check className="w-4 h-4 text-emerald-500" />}
+                      {usernameStatus?.[lineKey] === "taken" && <X className="w-4 h-4 text-red-500" />}
+                    </div>
+                  </div>
+                  {usernameStatus?.[lineKey] === "available" && (
+                    <div className="field-hint" style={{ color: "var(--success)" }}>✓ Username is available</div>
+                  )}
+                  {usernameStatus?.[lineKey] === "taken" && (
+                    <div className="field-error">{usernameError?.[lineKey] || "Username is already taken"}</div>
+                  )}
+                  <div className="field-hint">This will be your unique @username. Choose wisely — it cannot be changed later.</div>
                 </Field>
               </div>
             </div>
@@ -1435,6 +1471,9 @@ const Prebook = () => {
   const [step,              setStep]              = useState(() => hasNFCCards ? "profileHub" : "delivery");
   const [activeLineKey,     setActiveLineKey]     = useState(null);
   const [nfcProfilesByLine, setNfcProfilesByLine] = useState({});
+  const [usernameStatus,    setUsernameStatus]    = useState({});  // { lineKey: "idle" | "checking" | "available" | "taken" }
+  const [usernameError,     setUsernameError]     = useState({});  // { lineKey: errorMessage }
+  const usernameCheckTimeout = useRef({});  // { lineKey: timeoutId }
   const [submitting,        setSubmitting]        = useState(false);
   const [success,           setSuccess]           = useState(false);
   const [receiptOrder,      setReceiptOrder]      = useState(null);
@@ -1451,6 +1490,39 @@ const Prebook = () => {
   const [pincodeStatus,     setPincodeStatus]     = useState(null);
 
   const pincodeTimer = useRef(null);
+
+  const checkUsernameWithDebounce = useCallback((username: string, lineKey: string) => {
+    // Clear previous timeout
+    if (usernameCheckTimeout.current[lineKey]) {
+      clearTimeout(usernameCheckTimeout.current[lineKey]);
+    }
+
+    if (!username?.trim()) {
+      setUsernameStatus(prev => ({ ...prev, [lineKey]: "idle" }));
+      setUsernameError(prev => ({ ...prev, [lineKey]: "" }));
+      return;
+    }
+
+    setUsernameStatus(prev => ({ ...prev, [lineKey]: "checking" }));
+    setUsernameError(prev => ({ ...prev, [lineKey]: "" }));
+
+    usernameCheckTimeout.current[lineKey] = setTimeout(async () => {
+      try {
+        const result = await checkUsernameAvailability(username);
+        if (result.available) {
+          setUsernameStatus(prev => ({ ...prev, [lineKey]: "available" }));
+          setUsernameError(prev => ({ ...prev, [lineKey]: "" }));
+        } else {
+          setUsernameStatus(prev => ({ ...prev, [lineKey]: "taken" }));
+          setUsernameError(prev => ({ ...prev, [lineKey]: result.error || "Username is not available" }));
+        }
+      } catch (error) {
+        console.error("Error checking username:", error);
+        setUsernameStatus(prev => ({ ...prev, [lineKey]: "idle" }));
+        setUsernameError(prev => ({ ...prev, [lineKey]: "Could not verify username" }));
+      }
+    }, 800);
+  }, []);
 
   const activeUnit             = nfcCartUnits.find(u => u.lineKey === activeLineKey);
   const allNfcProfilesComplete = nfcCartUnits.every(u => isNfcLineProfileComplete(nfcProfilesByLine[u.lineKey]));
@@ -1847,6 +1919,10 @@ const Prebook = () => {
                       isSaving={submitting}
                       title={`Build Profile — ${activeUnit.displayTitle}`}
                       subtitle={`This profile will be embedded in your ${activeUnit.title}. Pick a unique @username.`}
+                      lineKey={activeLineKey}
+                      usernameStatus={usernameStatus}
+                      usernameError={usernameError}
+                      onUsernameChange={checkUsernameWithDebounce}
                     />
                   </div>
                 )}

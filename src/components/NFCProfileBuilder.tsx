@@ -1,9 +1,10 @@
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Info, AlertCircle, Lock } from "lucide-react";
+import { ArrowLeft, Info, AlertCircle, Lock, Loader2, Check, X } from "lucide-react";
+import { checkUsernameAvailability } from "@/lib/publicNfcService";
 
 const MAX_IMAGE_DATA_URL_LENGTH = 850000;
 const MAX_IMAGE_DIMENSION = 1200;
@@ -134,7 +135,20 @@ export default function NFCProfileBuilder({
 }: NFCProfileBuilderProps) {
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [showValidationErrors, setShowValidationErrors] = useState(false);
+  const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
+  const [usernameCheckError, setUsernameCheckError] = useState<string>("");
+  const usernameCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const inputRefs = useRef<Record<string, HTMLInputElement | HTMLTextAreaElement | null>>({});
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (usernameCheckTimeoutRef.current) {
+        clearTimeout(usernameCheckTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleInputChange = (field: keyof NFCProfileData, value: string) => {
     const newProfileData = { ...profileData, [field]: value };
     
@@ -151,13 +165,53 @@ export default function NFCProfileBuilder({
         return next;
       });
     }
+
+    // Check username availability when username field changes
+    if (field === "username" && variant === "checkout") {
+      checkUsernameWithDebounce(value);
+    }
   };
+
+  const checkUsernameWithDebounce = useCallback((username: string) => {
+    // Clear previous timeout
+    if (usernameCheckTimeoutRef.current) {
+      clearTimeout(usernameCheckTimeoutRef.current);
+    }
+
+    if (!username?.trim()) {
+      setUsernameStatus("idle");
+      setUsernameCheckError("");
+      return;
+    }
+
+    setUsernameStatus("checking");
+    setUsernameCheckError("");
+
+    usernameCheckTimeoutRef.current = setTimeout(async () => {
+      try {
+        const result = await checkUsernameAvailability(username);
+        if (result.available) {
+          setUsernameStatus("available");
+          setUsernameCheckError("");
+        } else {
+          setUsernameStatus("taken");
+          setUsernameCheckError(result.error || "Username is not available");
+        }
+      } catch (error) {
+        console.error("Error checking username:", error);
+        setUsernameStatus("idle");
+        setUsernameCheckError("Could not verify username");
+      }
+    }, 800); // Debounce for 800ms
+  }, [variant]);
 
   const validateForm = useCallback((): boolean => {
     const errors: Record<string, string> = {};
 
     if (!profileData.username?.trim()) {
       errors.username = "Username is required";
+    } else if (usernameStatus === "taken") {
+      errors.username = usernameCheckError || "Username is already taken";
     }
     if (!profileData.name?.trim()) {
       errors.name = "Full name is required";
@@ -701,21 +755,44 @@ export default function NFCProfileBuilder({
 
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="profile-username">Username *</Label>
+                  <Label htmlFor="profile-username" className="flex items-center gap-2">
+                    Username *
+                    {usernameStatus === "checking" && <Loader2 className="w-4 h-4 animate-spin text-amber-500" />}
+                    {usernameStatus === "available" && <Check className="w-4 h-4 text-emerald-500" />}
+                    {usernameStatus === "taken" && <X className="w-4 h-4 text-destructive" />}
+                  </Label>
                   <Input
                     id="profile-username"
                     placeholder="yourname"
                     value={profileData.username || ""}
                     onChange={(e) => handleInputChange("username", e.target.value)}
-                    className={`mt-1 ${validationErrors.username ? "border-destructive" : ""}`}
+                    className={`mt-1 ${
+                      validationErrors.username ? "border-destructive" : usernameStatus === "taken" ? "border-destructive" : usernameStatus === "available" ? "border-emerald-500" : ""
+                    }`}
                     ref={(el) => { if (el) inputRefs.current.username = el; }}
                   />
-                  {validationErrors.username && showValidationErrors && (
+                  
+                  {usernameStatus === "available" && (
+                    <p className="text-sm text-emerald-600 dark:text-emerald-400 mt-1.5 flex items-center gap-1">
+                      <Check className="w-4 h-4" />
+                      Username is available!
+                    </p>
+                  )}
+                  
+                  {usernameStatus === "taken" && (
+                    <p className="text-sm text-destructive mt-1.5 flex items-center gap-1">
+                      <AlertCircle className="w-4 h-4" />
+                      {usernameCheckError}
+                    </p>
+                  )}
+                  
+                  {validationErrors.username && showValidationErrors && !usernameCheckError && (
                     <p className="text-sm text-destructive mt-1.5 flex items-center gap-1">
                       <AlertCircle className="w-4 h-4" />
                       {validationErrors.username}
                     </p>
                   )}
+                  
                   {profileData.username?.trim() && (
                     <div className="mt-2 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950 px-3 py-2">
                       <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
