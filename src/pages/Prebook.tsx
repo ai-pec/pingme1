@@ -1005,13 +1005,6 @@ function NfcProfileEditor({
   const set = (key: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     onChange({ ...profile, [key]: e.target.value });
 
-  const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange({ ...profile, username: e.target.value });
-    if (onUsernameChange && lineKey) {
-      onUsernameChange(e.target.value, lineKey);
-    }
-  };
-
   const isComplete = isNfcLineProfileComplete(profile);
   const { pct } = calcProfileCompletion(profile);
 
@@ -1088,6 +1081,55 @@ function NfcProfileEditor({
                     onChange={set("name")}
                   />
                 </Field>
+
+                <Field label="Username" required>
+                  <div className="username-input-wrap" style={{ gap: "8px" }}>
+                    <div style={{ flex: 1, position: "relative" }}>
+                      <span className="username-prefix">@</span>
+                      <input
+                        className="field-input"
+                        placeholder="yourname"
+                        value={profile.username}
+                        onChange={(e) => onChange({ ...profile, username: e.target.value })}
+                      />
+                      <div className="username-status-icon">
+                        {usernameStatus?.[lineKey] === "checking" && <Loader2 className="w-4 h-4 animate-spin text-amber-500" />}
+                        {usernameStatus?.[lineKey] === "available" && <Check className="w-4 h-4 text-emerald-500" />}
+                        {usernameStatus?.[lineKey] === "taken" && <X className="w-4 h-4 text-red-500" />}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onUsernameChange && lineKey && onUsernameChange(profile.username, lineKey)}
+                      disabled={!profile.username?.trim() || usernameStatus?.[lineKey] === "checking"}
+                      style={{
+                        padding: "10px 18px",
+                        backgroundColor: usernameStatus?.[lineKey] === "available" ? "var(--success)" : "var(--ink)",
+                        color: "#fff",
+                        border: "1.5px solid",
+                        borderColor: usernameStatus?.[lineKey] === "available" ? "var(--success)" : "var(--ink)",
+                        borderRadius: "var(--r-sm)",
+                        fontSize: "13px",
+                        fontWeight: "600",
+                        fontFamily: "inherit",
+                        cursor: usernameStatus?.[lineKey] === "checking" ? "not-allowed" : "pointer",
+                        opacity: usernameStatus?.[lineKey] === "checking" ? 0.7 : 1,
+                        whiteSpace: "nowrap",
+                        flexShrink: 0,
+                        transition: "all .18s",
+                      }}
+                    >
+                      {usernameStatus?.[lineKey] === "checking" ? "Checking..." : usernameStatus?.[lineKey] === "available" ? "✓ Available" : "Verify"}
+                    </button>
+                  </div>
+                  {usernameStatus?.[lineKey] === "available" && (
+                    <div className="field-hint" style={{ color: "var(--success)" }}>✓ Username is available!</div>
+                  )}
+                  {usernameStatus?.[lineKey] === "taken" && (
+                    <div className="field-error">{usernameError?.[lineKey] || "Username is already taken"}</div>
+                  )}
+                  <div className="field-hint">Click "Verify" to check if username is available. This cannot be changed later.</div>
+                </Field>
               </div>
             </div>
 
@@ -1100,38 +1142,6 @@ function NfcProfileEditor({
                 rows={2}
                 style={{ minHeight: 58 }}
               />
-            </Field>
-          </div>
-
-          {/* Username block */}
-          <div className="section-card">
-            <div className="section-card-title"><AtSign />Username</div>
-            <p className="nfc-section-sub">
-              Your unique @username will be your public profile URL.
-            </p>
-
-            <Field label="Choose Username" required>
-              <div className="username-input-wrap">
-                <span className="username-prefix">@</span>
-                <input
-                  className="field-input"
-                  placeholder="yourname"
-                  value={profile.username}
-                  onChange={handleUsernameChange}
-                />
-                <div className="username-status-icon">
-                  {usernameStatus?.[lineKey] === "checking" && <Loader2 className="w-4 h-4 animate-spin text-amber-500" />}
-                  {usernameStatus?.[lineKey] === "available" && <Check className="w-4 h-4 text-emerald-500" />}
-                  {usernameStatus?.[lineKey] === "taken" && <X className="w-4 h-4 text-red-500" />}
-                </div>
-              </div>
-              {usernameStatus?.[lineKey] === "available" && (
-                <div className="field-hint" style={{ color: "var(--success)" }}>✓ Username is available!</div>
-              )}
-              {usernameStatus?.[lineKey] === "taken" && (
-                <div className="field-error">{usernameError?.[lineKey] || "Username is already taken"}</div>
-              )}
-              <div className="field-hint">Choose carefully — this username cannot be changed later and will be your permanent public profile URL.</div>
             </Field>
           </div>
 
@@ -1481,7 +1491,6 @@ const Prebook = () => {
   const [nfcProfilesByLine, setNfcProfilesByLine] = useState({});
   const [usernameStatus,    setUsernameStatus]    = useState({});  // { lineKey: "idle" | "checking" | "available" | "taken" }
   const [usernameError,     setUsernameError]     = useState({});  // { lineKey: errorMessage }
-  const usernameCheckTimeout = useRef({});  // { lineKey: timeoutId }
   const [submitting,        setSubmitting]        = useState(false);
   const [success,           setSuccess]           = useState(false);
   const [receiptOrder,      setReceiptOrder]      = useState(null);
@@ -1500,11 +1509,6 @@ const Prebook = () => {
   const pincodeTimer = useRef(null);
 
   const checkUsernameWithDebounce = useCallback((username: string, lineKey: string) => {
-    // Clear previous timeout
-    if (usernameCheckTimeout.current[lineKey]) {
-      clearTimeout(usernameCheckTimeout.current[lineKey]);
-    }
-
     if (!username?.trim()) {
       setUsernameStatus(prev => ({ ...prev, [lineKey]: "idle" }));
       setUsernameError(prev => ({ ...prev, [lineKey]: "" }));
@@ -1514,7 +1518,8 @@ const Prebook = () => {
     setUsernameStatus(prev => ({ ...prev, [lineKey]: "checking" }));
     setUsernameError(prev => ({ ...prev, [lineKey]: "" }));
 
-    usernameCheckTimeout.current[lineKey] = setTimeout(async () => {
+    // Check immediately (no debounce since this is on button click)
+    const checkAsync = async () => {
       try {
         const result = await checkUsernameAvailability(username);
         if (result.available) {
@@ -1529,7 +1534,9 @@ const Prebook = () => {
         setUsernameStatus(prev => ({ ...prev, [lineKey]: "idle" }));
         setUsernameError(prev => ({ ...prev, [lineKey]: "Could not verify username" }));
       }
-    }, 800);
+    };
+
+    checkAsync();
   }, []);
 
   const activeUnit             = nfcCartUnits.find(u => u.lineKey === activeLineKey);
