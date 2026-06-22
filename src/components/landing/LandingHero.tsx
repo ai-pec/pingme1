@@ -478,14 +478,70 @@ const ScanStory: React.FC<{ offerings: ReturnType<typeof getOfferings> }> = ({ o
           </motion.div>
         </AnimatePresence>
 
+        {/* SVG Connector Lines */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none overflow-visible hidden sm:block z-0" viewBox="0 0 268 374">
+          {SCAN_PRODUCTS.map((prod, i) => {
+            const isActive = activeCard === i;
+            let d = "";
+            if (i === 0) { // Top-Left
+              d = "M -9,30 C 3,30 3,36 15,36";
+            } else if (i === 1) { // Top-Right
+              d = "M 277,52 C 265,52 265,58 253,58";
+            } else if (i === 2) { // Bottom-Left
+              d = "M -9,209 C 3,209 3,215 15,215";
+            } else if (i === 3) { // Bottom-Right
+              d = "M 277,224 C 265,224 265,230 253,230";
+            }
+            return (
+              <g key={i}>
+                {/* Glow path */}
+                <path
+                  d={d}
+                  fill="none"
+                  stroke={prod.color}
+                  strokeWidth={isActive ? 4 : 0}
+                  strokeLinecap="round"
+                  opacity={isActive ? 0.25 : 0}
+                  style={{ transition: "stroke-width 0.4s, opacity 0.4s" }}
+                />
+                {/* Main line path */}
+                <path
+                  d={d}
+                  fill="none"
+                  stroke={isActive ? prod.color : "currentColor"}
+                  strokeWidth={isActive ? 1.5 : 1}
+                  strokeDasharray={isActive ? "none" : "3,3"}
+                  strokeLinecap="round"
+                  className={isActive ? "" : "text-foreground/15 dark:text-white/10"}
+                  style={{ transition: "stroke 0.4s, stroke-width 0.4s" }}
+                />
+                {/* Flowing animated dot */}
+                {isActive && (
+                  <circle
+                    r="2.5"
+                    fill={prod.color}
+                    style={{ filter: `drop-shadow(0 0 3px ${prod.color})` }}
+                  >
+                    <animateMotion
+                      dur="1.8s"
+                      repeatCount="indefinite"
+                      path={d}
+                    />
+                  </circle>
+                )}
+              </g>
+            );
+          })}
+        </svg>
+
         {/* Floating product-type chips — hidden on mobile to avoid overflow */}
         {SCAN_PRODUCTS.map((prod, i) => {
           const ProdIcon = prod.icon;
           const chipPositions = [
-            { top: "8%",  left: "-10%" },
-            { top: "14%", right: "-10%" },
-            { top: "56%", left: "-10%" },
-            { top: "60%", right: "-10%" },
+            { top: "8%",  left: "-52%" },
+            { top: "14%", right: "-52%" },
+            { top: "56%", left: "-52%" },
+            { top: "60%", right: "-52%" },
           ];
           const pos = chipPositions[i];
           return (
@@ -641,7 +697,7 @@ const TrustTicker: React.FC = () => {
     <div
       className="overflow-hidden py-4 border-y"
       style={{
-        background: "rgba(255,255,255,0.55)",
+        background: "hsl(var(--card) / 0.7)",
         backdropFilter: "blur(10px)",
         borderColor: "rgba(200,130,10,0.12)",
       }}
@@ -652,7 +708,7 @@ const TrustTicker: React.FC = () => {
             <div className="h-1.5 w-1.5 rounded-full" style={{ background: GOLD_MID }} />
             <span
               className="text-[11px] font-bold uppercase tracking-[0.24em]"
-              style={{ color: "rgba(120,85,15,0.60)" }}
+              style={{ color: "hsl(var(--muted-foreground) / 0.7)" }}
             >
               {item}
             </span>
@@ -1135,7 +1191,7 @@ const LandingHero = () => {
   const offerings = getOfferings(products, hasProductSnapshot);
 
   return (
-    <main className="relative overflow-hidden" style={{ background: CREAM }}>
+    <main className="relative overflow-hidden bg-background">
 
       {/* -- Global ambient background -- */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -1211,7 +1267,7 @@ const LandingHero = () => {
               transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
             >
               <div
-                className="inline-flex items-center gap-2.5 rounded-full border border-amber-300/45 bg-amber-50/80 px-4 py-2"
+                className="inline-flex items-center gap-2.5 rounded-full border border-primary/30 bg-primary/10 px-4 py-2"
                 style={{ backdropFilter: "blur(12px)" }}
               >
                 <motion.div
@@ -1308,7 +1364,7 @@ const LandingHero = () => {
                 href="https://app.plzpingme.com"
                 target="_blank"
                 rel="noreferrer"
-                className="group inline-flex items-center justify-center gap-2 rounded-2xl border border-border/50 bg-white/62 px-7 py-3.5 text-sm font-bold text-foreground/80 transition-colors duration-200 hover:border-amber-300/60 hover:bg-amber-50/60 hover:text-foreground"
+                className="group inline-flex items-center justify-center gap-2 rounded-2xl border border-border/50 bg-card/80 px-7 py-3.5 text-sm font-bold text-foreground/80 transition-colors duration-200 hover:border-primary/40 hover:bg-primary/5 hover:text-foreground"
                 style={{ backdropFilter: "blur(12px)" }}
                 whileHover={{ scale: 1.025 }}
                 whileTap={{ scale: 0.97 }}
@@ -1336,7 +1392,7 @@ const LandingHero = () => {
                     className="flex h-8 w-8 items-center justify-center rounded-full border-2 text-[11px] font-extrabold text-white"
                     style={{
                       background: u.color,
-                      borderColor: CREAM,
+                      borderColor: "hsl(var(--background))",
                       zIndex: socialProofUsers.length - i,
                       boxShadow: "0 2px 6px rgba(0,0,0,0.12)",
                     }}
@@ -1377,7 +1433,7 @@ const LandingHero = () => {
                     key={item.label}
                     whileHover={{ scale: 1.05, borderColor: "rgba(245,166,35,0.45)" }}
                     transition={{ duration: 0.2 }}
-                    className="flex items-center gap-1.5 rounded-full border border-amber-200/50 bg-white/62 px-3 py-1.5 cursor-default"
+                    className="flex items-center gap-1.5 rounded-full border border-primary/25 bg-card/80 px-3 py-1.5 cursor-default"
                     style={{ backdropFilter: "blur(10px)" }}
                   >
                     <Icon className="h-3.5 w-3.5 text-amber-500 flex-shrink-0" />
