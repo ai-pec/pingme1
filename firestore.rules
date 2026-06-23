@@ -109,12 +109,12 @@ service cloud.firestore {
 
     match /faqs/{faqId} {
       allow read: if true;
-      allow write: if isSignedIn();
+      allow write: if isAdmin();
     }
 
     match /blogPosts/{postId} {
       allow read: if true;
-      allow write: if isSignedIn();
+      allow write: if isAdmin();
     }
 
     // NFC privacy policy consent records — written once by the profile owner, never editable
