@@ -13,7 +13,7 @@ const MAX_EMAIL_LENGTH = 255;
 const MAX_PHONE_LENGTH = 20;
 const MAX_MESSAGE_LENGTH = 1000;
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-const SUPPORT_ADDRESS = "Ping IFF LLP, 745, Burail, Ekta Market, Burail Village, Sector 45, Chandigarh, 160047";
+const SUPPORT_ADDRESS = "745, First Floor, Rani Boutique, Kesho Ram Complex, Ram Electricals, Sector 45, Burail, Chandigarh, Chandigarh, 160047, India";
 
 const buildGoogleMapsUrl = (address: string) =>
   `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
@@ -212,7 +212,14 @@ const Contact = () => {
                       rel="noreferrer"
                       className="mt-0.5 inline-flex items-start gap-1.5 text-sm font-medium text-foreground transition-colors hover:text-primary"
                     >
-                      <span className="leading-5">745, Burail, Ekta Market,<br />Sector 45, Chandigarh – 160047</span>
+                      <span className="leading-5">
+                        745, First Floor,<br /> Rani Boutique<br />
+                        Kesho Ram Complex<br />
+                        Ram Electricals, Sector 45<br />
+                        Burail, Chandigarh<br />
+                        Chandigarh – 160047<br />
+                        India
+                      </span>
                       <ExternalLink className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                     </a>
                   </div>
@@ -261,7 +268,7 @@ const Contact = () => {
       </div>
 
       {/* ── Map full-width ── */}
-      
+
     </MainLayout>
   );
 };

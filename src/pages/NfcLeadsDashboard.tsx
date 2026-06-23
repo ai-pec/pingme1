@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import MainLayout from "@/layouts/MainLayout";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -71,6 +72,7 @@ const cleanHtmlToPlainText = (html?: string) => {
 
 export default function NfcLeadsDashboard() {
   const { user } = useAuth();
+  const { theme } = useTheme();
   const [selectedUsername, setSelectedUsername] = useState<string>("all");
   const [activeLead, setActiveLead] = useState<LeadRecord | null>(null);
   const [copiedMap, setCopiedMap] = useState<Record<string, boolean>>({});
@@ -272,18 +274,18 @@ export default function NfcLeadsDashboard() {
       <div className="dashboard-wrapper py-10">
         <div className="container px-4 md:px-6 lg:px-8">
           {/* Header section */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 pb-6 border-b border-gray-200">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 pb-6 border-b border-gray-200 dark:border-stone-800">
             <div>
               <div className="flex items-center gap-2 mb-1.5">
                 <Zap className="w-6 h-6 text-amber-500" />
-                <span className="text-xs font-extrabold uppercase tracking-widest text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
+                <span className="text-xs font-extrabold uppercase tracking-widest text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 px-2.5 py-1 rounded-full">
                   AI Lead Capture & CRM
                 </span>
               </div>
-              <h1 className="text-3xl font-extrabold text-stone-900 tracking-tight leading-none">
+              <h1 className="text-3xl font-extrabold text-stone-900 dark:text-stone-100 tracking-tight leading-none">
                 Leads & Outreach
               </h1>
-              <p className="text-sm text-stone-500 mt-2">
+              <p className="text-sm text-stone-500 dark:text-stone-400 mt-2">
                 Manage contact info captured from NFC profile scans along with AI outreach drafts.
               </p>
             </div>
@@ -291,7 +293,7 @@ export default function NfcLeadsDashboard() {
             <div className="flex items-center gap-3">
               {ownedUsernames.length > 1 && (
                 <div className="flex flex-col gap-1">
-                  <label htmlFor="card-selector" className="text-xs font-semibold text-stone-500">
+                  <label htmlFor="card-selector" className="text-xs font-semibold text-stone-500 dark:text-stone-400">
                     Select NFC Card:
                   </label>
                   <select
@@ -324,7 +326,7 @@ export default function NfcLeadsDashboard() {
                 <button
                   onClick={() => void refetch()}
                   disabled={isRefetching}
-                  className="flex items-center justify-center p-3 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 hover:border-amber-400 hover:text-amber-600 transition-all shadow-sm shrink-0"
+                  className="flex items-center justify-center p-3 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:bg-stone-50 dark:hover:bg-stone-800 hover:border-amber-400 hover:text-amber-600 transition-all shadow-sm shrink-0"
                   aria-label="Refresh leads"
                 >
                   <RotateCcw className={`w-4 h-4 ${isRefetching ? "animate-spin text-amber-500" : ""}`} />
@@ -336,22 +338,22 @@ export default function NfcLeadsDashboard() {
           {ownedUsernames.length === 0 ? (
             /* Empty cards state */
             <div className="dashboard-card py-20 flex flex-col items-center justify-center text-center gap-6 max-w-lg mx-auto">
-              <div className="h-16 w-16 bg-amber-50 border border-amber-200 rounded-full flex items-center justify-center">
+              <div className="h-16 w-16 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 rounded-full flex items-center justify-center">
                 <Users className="w-8 h-8 text-amber-500" />
               </div>
-              <h2 className="text-xl font-bold text-stone-900">No NFC cards registered</h2>
-              <p className="text-sm text-stone-500 leading-relaxed">
+              <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100">No NFC cards registered</h2>
+              <p className="text-sm text-stone-500 dark:text-stone-400 leading-relaxed">
                 We couldn't find any confirmed NFC card profiles linked to this account. Visit and complete profile setup after purchasing cards.
               </p>
             </div>
           ) : leads.length === 0 ? (
             /* Empty leads state */
             <div className="dashboard-card py-16 flex flex-col items-center justify-center text-center gap-5 max-w-md mx-auto">
-              <div className="h-14 w-14 bg-amber-50 border border-amber-200 rounded-full flex items-center justify-center">
+              <div className="h-14 w-14 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 rounded-full flex items-center justify-center">
                 <Users className="w-7 h-7 text-amber-500" />
               </div>
-              <h2 className="text-lg font-bold text-stone-900">No leads captured yet</h2>
-              <p className="text-xs text-stone-500 leading-relaxed">
+              <h2 className="text-lg font-bold text-stone-900 dark:text-stone-100">No leads captured yet</h2>
+              <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
                 When visitors scan your NFC card and fill out the "Share My Info" form, their details and AI-personalized outreach drafts will show up here.
               </p>
             </div>
@@ -399,9 +401,9 @@ export default function NfcLeadsDashboard() {
                 </motion.div>
               </div>
 
-              {/* Leads Table Card */}
+               {/* Leads Table Card */}
               <motion.div variants={cardVariants} className="dashboard-card overflow-hidden">
-                <h3 className="font-bold text-stone-900 mb-6 flex items-center gap-2">
+                <h3 className="font-bold text-stone-900 dark:text-stone-100 mb-6 flex items-center gap-2">
                   <Users className="w-4 h-4 text-amber-500" />
                   All Captured Leads
                 </h3>
@@ -421,23 +423,23 @@ export default function NfcLeadsDashboard() {
                     <tbody>
                       {leads.map((lead, index) => (
                         <tr key={lead.id || `lead-${index}`} className="cursor-pointer" onClick={() => setActiveLead(lead)}>
-                          <td className="font-semibold text-stone-800">
+                          <td className="font-semibold text-stone-800 dark:text-stone-200">
                             {lead.visitorName}
                           </td>
-                          <td className="text-stone-600">
+                          <td className="text-stone-600 dark:text-stone-400">
                             {lead.visitorCompany && lead.visitorCompany !== "N/A" ? lead.visitorCompany : "-"}
                           </td>
                           <td>
-                            <div className="flex flex-col gap-0.5 text-xs text-stone-500">
+                            <div className="flex flex-col gap-0.5 text-xs text-stone-500 dark:text-stone-400">
                               <span>{lead.visitorEmail}</span>
                               {lead.visitorPhone && lead.visitorPhone !== "N/A" && <span>{lead.visitorPhone}</span>}
                             </div>
                           </td>
-                          <td className="text-stone-600">
+                          <td className="text-stone-600 dark:text-stone-400">
                             {formatExactTime(lead.createdAt)}
                           </td>
                           {selectedUsername === "all" && (
-                            <td className="text-amber-600 font-semibold text-xs">
+                            <td className="text-amber-600 dark:text-amber-400 font-semibold text-xs">
                               @{lead.cardOwnerUsername}
                             </td>
                           )}
@@ -503,20 +505,20 @@ export default function NfcLeadsDashboard() {
 
               <div className="drawer-content">
                 {/* Meta details card */}
-                <div className="space-y-3 p-4 bg-stone-50 rounded-xl border border-stone-200 text-sm">
+                <div className="space-y-3 p-4 bg-stone-50 dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-800 text-sm">
                   {activeLead.visitorCompany && activeLead.visitorCompany !== "N/A" && (
                     <div className="flex items-center gap-2">
                       <Briefcase className="w-4 h-4 text-stone-400 shrink-0" />
-                      <span className="text-stone-600">Company:</span>
-                      <strong className="text-stone-800">{activeLead.visitorCompany}</strong>
+                      <span className="text-stone-600 dark:text-stone-400">Company:</span>
+                      <strong className="text-stone-800 dark:text-stone-200">{activeLead.visitorCompany}</strong>
                     </div>
                   )}
                   <div className="flex items-center gap-2">
                     <Mail className="w-4 h-4 text-stone-400 shrink-0" />
-                    <span className="text-stone-600">Email:</span>
+                    <span className="text-stone-600 dark:text-stone-400">Email:</span>
                     <a
                       href={`mailto:${activeLead.visitorEmail}`}
-                      className="text-amber-600 font-semibold hover:underline"
+                      className="text-amber-600 dark:text-amber-400 font-semibold hover:underline"
                     >
                       {activeLead.visitorEmail}
                     </a>
@@ -524,16 +526,16 @@ export default function NfcLeadsDashboard() {
                   {activeLead.visitorPhone && activeLead.visitorPhone !== "N/A" && (
                     <div className="flex items-center gap-2">
                       <Phone className="w-4 h-4 text-stone-400 shrink-0" />
-                      <span className="text-stone-600">Phone:</span>
+                      <span className="text-stone-600 dark:text-stone-400">Phone:</span>
                       <a
                         href={`tel:${activeLead.visitorPhone}`}
-                        className="text-stone-700 font-semibold hover:underline"
+                        className="text-stone-700 dark:text-stone-300 font-semibold hover:underline"
                       >
                         {activeLead.visitorPhone}
                       </a>
                     </div>
                   )}
-                  <div className="flex items-center gap-2 pt-1 border-t border-stone-200/60 text-xs text-stone-400">
+                  <div className="flex items-center gap-2 pt-1 border-t border-stone-200/60 dark:border-stone-800/60 text-xs text-stone-400">
                     <Calendar className="w-3.5 h-3.5" />
                     <span>
                       Captured on{" "}
@@ -558,7 +560,7 @@ export default function NfcLeadsDashboard() {
                 {/* AI Follow-up Email template */}
                 {activeLead.personalizedEmailBody && activeLead.personalizedEmailBody !== "N/A" && (
                   <div className="email-outreach-panel">
-                    <h3 className="text-sm font-bold text-stone-800 mb-3 flex items-center gap-1.5">
+                    <h3 className="text-sm font-bold text-stone-800 dark:text-stone-200 mb-3 flex items-center gap-1.5">
                       <Mail className="w-4 h-4 text-stone-400" />
                       Suggested Outreach Follow-up
                     </h3>

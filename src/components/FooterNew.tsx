@@ -155,9 +155,12 @@ const FooterNew = () => {
               >
                 <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" />
                 <span>
-                  745, Burail, Ekta Market,<br />
-                  Burail Village, Sector 45,<br />
-                  Chandigarh - 160047, India
+                  745, First Floor,<br /> Rani Boutique<br />
+                  Kesho Ram Complex<br />
+                  Ram Electricals,<br />Sector 45<br />
+                  Burail, Chandigarh<br />
+                  Chandigarh – 160047<br />
+                  India
                 </span>
               </div>
             </div>

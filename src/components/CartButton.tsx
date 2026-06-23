@@ -39,18 +39,18 @@ const CartButton = React.forwardRef<HTMLButtonElement, Props>(
           width: 48,
           height: 48,
           borderRadius: 12,
-          background: "rgba(255,255,255,0.92)",
-          border: "none",
+          background: "hsl(var(--card) / 0.92)",
+          border: "1.5px solid hsl(var(--border) / 0.6)",
           cursor: "pointer",
           transition:
-            "transform 160ms ease, box-shadow 160ms ease, background 160ms ease",
+            "transform 160ms ease, box-shadow 160ms ease, background 160ms ease, border-color 160ms ease",
         }}
       >
         <style>{`
           .pm-cart-btn:active { transform: scale(0.96); }
-          .pm-cart-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(8,12,20,0.06); }
-          .pm-cart-icon { width: 20px; height: 20px; color: #121212; display: block; }
-          .pm-cart-badge { position: absolute; top: -6px; right: -6px; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: #f59e0b; color: #111827; font-weight: 800; font-size: 11px; border: 2px solid #ffffff; box-shadow: 0 6px 12px rgba(20,20,20,0.08); transform: translateZ(0); }
+          .pm-cart-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.12); }
+          .pm-cart-icon { width: 20px; height: 20px; color: hsl(var(--foreground)); display: block; }
+          .pm-cart-badge { position: absolute; top: -6px; right: -6px; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: #f59e0b; color: #111827; font-weight: 800; font-size: 11px; border: 2px solid hsl(var(--card)); box-shadow: 0 6px 12px rgba(20,20,20,0.08); transform: translateZ(0); }
           .pm-cart-pulse .pm-cart-icon { animation: pm-pulse 700ms cubic-bezier(0.2,0.8,0.2,1); }
           @keyframes pm-pulse { 0% { transform: scale(1); } 30% { transform: scale(1.18); } 100% { transform: scale(1); } }
         `}</style>

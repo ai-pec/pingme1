@@ -30,7 +30,15 @@ const siteFooter = `
   <footer class="border-t border-border/40 bg-background py-8">
     <div class="container space-y-3 text-sm text-muted-foreground">
       <p>&copy; 2026 Ping IFF LLP. All rights reserved. PingME is a brand of Ping IFF LLP.</p>
-      <address style="font-style:normal;">Ping IFF LLP, 745, Burail, Ekta Market, Burail Village, Sector 45, Chandigarh &ndash; 160047, India</address>
+      <address style="font-style:normal;">
+        Ping IFF LLP<br />
+        745, First Floor,<br/> Rani Boutique<br />
+        Kesho Ram Complex<br />
+        Ram Electricals, Sector 45<br />
+        Burail, Chandigarh<br />
+        Chandigarh – 160047<br />
+        India
+      </address>
       <p>Phone: <a href="tel:+917347340007">+91 73473 40007</a> &nbsp;|&nbsp; Email: <a href="mailto:contact@pingiff.ai">contact@pingiff.ai</a></p>
       <nav style="display:flex;flex-wrap:wrap;gap:16px;margin-top:4px;">
         <a href="/blog">Blog</a>
@@ -200,7 +208,15 @@ const contactContent = `
       <h1 class="text-4xl font-bold tracking-tight text-foreground">We'd love to hear from you</h1>
       <p class="mt-6 text-lg leading-8 text-muted-foreground">Have questions about PingME? Want to partner with us? We're here to help.</p>
       <div class="mt-8 grid gap-6 md:grid-cols-3 text-muted-foreground">
-        <div><strong>Address</strong><address style="font-style:normal;margin-top:4px;line-height:1.7;">Ping IFF LLP<br>745, Burail, Ekta Market,<br>Burail Village, Sector 45,<br>Chandigarh &ndash; 160047, India</address></div>
+        <div><strong>Address</strong><address style="font-style:normal;margin-top:4px;line-height:1.7;">
+          Ping IFF LLP<br />
+          745, First Floor, Rani Boutique<br />
+          Kesho Ram Complex<br />
+          Ram Electricals, Sector 45<br />
+          Burail, Chandigarh<br />
+          Chandigarh – 160047<br />
+          India
+        </address></div>
         <div><strong>Phone</strong><p>+91 91151 12345</p></div>
         <div><strong>Email</strong><p>hello@pingme.in</p></div>
       </div>

@@ -158,10 +158,9 @@ const ReviewCard: React.FC<{ review: Review; style?: React.CSSProperties }> = ({
   style,
 }) => (
   <div
-    className="relative flex-shrink-0 w-[280px] sm:w-[300px] rounded-3xl bg-white/90 p-5 flex flex-col gap-3"
+    className="relative flex-shrink-0 w-[280px] sm:w-[300px] rounded-3xl bg-card/90 dark:bg-card/45 p-5 flex flex-col gap-3 border border-amber-500/10 dark:border-amber-500/20"
     style={{
       boxShadow: "0 4px 28px rgba(81,60,9,0.09), 0 1px 4px rgba(0,0,0,0.04)",
-      border: "1px solid rgba(245,166,35,0.13)",
       backdropFilter: "blur(12px)",
       ...style,
     }}
@@ -171,7 +170,7 @@ const ReviewCard: React.FC<{ review: Review; style?: React.CSSProperties }> = ({
       className="absolute top-4 right-4 flex h-7 w-7 items-center justify-center rounded-xl opacity-25"
       style={{ background: "rgba(245,166,35,0.12)" }}
     >
-      <Quote className="h-3.5 w-3.5 text-amber-600" />
+      <Quote className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
     </div>
 
     {/* Header */}
@@ -195,12 +194,7 @@ const ReviewCard: React.FC<{ review: Review; style?: React.CSSProperties }> = ({
     <div className="flex items-center justify-between">
       <StarRow count={review.stars} />
       <span
-        className="rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide"
-        style={{
-          background: "rgba(245,166,35,0.10)",
-          color: GOLD,
-          border: "1px solid rgba(200,130,10,0.18)",
-        }}
+        className="rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/20 dark:border-amber-500/30"
       >
         {review.tag}
       </span>
@@ -216,8 +210,7 @@ const ReviewCard: React.FC<{ review: Review; style?: React.CSSProperties }> = ({
 
     {/* Use-case badge */}
     <div
-      className="mt-auto rounded-2xl px-3 py-2 text-[10px] font-semibold text-muted-foreground"
-      style={{ background: "rgba(0,0,0,0.03)", border: "1px solid rgba(0,0,0,0.05)" }}
+      className="mt-auto rounded-2xl px-3 py-2 text-[10px] font-semibold text-muted-foreground bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5"
     >
       📍 {review.useCase}
     </div>
@@ -340,10 +333,9 @@ const MobileSlider: React.FC<{ reviews: Review[] }> = ({ reviews }) => {
           >
             {/* Full-width card on mobile */}
             <div
-              className="relative rounded-3xl bg-white/90 p-5 flex flex-col gap-3 w-full"
+              className="relative rounded-3xl bg-card/90 dark:bg-card/45 p-5 flex flex-col gap-3 w-full border border-amber-500/10 dark:border-amber-500/20"
               style={{
                 boxShadow: "0 4px 28px rgba(81,60,9,0.09), 0 1px 4px rgba(0,0,0,0.04)",
-                border: "1px solid rgba(245,166,35,0.13)",
               }}
             >
               {/* Quote */}
@@ -351,7 +343,7 @@ const MobileSlider: React.FC<{ reviews: Review[] }> = ({ reviews }) => {
                 className="absolute top-4 right-4 flex h-7 w-7 items-center justify-center rounded-xl opacity-25"
                 style={{ background: "rgba(245,166,35,0.12)" }}
               >
-                <Quote className="h-3.5 w-3.5 text-amber-600" />
+                <Quote className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
               </div>
 
               {/* Header */}
@@ -377,12 +369,7 @@ const MobileSlider: React.FC<{ reviews: Review[] }> = ({ reviews }) => {
               <div className="flex items-center justify-between">
                 <StarRow count={reviews[activeIdx].stars} />
                 <span
-                  className="rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide"
-                  style={{
-                    background: "rgba(245,166,35,0.10)",
-                    color: GOLD,
-                    border: "1px solid rgba(200,130,10,0.18)",
-                  }}
+                  className="rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/20 dark:border-amber-500/30"
                 >
                   {reviews[activeIdx].tag}
                 </span>
@@ -393,8 +380,7 @@ const MobileSlider: React.FC<{ reviews: Review[] }> = ({ reviews }) => {
 
               {/* Use case */}
               <div
-                className="rounded-2xl px-3 py-2 text-[11px] font-semibold text-muted-foreground"
-                style={{ background: "rgba(0,0,0,0.03)", border: "1px solid rgba(0,0,0,0.05)" }}
+                className="rounded-2xl px-3 py-2 text-[11px] font-semibold text-muted-foreground bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5"
               >
                 📍 {reviews[activeIdx].useCase}
               </div>
@@ -407,10 +393,10 @@ const MobileSlider: React.FC<{ reviews: Review[] }> = ({ reviews }) => {
       <div className="flex items-center justify-between px-4 mt-5">
         <button
           onClick={() => goTo(activeIdx - 1)}
-          className="flex h-10 w-10 items-center justify-center rounded-2xl border border-border/40 bg-white/80 shadow-sm active:scale-95 transition-transform"
+          className="flex h-10 w-10 items-center justify-center rounded-2xl border border-border/40 bg-card/85 dark:bg-card/85 shadow-sm active:scale-95 transition-transform"
           aria-label="Previous review"
         >
-          <ChevronLeft className="h-4 w-4 text-amber-600" />
+          <ChevronLeft className="h-4 w-4 text-amber-600 dark:text-amber-400" />
         </button>
 
         {/* Pagination dots */}
@@ -432,10 +418,10 @@ const MobileSlider: React.FC<{ reviews: Review[] }> = ({ reviews }) => {
 
         <button
           onClick={() => goTo(activeIdx + 1)}
-          className="flex h-10 w-10 items-center justify-center rounded-2xl border border-border/40 bg-white/80 shadow-sm active:scale-95 transition-transform"
+          className="flex h-10 w-10 items-center justify-center rounded-2xl border border-border/40 bg-card/85 dark:bg-card/85 shadow-sm active:scale-95 transition-transform"
           aria-label="Next review"
         >
-          <ChevronRight className="h-4 w-4 text-amber-600" />
+          <ChevronRight className="h-4 w-4 text-amber-600 dark:text-amber-400" />
         </button>
       </div>
 
@@ -452,16 +438,14 @@ const MobileSlider: React.FC<{ reviews: Review[] }> = ({ reviews }) => {
 ---------------------------------------------------------------- */
 const SummaryRow: React.FC = () => (
   <div
-    className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 rounded-3xl px-6 py-5 sm:px-8 mx-auto max-w-2xl"
+    className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 rounded-3xl px-6 py-5 sm:px-8 mx-auto max-w-2xl bg-card/75 dark:bg-card/45 border border-amber-500/10 dark:border-amber-500/20"
     style={{
-      background: "rgba(255,255,255,0.72)",
-      border: "1px solid rgba(245,166,35,0.14)",
       boxShadow: "0 4px 24px rgba(81,60,9,0.07)",
       backdropFilter: "blur(14px)",
     }}
   >
     {/* Big rating */}
-    <div className="flex flex-col items-center sm:items-start sm:border-r sm:border-amber-200/40 sm:pr-6">
+    <div className="flex flex-col items-center sm:items-start sm:border-r border-amber-200/40 dark:border-amber-500/20 sm:pr-6 w-full sm:w-auto">
       <span
         className="text-5xl font-black leading-none"
         style={{
@@ -489,12 +473,7 @@ const SummaryRow: React.FC = () => (
       ].map((p) => (
         <span
           key={p.label}
-          className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold"
-          style={{
-            background: "rgba(245,166,35,0.09)",
-            color: "rgba(120,75,10,0.85)",
-            border: "1px solid rgba(200,130,10,0.14)",
-          }}
+          className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold bg-amber-500/10 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/10 dark:border-amber-500/25"
         >
           <span>{p.emoji}</span>
           {p.label}

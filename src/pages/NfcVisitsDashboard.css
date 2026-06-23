@@ -1,28 +1,68 @@
 /* src/pages/NfcVisitsDashboard.css */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
 
+:root {
+  --dash-bg: #faf8f5;
+  --dash-text: #1a1a1a;
+  --dash-card-bg: rgba(255, 255, 255, 0.7);
+  --dash-card-border: rgba(244, 180, 0, 0.12);
+  --dash-card-hover-border: rgba(244, 180, 0, 0.3);
+  --dash-card-shadow: rgba(0, 0, 0, 0.03);
+  --dash-card-hover-shadow: rgba(244, 180, 0, 0.06);
+  --dash-kpi-title: #78716c;
+  --dash-kpi-value: #1c1917;
+  --dash-kpi-desc: #a8a29e;
+  --dash-table-th-text: #78716c;
+  --dash-table-th-border: rgba(244, 180, 0, 0.1);
+  --dash-table-td-text: #44403c;
+  --dash-table-td-border: rgba(244, 180, 0, 0.06);
+  --dash-select-bg: white;
+  --dash-select-text: #1c1917;
+  --dash-select-border: rgba(244, 180, 0, 0.3);
+}
+
+.dark {
+  --dash-bg: hsl(var(--background));
+  --dash-text: #f5f5f5;
+  --dash-card-bg: hsl(var(--card) / 0.75);
+  --dash-card-border: hsl(var(--primary) / 0.15);
+  --dash-card-hover-border: hsl(var(--primary) / 0.4);
+  --dash-card-shadow: rgba(0, 0, 0, 0.3);
+  --dash-card-hover-shadow: rgba(0, 0, 0, 0.45);
+  --dash-kpi-title: hsl(var(--muted-foreground));
+  --dash-kpi-value: #ffffff;
+  --dash-kpi-desc: hsl(var(--muted-foreground) / 0.8);
+  --dash-table-th-text: hsl(var(--muted-foreground));
+  --dash-table-th-border: hsl(var(--primary) / 0.2);
+  --dash-table-td-text: #e2e8f0;
+  --dash-table-td-border: hsl(var(--border) / 0.5);
+  --dash-select-bg: hsl(var(--card));
+  --dash-select-text: #ffffff;
+  --dash-select-border: hsl(var(--primary) / 0.3);
+}
+
 .dashboard-wrapper {
   font-family: 'Poppins', sans-serif;
-  color: #1a1a1a;
-  background: #faf8f5;
+  color: var(--dash-text);
+  background: var(--dash-bg);
   min-height: 80vh;
 }
 
 /* Glassmorphism theme cards */
 .dashboard-card {
-  background: rgba(255, 255, 255, 0.7);
+  background: var(--dash-card-bg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(244, 180, 0, 0.12);
+  border: 1px solid var(--dash-card-border);
   border-radius: 20px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 10px 30px var(--dash-card-shadow);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   padding: 1.75rem;
 }
 
 .dashboard-card:hover {
-  border-color: rgba(244, 180, 0, 0.3);
-  box-shadow: 0 15px 35px rgba(244, 180, 0, 0.06);
+  border-color: var(--dash-card-hover-border);
+  box-shadow: 0 15px 35px var(--dash-card-hover-shadow);
   transform: translateY(-2px);
 }
 
@@ -99,7 +139,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #78716c;
+  color: var(--dash-kpi-title);
   margin-bottom: 0.25rem;
 }
 
@@ -107,12 +147,12 @@
   font-size: 1.85rem;
   font-weight: 800;
   line-height: 1;
-  color: #1c1917;
+  color: var(--dash-kpi-value);
 }
 
 .kpi-desc {
   font-size: 0.75rem;
-  color: #a8a29e;
+  color: var(--dash-kpi-desc);
   margin-top: 0.25rem;
 }
 
@@ -128,17 +168,17 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #78716c;
+  color: var(--dash-table-th-text);
   padding: 1rem;
-  border-bottom: 2px solid rgba(244, 180, 0, 0.1);
+  border-bottom: 2px solid var(--dash-table-th-border);
   text-align: left;
 }
 
 .analytics-table td {
   padding: 1rem;
   font-size: 0.875rem;
-  color: #44403c;
-  border-bottom: 1px solid rgba(244, 180, 0, 0.06);
+  color: var(--dash-table-td-text);
+  border-bottom: 1px solid var(--dash-table-td-border);
 }
 
 .analytics-table tr:last-child td {
@@ -151,6 +191,10 @@
 
 .analytics-table tr:hover {
   background-color: rgba(244, 180, 0, 0.02);
+}
+
+.dark .analytics-table tr:hover {
+  background-color: rgba(255, 255, 255, 0.02);
 }
 
 /* Device Breakdown List */
@@ -167,7 +211,7 @@
   justify-content: space-between;
   font-size: 0.85rem;
   font-weight: 600;
-  color: #44403c;
+  color: var(--dash-table-td-text);
   margin-bottom: 0.35rem;
 }
 
@@ -176,6 +220,10 @@
   background: rgba(120, 113, 108, 0.1);
   border-radius: 4px;
   overflow: hidden;
+}
+
+.dark .breakdown-bar-bg {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .breakdown-bar-fill {
@@ -189,9 +237,9 @@
 .nfc-select {
   padding: 0.625rem 2.5rem 0.625rem 1.25rem;
   border-radius: 12px;
-  border: 1px solid rgba(244, 180, 0, 0.3);
-  background: white;
-  color: #1c1917;
+  border: 1px solid var(--dash-select-border);
+  background-color: var(--dash-select-bg);
+  color: var(--dash-select-text);
   font-weight: 600;
   font-size: 0.9rem;
   cursor: pointer;

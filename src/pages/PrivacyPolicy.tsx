@@ -95,8 +95,12 @@ const PrivacyPolicy = () => {
             <h2 className="text-lg font-bold mb-3">Contact Us</h2>
             <address className="not-italic text-muted-foreground leading-7">
               <strong className="text-foreground">Ping IFF LLP</strong><br />
-              745, Burail, Ekta Market, Burail Village,<br />
-              Sector 45, Chandigarh &ndash; 160047, India<br />
+              745, First Floor, Rani Boutique<br />
+              Kesho Ram Complex<br />
+              Ram Electricals, Sector 45<br />
+              Burail, Chandigarh<br />
+              Chandigarh &ndash; 160047<br />
+              India<br />
               Phone: <a href="tel:+917347340007" className="hover:underline">+91 73473 40007</a><br />
               Email: <a href="mailto:contact@pingiff.ai" className="hover:underline">contact@pingiff.ai</a>
             </address>

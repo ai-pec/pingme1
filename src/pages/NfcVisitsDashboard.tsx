@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import MainLayout from "@/layouts/MainLayout";
 import { motion } from "framer-motion";
 import {
@@ -104,7 +105,10 @@ const getDeviceBadgeClass = (device: string) => {
 
 export default function NfcVisitsDashboard() {
   const { user } = useAuth();
+  const { theme } = useTheme();
   const [selectedUsername, setSelectedUsername] = useState<string>("all");
+
+  const isDark = theme === "dark";
 
   const { data, isLoading, error, refetch, isRefetching } = useQuery<ApiResponse>({
     queryKey: ["nfcVisitAnalytics", selectedUsername],
@@ -235,18 +239,18 @@ export default function NfcVisitsDashboard() {
       <div className="dashboard-wrapper py-10">
         <div className="container px-4 md:px-6 lg:px-8">
           {/* Header row */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 pb-6 border-b border-gray-200">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 pb-6 border-b border-gray-200 dark:border-stone-800">
             <div>
               <div className="flex items-center gap-2 mb-1.5">
                 <Nfc className="w-6 h-6 text-amber-500" />
-                <span className="text-xs font-extrabold uppercase tracking-widest text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
+                <span className="text-xs font-extrabold uppercase tracking-widest text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 px-2.5 py-1 rounded-full">
                   NFC Live Tracking
                 </span>
               </div>
-              <h1 className="text-3xl font-extrabold text-stone-900 tracking-tight leading-none">
+              <h1 className="text-3xl font-extrabold text-stone-900 dark:text-stone-100 tracking-tight leading-none">
                 NFC Profile Visits
               </h1>
-              <p className="text-sm text-stone-500 mt-2">
+              <p className="text-sm text-stone-500 dark:text-stone-400 mt-2">
                 Real-time scans, traffic trends, and system metadata breakdown.
               </p>
             </div>
@@ -254,7 +258,7 @@ export default function NfcVisitsDashboard() {
             <div className="flex items-center gap-3">
               {ownedUsernames.length > 1 && (
                 <div className="flex flex-col gap-1">
-                  <label htmlFor="card-selector" className="text-xs font-semibold text-stone-500">
+                  <label htmlFor="card-selector" className="text-xs font-semibold text-stone-500 dark:text-stone-400">
                     Select NFC Card Profile:
                   </label>
                   <select
@@ -276,7 +280,7 @@ export default function NfcVisitsDashboard() {
               <button
                 onClick={() => void refetch()}
                 disabled={isRefetching}
-                className="flex items-center justify-center p-3 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 hover:border-amber-400 hover:text-amber-600 transition-all shadow-sm shrink-0 self-end"
+                className="flex items-center justify-center p-3 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:bg-stone-50 dark:hover:bg-stone-800 hover:border-amber-400 hover:text-amber-600 transition-all shadow-sm shrink-0 self-end"
                 aria-label="Refresh statistics"
               >
                 <RotateCcw className={`w-4 h-4 ${isRefetching ? "animate-spin text-amber-500" : ""}`} />
@@ -287,11 +291,11 @@ export default function NfcVisitsDashboard() {
           {ownedUsernames.length === 0 ? (
             /* Empty state */
             <div className="dashboard-card py-20 flex flex-col items-center justify-center text-center gap-6 max-w-lg mx-auto">
-              <div className="h-16 w-16 bg-amber-50 border border-amber-200 rounded-full flex items-center justify-center">
+              <div className="h-16 w-16 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 rounded-full flex items-center justify-center">
                 <Nfc className="w-8 h-8 text-amber-500" />
               </div>
-              <h2 className="text-xl font-bold text-stone-900">No NFC cards registered</h2>
-              <p className="text-sm text-stone-500 leading-relaxed">
+              <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100">No NFC cards registered</h2>
+              <p className="text-sm text-stone-500 dark:text-stone-400 leading-relaxed">
                 We couldn't find any confirmed NFC card profiles linked to this account. Visit and complete profile setup after purchasing cards.
               </p>
             </div>
@@ -347,9 +351,9 @@ export default function NfcVisitsDashboard() {
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-2">
                       <Calendar className="w-4 h-4 text-amber-500" />
-                      <h3 className="font-bold text-stone-900">Traffic History (Last 30 Days)</h3>
+                      <h3 className="font-bold text-stone-900 dark:text-stone-100">Traffic History (Last 30 Days)</h3>
                     </div>
-                    <span className="text-xs font-semibold text-stone-500 flex items-center gap-1">
+                    <span className="text-xs font-semibold text-stone-500 dark:text-stone-400 flex items-center gap-1">
                       <Info className="w-3.5 h-3.5" /> Live scan rate
                     </span>
                   </div>
@@ -367,7 +371,7 @@ export default function NfcVisitsDashboard() {
                               <stop offset="95%" stopColor="#F4B400" stopOpacity={0} />
                             </linearGradient>
                           </defs>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0,0,0,0.05)"} />
                           <XAxis
                             dataKey="date"
                             tickFormatter={(str) => {
@@ -379,18 +383,19 @@ export default function NfcVisitsDashboard() {
                                 return str;
                               }
                             }}
-                            stroke="#78716c"
+                            stroke={isDark ? "#a8a29e" : "#78716c"}
                             fontSize={11}
                             tickLine={false}
                           />
-                          <YAxis stroke="#78716c" fontSize={11} tickLine={false} allowDecimals={false} />
+                          <YAxis stroke={isDark ? "#a8a29e" : "#78716c"} fontSize={11} tickLine={false} allowDecimals={false} />
                           <Tooltip
                             contentStyle={{
-                              background: "rgba(255, 255, 255, 0.95)",
-                              border: "1px solid rgba(244, 180, 0, 0.2)",
+                              background: isDark ? "rgba(28, 25, 23, 0.95)" : "rgba(255, 255, 255, 0.95)",
+                              border: isDark ? "1px solid rgba(244, 180, 0, 0.3)" : "1px solid rgba(244, 180, 0, 0.2)",
                               borderRadius: "12px",
                               fontSize: "12px",
-                              boxShadow: "0 8px 20px rgba(0,0,0,0.06)",
+                              boxShadow: "0 8px 20px rgba(0,0,0,0.25)",
+                              color: isDark ? "#ffffff" : "#1a1a1a",
                             }}
                             labelFormatter={(label) => {
                               try {
@@ -425,7 +430,7 @@ export default function NfcVisitsDashboard() {
 
                 {/* Device Breakdown Card */}
                 <motion.div variants={cardVariants} className="dashboard-card">
-                  <h3 className="font-bold text-stone-900 mb-6 flex items-center gap-2">
+                  <h3 className="font-bold text-stone-900 dark:text-stone-100 mb-6 flex items-center gap-2">
                     <Smartphone className="w-4 h-4 text-amber-500" />
                     Device Breakdown
                   </h3>
@@ -490,14 +495,14 @@ export default function NfcVisitsDashboard() {
                     )}
                   </div>
 
-                  <div className="mt-8 pt-6 border-t border-stone-100 grid grid-cols-2 gap-4">
+                  <div className="mt-8 pt-6 border-t border-stone-100 dark:border-stone-800 grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-[10px] uppercase font-bold text-stone-400 tracking-wider">Top Operating System</p>
-                      <p className="text-base font-extrabold text-stone-800">{topOS}</p>
+                      <p className="text-[10px] uppercase font-bold text-stone-400 dark:text-stone-500 tracking-wider">Top Operating System</p>
+                      <p className="text-base font-extrabold text-stone-800 dark:text-stone-200">{topOS}</p>
                     </div>
                     <div>
-                      <p className="text-[10px] uppercase font-bold text-stone-400 tracking-wider">Top Browser</p>
-                      <p className="text-base font-extrabold text-stone-800">{topBrowser}</p>
+                      <p className="text-[10px] uppercase font-bold text-stone-400 dark:text-stone-500 tracking-wider">Top Browser</p>
+                      <p className="text-base font-extrabold text-stone-800 dark:text-stone-200">{topBrowser}</p>
                     </div>
                   </div>
                 </motion.div>
@@ -506,12 +511,12 @@ export default function NfcVisitsDashboard() {
               {/* Recent Visits Table */}
               <motion.div variants={cardVariants} className="dashboard-card overflow-hidden">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="font-bold text-stone-900 flex items-center gap-2">
+                  <h3 className="font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2">
                     <Zap className="w-4 h-4 text-amber-500" />
                     Recent Visits Activity (Last 15)
                   </h3>
                   {selectedUsername === "all" && (
-                    <span className="text-[10px] font-extrabold uppercase tracking-wide px-2.5 py-1 rounded bg-stone-100 text-stone-600 border border-stone-200">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wide px-2.5 py-1 rounded bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 border border-stone-200 dark:border-stone-700">
                       Multi-card aggregations
                     </span>
                   )}
@@ -532,11 +537,11 @@ export default function NfcVisitsDashboard() {
                       <tbody>
                         {analytics.recentVisits.map((visit) => (
                           <tr key={visit.id}>
-                            <td className="font-semibold text-stone-800">
+                            <td className="font-semibold text-stone-800 dark:text-stone-200">
                               {formatRelativeTime(visit.timestamp)}
                             </td>
                             {selectedUsername === "all" && (
-                              <td className="text-amber-600 font-bold">
+                              <td className="text-amber-600 dark:text-amber-400 font-bold">
                                 @{visit.username}
                               </td>
                             )}
@@ -546,8 +551,8 @@ export default function NfcVisitsDashboard() {
                                 {visit.device}
                               </span>
                             </td>
-                            <td className="text-stone-600">{visit.os}</td>
-                            <td className="text-stone-600">{visit.browser}</td>
+                            <td className="text-stone-600 dark:text-stone-400">{visit.os}</td>
+                            <td className="text-stone-600 dark:text-stone-400">{visit.browser}</td>
                           </tr>
                         ))}
                       </tbody>

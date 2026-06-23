@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -424,6 +425,7 @@
     }
 
     @media print {
+
       /* PDF NOTE: A4 page size required for print PDF output */
       @page {
         size: A4 portrait;
@@ -445,16 +447,17 @@
     }
   </style>
 </head>
+
 <body>
   <div class="invoice-wrapper" id="invoice-wrapper">
     <section class="invoice-header-box">
       <div class="header-left">
         <div class="company-name" id="company-name">Ping IFF LLP</div>
         <div class="company-address" id="company-address">
-          <div>745, Street No. 8,</div>
-          <div>Keshoram Complex Burail,</div>
-          <div>Sector 45C Chandigarh, Chandigarh 160047</div>
-          <div>INDIA</div>
+          <div>745, First Floor,<br /> Rani Boutique</div>
+          <div>Kesho Ram Complex, Ram Electricals</div>
+          <div>Sector 45, Burail</div>
+          <div>Chandigarh, Chandigarh, 160047, India</div>
         </div>
         <div class="company-ids" id="company-identifiers">
           <div id="company-gstin">GSTIN: 04ABGF35925N1ZU</div>
@@ -464,7 +467,8 @@
       </div>
       <div class="header-right">
         <div class="qr-block">
-          <img id="qr-code" class="qr-image" src="https://api.qrserver.com/v1/create-qr-code/?size=128x128&data=#PM12345" alt="QR Code" />
+          <img id="qr-code" class="qr-image"
+            src="https://api.qrserver.com/v1/create-qr-code/?size=128x128&data=#PM12345" alt="QR Code" />
         </div>
         <div class="invoice-meta-box">
           <div class="meta-label">Invoice No.</div>
@@ -548,14 +552,16 @@
         <div class="totals-row"><span>Total Quantity</span><span id="total-quantity">1</span></div>
         <div class="totals-row"><span>Total Taxable Amount</span><span id="total-taxable">₹1.00</span></div>
         <div class="totals-row"><span>Total Taxes</span><span id="total-taxes">₹0.18</span></div>
-        <div class="totals-row totals-grand"><span>Grand Total</span><span class="grand-total-value" id="grand-total">₹1.18</span></div>
+        <div class="totals-row totals-grand"><span>Grand Total</span><span class="grand-total-value"
+            id="grand-total">₹1.18</span></div>
       </div>
     </div>
 
     <div class="footer-section">
       <div class="footer-column">
         <span class="footer-label">Return Policy</span>
-        <div class="footer-text">Goods once sold can only be returned under the applicable policy and statutory conditions.</div>
+        <div class="footer-text">Goods once sold can only be returned under the applicable policy and statutory
+          conditions.</div>
       </div>
       <div class="footer-column">
         <span class="footer-label">Contact</span>
@@ -624,10 +630,10 @@
       const defaultCompany = {
         name: 'Ping IFF LLP',
         addressLines: [
-          '745, Street No. 8,',
-          'Keshoram Complex Burail,',
-          'Sector 45C Chandigarh, Chandigarh 160047',
-          'INDIA'
+          '745, First Floor, Rani Boutique',
+          'Kesho Ram Complex, Ram Electricals',
+          'Sector 45, Burail',
+          'Chandigarh, Chandigarh, 160047, India'
         ],
         gstin: '04ABGF35925N1ZU',
         pan: 'ABGFP5925N',
@@ -711,4 +717,5 @@
     renderInvoice(window.INVOICE_DATA);
   </script>
 </body>
+
 </html>

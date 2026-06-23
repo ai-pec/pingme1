@@ -698,10 +698,10 @@ export const buildInvoiceDataFromPrebooking = (
     company: {
       name: "Ping IFF LLP",
       addressLines: [
-        "745, Street No. 8,",
-        "Keshoram Complex Burail,",
-        "Sector 45C Chandigarh (160047)",
-        "INDIA",
+        "745, First Floor, Rani Boutique",
+        "Kesho Ram Complex, Ram Electricals",
+        "Sector 45, Burail",
+        "Chandigarh, Chandigarh, 160047, India",
       ],
       gstin: "04ABGF35925N1ZU",
       pan: "ABGFP5925N",

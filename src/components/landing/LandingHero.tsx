@@ -65,11 +65,11 @@ const heroImageUrl = buildProductImageUrl(heroImagePath);
    DESIGN TOKENS
 ----------------------------------------------------------------- */
 
-const GOLD      = "#C8820A";
-const GOLD_MID  = "#F5A623";
+const GOLD = "#C8820A";
+const GOLD_MID = "#F5A623";
 const GOLD_SOFT = "#E8940F";
-const CREAM     = "#FFF9EB";
-const CREAM_2   = "#FFF3D6";
+const CREAM = "#FFF9EB";
+const CREAM_2 = "#FFF3D6";
 const DARK_GOLD = "#3D2200";
 
 /* -----------------------------------------------------------------
@@ -329,10 +329,10 @@ const SectionEyebrow: React.FC<{ children: React.ReactNode; align?: "center" | "
 ----------------------------------------------------------------- */
 
 const SCAN_PRODUCTS = [
-  { label: "Vehicle Tag",  icon: CarFront,      color: GOLD,      bg: "rgba(245,166,35,0.13)" },
+  { label: "Vehicle Tag", icon: CarFront, color: GOLD, bg: "rgba(245,166,35,0.13)" },
   { label: "Lost & Found", icon: PackageSearch, color: "#64748B", bg: "rgba(100,116,139,0.13)" },
-  { label: "Pet Tag",      icon: PawPrint,      color: "#10B981", bg: "rgba(16,185,129,0.13)" },
-  { label: "NFC Card",     icon: Nfc,           color: "#0EA5E9", bg: "rgba(14,165,233,0.13)" },
+  { label: "Pet Tag", icon: PawPrint, color: "#10B981", bg: "rgba(16,185,129,0.13)" },
+  { label: "NFC Card", icon: Nfc, color: "#0EA5E9", bg: "rgba(14,165,233,0.13)" },
 ];
 
 const ScanStory: React.FC<{ offerings: ReturnType<typeof getOfferings> }> = ({ offerings }) => {
@@ -453,10 +453,10 @@ const ScanStory: React.FC<{ offerings: ReturnType<typeof getOfferings> }> = ({ o
                   className="absolute h-5 w-5 pointer-events-none"
                   style={{
                     ...pos,
-                    borderTop:    pi < 2  ? `2px solid ${active.color}60` : "none",
+                    borderTop: pi < 2 ? `2px solid ${active.color}60` : "none",
                     borderBottom: pi >= 2 ? `2px solid ${active.color}60` : "none",
-                    borderLeft:   pi % 2 === 0 ? `2px solid ${active.color}60` : "none",
-                    borderRight:  pi % 2 === 1 ? `2px solid ${active.color}60` : "none",
+                    borderLeft: pi % 2 === 0 ? `2px solid ${active.color}60` : "none",
+                    borderRight: pi % 2 === 1 ? `2px solid ${active.color}60` : "none",
                   }}
                 />
               ))}
@@ -538,7 +538,7 @@ const ScanStory: React.FC<{ offerings: ReturnType<typeof getOfferings> }> = ({ o
         {SCAN_PRODUCTS.map((prod, i) => {
           const ProdIcon = prod.icon;
           const chipPositions = [
-            { top: "8%",  left: "-52%" },
+            { top: "8%", left: "-52%" },
             { top: "14%", right: "-52%" },
             { top: "56%", left: "-52%" },
             { top: "60%", right: "-52%" },
@@ -557,8 +557,8 @@ const ScanStory: React.FC<{ offerings: ReturnType<typeof getOfferings> }> = ({ o
               }}
               transition={{
                 opacity: { delay: 0.6 + i * 0.14, duration: 0.5 },
-                scale:   { delay: 0.6 + i * 0.14, duration: 0.5 },
-                y:       { duration: 3.6 + i * 0.5, repeat: Infinity, ease: "easeInOut", delay: i * 0.35 },
+                scale: { delay: 0.6 + i * 0.14, duration: 0.5 },
+                y: { duration: 3.6 + i * 0.5, repeat: Infinity, ease: "easeInOut", delay: i * 0.35 },
               }}
             >
               <motion.div
@@ -725,10 +725,10 @@ const TrustTicker: React.FC = () => {
 
 const StatsBar: React.FC = () => {
   const stats = [
-    { value: 2400, suffix: "+",       label: "Tags Active",   icon: Activity    },
-    { value: 98,   suffix: "%",       label: "Delivery Rate", icon: CheckCircle2 },
-    { value: 12,   suffix: "s",       label: "Avg. Response", icon: Zap          },
-    { value: 4,    suffix: " states", label: "Across India",  icon: MapPinned    },
+    { value: 2400, suffix: "+", label: "Tags Active", icon: Activity },
+    { value: 98, suffix: "%", label: "Delivery Rate", icon: CheckCircle2 },
+    { value: 12, suffix: "s", label: "Avg. Response", icon: Zap },
+    { value: 4, suffix: " states", label: "Across India", icon: MapPinned },
   ];
 
   return (
@@ -1168,7 +1168,7 @@ const LandingHero = () => {
   useEffect(() => {
     const unsub = subscribeToProducts(
       (latest) => { setProducts(latest); setHasProductSnapshot(true); },
-      (err)    => { console.error("Hero products error", err); setHasProductSnapshot(true); },
+      (err) => { console.error("Hero products error", err); setHasProductSnapshot(true); },
     );
     return unsub;
   }, []);
@@ -1210,7 +1210,7 @@ const LandingHero = () => {
           style={{
             width: 800,
             height: 560,
-            top:  useTransform(smoothBgY, v => `calc(${v}% - 280px)`),
+            top: useTransform(smoothBgY, v => `calc(${v}% - 280px)`),
             left: useTransform(smoothBgX, v => `calc(${v}% - 400px)`),
             background: "radial-gradient(ellipse, rgba(245,166,35,0.13) 0%, transparent 70%)",
           }}
@@ -1422,10 +1422,10 @@ const LandingHero = () => {
               className="flex flex-wrap gap-2"
             >
               {[
-                { icon: ShieldCheck, label: "No app needed"  },
-                { icon: EyeOff,      label: "Number hidden"  },
-                { icon: Nfc,         label: "QR + NFC"       },
-                { icon: Sparkles,    label: "Made in India"  },
+                { icon: ShieldCheck, label: "No app needed" },
+                { icon: EyeOff, label: "Number hidden" },
+                { icon: Nfc, label: "QR + NFC" },
+                { icon: Sparkles, label: "Made in India" },
               ].map((item) => {
                 const Icon = item.icon;
                 return (
@@ -1597,13 +1597,17 @@ const LandingHero = () => {
                     </p>
                     <h3 className="font-extrabold text-xl text-foreground mb-2">Our Office</h3>
                     <a
-                      href="https://www.google.com/maps/search/?api=1&query=745+Burail+Ekta+Market+Burail+Village+Sector+45+Chandigarh+160047"
+                      href="https://www.google.com/maps/search/?api=1&query=745+First+Floor+Rani+Boutique+Kesho+Ram+Complex+Ram+Electricals+Sector+45+Burail+Chandigarh+Chandigarh+160047+India"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-sm text-muted-foreground hover:text-primary transition-colors block leading-7"
                     >
-                      Ping IFF LLP · 745, Burail, Ekta Market,<br />
-                      Burail Village, Sector 45, Chandigarh – 160047
+                      Ping IFF LLP · 745, First Floor,<br /> Rani Boutique<br />
+                      Kesho Ram Complex<br />
+                      Ram Electricals, Sector 45<br />
+                      Burail, Chandigarh<br />
+                      Chandigarh – 160047<br />
+                      India
                     </a>
                     <div className="mt-3 flex flex-wrap gap-5 text-sm text-muted-foreground">
                       <a
@@ -1632,9 +1636,9 @@ const LandingHero = () => {
                   Quick links
                 </p>
                 {[
-                  { href: "/products",               label: "Browse Tags",       external: false },
-                  { href: "/about",                  label: "About Us",          external: false },
-                  { href: "https://app.plzpingme.com", label: "Register a Tag", external: true  },
+                  { href: "/products", label: "Browse Tags", external: false },
+                  { href: "/about", label: "About Us", external: false },
+                  { href: "https://app.plzpingme.com", label: "Register a Tag", external: true },
                 ].map((link) => {
                   const LinkOrA = link.external ? "a" : Link;
                   return (

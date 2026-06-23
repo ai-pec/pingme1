@@ -87,7 +87,7 @@ const contactDetails = [
   },
   {
     label: "Address",
-    value: "745, Burail, Ekta Market, Sector 45, Chandigarh – 160047",
+    value: "745, First Floor, Rani Boutique, Kesho Ram Complex, Ram Electricals, Sector 45, Burail, Chandigarh, Chandigarh, 160047, India",
     icon: MapPin,
     copyable: true,
   },
