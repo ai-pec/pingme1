@@ -42,6 +42,7 @@ export interface NFCProfile {
   youtube?: string;
   facebook?: string;
   profilePhoto?: string;
+  coverPhoto?: string;
   companyAddress?: string;
   googleMapsLink?: string;
   upiId?: string;
@@ -59,6 +60,8 @@ export interface NFCProfile {
     url: string;
     type?: string;
   }>;
+  themeBgColor?: string;
+  themeAccentColor?: string;
 }
 
 export interface NfcLineProfile {
@@ -174,6 +177,7 @@ const sanitizeNFCProfile = (profile: NFCProfile): NFCProfile => {
     ...(profile.youtube ? { youtube: sanitizeText(profile.youtube) } : {}),
     ...(profile.facebook ? { facebook: sanitizeText(profile.facebook) } : {}),
     ...(profile.profilePhoto ? { profilePhoto: sanitizeText(profile.profilePhoto) } : {}),
+    ...(profile.coverPhoto ? { coverPhoto: sanitizeText(profile.coverPhoto) } : {}),
     ...(profile.companyAddress ? { companyAddress: sanitizeText(profile.companyAddress) } : {}),
     ...(profile.googleMapsLink ? { googleMapsLink: sanitizeText(profile.googleMapsLink) } : {}),
     ...(profile.upiId ? { upiId: sanitizeText(profile.upiId) } : {}),
@@ -199,6 +203,8 @@ const sanitizeNFCProfile = (profile: NFCProfile): NFCProfile => {
           })),
         }
       : {}),
+    ...(profile.themeBgColor ? { themeBgColor: sanitizeText(profile.themeBgColor) } : {}),
+    ...(profile.themeAccentColor ? { themeAccentColor: sanitizeText(profile.themeAccentColor) } : {}),
   };
 };
 

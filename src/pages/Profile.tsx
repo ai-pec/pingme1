@@ -24,7 +24,7 @@ const AddressManagement = lazy(() => import("@/components/profile/AddressManagem
 
 export default function Profile() {
   const { userId } = useParams<{ userId?: string }>();
-  const { user, profile: currentUserProfile, resendVerification, refreshProfile } = useAuth();
+  const { user, profile: currentUserProfile, loading, resendVerification, refreshProfile } = useAuth();
   const [fetchedProfile, setFetchedProfile] = useState<UserProfile | null>(null);
 
   // Determine if viewing another user's profile
@@ -56,11 +56,14 @@ export default function Profile() {
     youtube: "",
     facebook: "",
     profilePhoto: "",
+    coverPhoto: "",
     upiId: "",
     razorpayLink: "",
     appointmentBookingLink: "",
     projects: [],
     documents: [],
+    themeBgColor: "",
+    themeAccentColor: "",
   });
 
   // Fetch other user's profile if userId parameter is provided
@@ -133,11 +136,14 @@ export default function Profile() {
     youtube: nfcProfile?.youtube || "",
     facebook: nfcProfile?.facebook || "",
     profilePhoto: nfcProfile?.profilePhoto || "",
+    coverPhoto: nfcProfile?.coverPhoto || "",
     upiId: nfcProfile?.upiId || "",
     razorpayLink: nfcProfile?.razorpayLink || "",
     appointmentBookingLink: nfcProfile?.appointmentBookingLink || "",
     projects: nfcProfile?.projects || [],
     documents: nfcProfile?.documents || [],
+    themeBgColor: nfcProfile?.themeBgColor || "",
+    themeAccentColor: nfcProfile?.themeAccentColor || "",
   });
 
   const openEditNFC = (order: PrebookingRecord, lineKey?: string, lineTitle?: string) => {
@@ -188,7 +194,7 @@ export default function Profile() {
     }
 
     // Viewing own profile: ensure the current profile is loaded
-    if (!isViewingOtherUser && !profile) {
+    if (!isViewingOtherUser && loading) {
       return (
         <MainLayout>
           <div className="container py-8 flex items-center justify-center min-h-[60vh]">
@@ -268,7 +274,6 @@ export default function Profile() {
 
             <PersonalInfoForm />
             <EmailSettings />
-            <AddressManagement />
               <div className="rounded-xl border bg-card p-4 sm:p-5">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-start gap-3">

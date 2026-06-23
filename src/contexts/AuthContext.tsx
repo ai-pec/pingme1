@@ -90,8 +90,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Get or sync profile
           let userProfile = await getUserProfile(firebaseUser.uid);
 
-          // Sync email verification status if needed
-          if (userProfile && userProfile.emailVerified !== firebaseUser.emailVerified) {
+          if (!userProfile) {
+            // Lazy create profile if it doesn't exist (e.g. for imported/new users)
+            const providerId = firebaseUser.providerData[0]?.providerId;
+            await createUserProfile(firebaseUser.uid, {
+              email: firebaseUser.email || "",
+              displayName: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "User",
+              photoURL: firebaseUser.photoURL || null,
+              authProvider: providerId === "google.com" ? "google" : "email",
+            });
+            userProfile = await getUserProfile(firebaseUser.uid);
+          } else if (userProfile.emailVerified !== firebaseUser.emailVerified) {
+            // Sync email verification status if needed
             await syncEmailVerification(firebaseUser.uid, firebaseUser.emailVerified);
             userProfile = { ...userProfile, emailVerified: firebaseUser.emailVerified };
           }

@@ -67,7 +67,7 @@ const pageShell = ({ title, description, content }) => {
     .replace(/<meta property="og:description" content=".*?" \/>/s, `<meta property="og:description" content="${escapeHtml(description)}" />`)
     .replace(/<meta name="twitter:title" content=".*?" \/>/s, `<meta name="twitter:title" content="${escapeHtml(title)}" />`)
     .replace(/<meta name="twitter:description" content=".*?" \/>/s, `<meta name="twitter:description" content="${escapeHtml(description)}" />`)
-    .replace(/<div id="root"><\/div>/s, `<div id="root">${siteNav}${content}${siteFooter}</div>`);
+    .replace(/<div id="root"><\/div>/s, `<div id="root"><noscript>${siteNav}${content}${siteFooter}</noscript></div>`);
 
   return htmlWithContent;
 };

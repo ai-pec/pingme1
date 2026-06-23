@@ -335,6 +335,7 @@ const mapDocToPublicProfileCandidate = (docSnap) => {
     youtube: asOptionalText(nfcProfile.youtube),
     facebook: asOptionalText(nfcProfile.facebook),
     profilePhoto: asOptionalText(nfcProfile.profilePhoto),
+    coverPhoto: asOptionalText(nfcProfile.coverPhoto),
     upiId: asOptionalText(nfcProfile.upiId),
     razorpayLink: asOptionalText(nfcProfile.razorpayLink),
     appointmentBookingLink: asOptionalText(nfcProfile.appointmentBookingLink),
@@ -403,9 +404,12 @@ const buildPublicNfcProfilePayload = ({ profileId, profile }) => {
     ...(profile?.youtube ? { youtube: sanitizeText(profile.youtube) } : {}),
     ...(profile?.facebook ? { facebook: sanitizeText(profile.facebook) } : {}),
     ...(profile?.profilePhoto ? { profilePhoto: sanitizeText(profile.profilePhoto) } : {}),
+    ...(profile?.coverPhoto ? { coverPhoto: sanitizeText(profile.coverPhoto) } : {}),
     ...(profile?.upiId ? { upiId: sanitizeText(profile.upiId) } : {}),
     ...(profile?.razorpayLink ? { razorpayLink: sanitizeText(profile.razorpayLink) } : {}),
     ...(profile?.appointmentBookingLink ? { appointmentBookingLink: sanitizeText(profile.appointmentBookingLink) } : {}),
+    ...(profile?.themeBgColor ? { themeBgColor: sanitizeText(profile.themeBgColor) } : {}),
+    ...(profile?.themeAccentColor ? { themeAccentColor: sanitizeText(profile.themeAccentColor) } : {}),
     ...(Array.isArray(profile?.projects)
       ? {
         projects: profile.projects
@@ -848,11 +852,20 @@ exports.syncNfcProfileDraft = onRequest({
         return;
       }
 
+      const bookingId = String(profileId).split("_")[0];
+      const bookingDoc = await db.collection("booking").doc(bookingId).get();
+      const legacyDoc = await db.collection("prebookings").doc(bookingId).get();
+      const bookingData = bookingDoc.exists ? bookingDoc.data() : (legacyDoc.exists ? legacyDoc.data() : null);
+
+      const isConfirmed = bookingData && (bookingData.status === "confirmed" || (bookingData.updatedSource && bookingData.updatedSource !== "prePaymentDraft"));
+      const status = isConfirmed ? "confirmed" : "draft";
+      const source = isConfirmed ? "dashboardEdit" : "prePaymentDraft";
+
       const result = await syncProfileToNfcProfilesCollection({
         profileId,
         profile: nfcProfile,
-        source: "prePaymentDraft",
-        status: "draft",
+        source,
+        status,
       });
 
       if (!result.synced) {
@@ -1062,18 +1075,12 @@ exports.sendReverseContactEmail = onRequest({
         return;
       }
 
-      // 2. Send email to card owner
+      // 2. Resolve email transporter configurations
       const transporter = getMailTransporter();
       const fromEmail = (
         SMTP_FROM.value() || SMTP_USER.value() ||
         process.env.SMTP_FROM || process.env.SMTP_USER || ""
       ).trim();
-
-      if (!transporter || !fromEmail) {
-        console.warn("sendReverseContactEmail skipped due to missing SMTP configuration.");
-        res.status(500).send("Email configuration error on server.");
-        return;
-      }
 
       // Generate AI lead intelligence & outreach drafts if API key is configured
       let aiSectionHtml = "";
@@ -1176,15 +1183,7 @@ ${aiResult.personalizedEmailBody.replace(/<[^>]*>/g, "")}
         </div>
       `;
 
-      await transporter.sendMail({
-        from: fromEmail,
-        to: ownerEmail,
-        subject,
-        text,
-        html,
-      });
-
-      // Save lead details to Firestore nfcLeads collection
+      // Save lead details to Firestore nfcLeads collection (Primary action)
       try {
         const leadData = {
           cardOwnerUsername: username,
@@ -1203,6 +1202,24 @@ ${aiResult.personalizedEmailBody.replace(/<[^>]*>/g, "")}
         console.log(`Lead saved successfully in Firestore nfcLeads for username: ${username}`);
       } catch (dbErr) {
         console.error("Error saving lead details to Firestore:", dbErr);
+      }
+
+      // Try sending email notification (Secondary action - do not block on failure/missing config)
+      try {
+        if (!transporter || !fromEmail) {
+          console.warn("sendReverseContactEmail notification email skipped due to missing SMTP configuration.");
+        } else {
+          await transporter.sendMail({
+            from: fromEmail,
+            to: ownerEmail,
+            subject,
+            text,
+            html,
+          });
+          console.log(`Notification email successfully sent to ${ownerEmail}`);
+        }
+      } catch (mailErr) {
+        console.error("Failed to send notification email:", mailErr);
       }
 
       res.status(200).json({ success: true });

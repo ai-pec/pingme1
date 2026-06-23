@@ -28,6 +28,87 @@ const getInitials = (name?: string): string => {
   return name.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 };
 
+const copyToClipboardFallback = (text: string): boolean => {
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.top = "-9999px";
+  textarea.style.left = "-9999px";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  
+  // For iOS selection support
+  textarea.focus();
+  textarea.select();
+  
+  const range = document.createRange();
+  range.selectNodeContents(textarea);
+  const selection = window.getSelection();
+  if (selection) {
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
+  textarea.setSelectionRange(0, 999999);
+  
+  let success = false;
+  try {
+    success = document.execCommand("copy");
+  } catch (err) {
+    console.error("Fallback copy failed:", err);
+  }
+  
+  document.body.removeChild(textarea);
+  return success;
+};
+
+const copyTextToClipboard = async (text: string): Promise<boolean> => {
+  if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (err) {
+      console.warn("navigator.clipboard.writeText failed, trying fallback...", err);
+    }
+  }
+  return copyToClipboardFallback(text);
+};
+
+const showStylishSuccessToast = (message: string) => {
+  toast.success(message, {
+    style: {
+      background: "rgba(31, 31, 37, 0.85)",
+      backdropFilter: "blur(20px)",
+      WebkitBackdropFilter: "blur(20px)",
+      border: "1px solid rgba(255, 255, 255, 0.08)",
+      color: "#E4E1E9",
+      borderRadius: "100px",
+      fontSize: "13px",
+      fontWeight: 500,
+      boxShadow: "0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.05)",
+      padding: "10px 16px",
+    },
+    icon: <Check size={14} style={{ color: "#10b981" }} />,
+  });
+};
+
+const showStylishErrorToast = (message: string) => {
+  toast.error(message, {
+    style: {
+      background: "rgba(31, 31, 37, 0.85)",
+      backdropFilter: "blur(20px)",
+      WebkitBackdropFilter: "blur(20px)",
+      border: "1px solid rgba(239, 68, 68, 0.3)",
+      color: "#E4E1E9",
+      borderRadius: "100px",
+      fontSize: "13px",
+      fontWeight: 500,
+      boxShadow: "0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.05)",
+      padding: "10px 16px",
+    },
+  });
+};
+
 /* ── vCard builder ── */
 function createVCard(profile: PublicNfcProfile) {
   const fn = profile.name || profile.username || "";
@@ -131,7 +212,7 @@ function ShareBackModal({ cardOwnerUsername, cardOwnerName, onClose }: ShareBack
 
     const baseUrl = getPaymentApiBaseUrl();
     if (!baseUrl) {
-      toast.error("Service is temporarily unavailable.");
+      showStylishErrorToast("Service is temporarily unavailable.");
       return;
     }
 
@@ -156,11 +237,11 @@ function ShareBackModal({ cardOwnerUsername, cardOwnerName, onClose }: ShareBack
       }
 
       setSubmitted(true);
-      toast.success("Your info was shared! 🎉");
+      showStylishSuccessToast("Your info was shared! 🎉");
       setTimeout(onClose, 2200);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Something went wrong. Please try again.";
-      toast.error(msg);
+      showStylishErrorToast(msg);
     } finally {
       setSubmitting(false);
     }
@@ -394,11 +475,11 @@ function ShareSheet({ url, name, onClose }: ShareSheetProps) {
   }, []);
 
   const handleCopy = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(url);
+    const success = await copyTextToClipboard(url);
+    if (success) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch {
+    } else {
       window.prompt("Copy this profile link:", url);
     }
   }, [url]);
@@ -458,6 +539,18 @@ function ShareSheet({ url, name, onClose }: ShareSheetProps) {
   );
 }
 
+const getSocialIconComponent = (label: string) => {
+  switch (label.toLowerCase()) {
+    case "linkedin":    return Linkedin;
+    case "x / twitter":
+    case "twitter":     return Twitter;
+    case "instagram":   return Instagram;
+    case "youtube":     return Youtube;
+    case "facebook":    return Facebook;
+    default:            return LinkIcon;
+  }
+};
+
 /* ═══════════════════════════════════════════════════════════════════════════
    Main Component
 ═══════════════════════════════════════════════════════════════════════════ */
@@ -477,6 +570,19 @@ export default function PublicNFCProfile() {
   const [profile,        setProfile]        = useState<PublicNfcProfile | null>(null);
   const [shareSheetOpen, setShareSheetOpen] = useState(false);
   const [shareBackOpen,  setShareBackOpen]  = useState(false);
+  const [copiedField,    setCopiedField]    = useState<string | null>(null);
+  const [isAboutExpanded, setIsAboutExpanded] = useState(false);
+
+  const handleCopyValue = async (text: string, fieldId: string) => {
+    const success = await copyTextToClipboard(text);
+    if (success) {
+      setCopiedField(fieldId);
+      showStylishSuccessToast("Copied to clipboard!");
+      setTimeout(() => setCopiedField(null), 2000);
+    } else {
+      showStylishErrorToast("Failed to copy to clipboard");
+    }
+  };
 
   useEffect(() => {
     let isCancelled = false;
@@ -523,6 +629,12 @@ export default function PublicNFCProfile() {
     [profile?.businessTags]
   );
 
+  const displayAboutText = useMemo(() => {
+    const text = profile?.businessOverview || "";
+    if (text.length <= 180 || isAboutExpanded) return text;
+    return `${text.slice(0, 185)}...`;
+  }, [profile?.businessOverview, isAboutExpanded]);
+
   const subtitle = [profile?.jobTitle, profile?.companyName].filter(Boolean).join(" · ");
 
   const socialRows = [
@@ -551,7 +663,7 @@ export default function PublicNFCProfile() {
       a.href   = `data:text/vcard;charset=utf-8,${encodeURIComponent(vcard)}`;
       a.download = filename;
       document.body.appendChild(a); a.click(); a.remove();
-      toast.success("vCard downloaded");
+      showStylishSuccessToast("vCard downloaded");
     };
 
     const nav: any = navigator;
@@ -561,7 +673,7 @@ export default function PublicNFCProfile() {
     if (typeof nav.canShare === "function" && nav.canShare({ files: [file] })) {
       try {
         await nav.share({ files: [file], title: profile.name || profile.username });
-        toast.success("Contact shared");
+        showStylishSuccessToast("Contact shared");
         sharedSuccessfully = true;
       } catch (err: any) {
         // Permission denied or unsupported — fall through to text share / download
@@ -572,7 +684,7 @@ export default function PublicNFCProfile() {
     if (!sharedSuccessfully && typeof nav.share === "function") {
       try {
         await nav.share({ title: profile.name || profile.username, text: vcard });
-        toast.success("Contact shared");
+        showStylishSuccessToast("Contact shared");
         sharedSuccessfully = true;
       } catch (err: any) {
         // Permission denied or unsupported — fall through to download
@@ -590,342 +702,368 @@ export default function PublicNFCProfile() {
 
 
   /* ── Render ── */
+  const themeBgColor = profile?.themeBgColor || "#0e0e13";
+  const themeAccentColor = profile?.themeAccentColor || "#7000ff";
+
+  const customStyles = useMemo(() => {
+    return {
+      "--c-bg": themeBgColor,
+      "--c-accent": themeAccentColor,
+      "--c-accent-glow": `${themeAccentColor}44`,
+      "--c-accent-glow-subtle": `${themeAccentColor}15`,
+      "--c-border-accent": `${themeAccentColor}30`,
+    } as React.CSSProperties;
+  }, [themeBgColor, themeAccentColor]);
+
   return (
-    <div className="nfc-public-page">
+    <div className="nfc-public-page" style={customStyles}>
       <main className="nfc-app-shell">
 
-        <section className="nfc-card">
+        {/* Floating/top indicator bar */}
+        <div className="nfc-indicator-bar">
+          <div className="nfc-indicator-pulse-ring" />
+          <Nfc className="nfc-indicator-icon" size={16} />
+          <span className="nfc-indicator-text">READY FOR NFC TAP</span>
+        </div>
 
-          <header className="nfc-card-header">
-            <div className="nfc-header-top">
-              <div className="nfc-avatar-wrap">
-                {profile?.profilePhoto ? (
-                  <img
-                    src={profile.profilePhoto}
-                    alt={profile.name || profile.username}
-                    className="nfc-profile-photo"
-                  />
-                ) : (
-                  <div className="nfc-avatar-placeholder">
-                    {profile ? getInitials(profile.name || profile.username) : <Nfc size={28} />}
+        {loading && (
+          <div className="nfc-loader-wrap">
+            <div className="nfc-spinner" />
+            <span className="nfc-loader-text">Loading profile…</span>
+          </div>
+        )}
+
+        {!loading && error && (
+          <div className="nfc-empty-state">
+            <h2>Profile not available</h2>
+            <p>{error}</p>
+          </div>
+        )}
+
+        {!loading && !error && profile && !hasContent && (
+          <div className="nfc-empty-state">
+            <h2>Profile is empty</h2>
+            <p>The owner hasn't added details yet. Check back soon.</p>
+          </div>
+        )}
+
+        {!loading && !error && profile && hasContent && (
+          <>
+            {/* Header Block (Outer wrapper) */}
+            <div className="nfc-header-section">
+              {profile.coverPhoto && (
+                <div className="nfc-cover-wrap">
+                  <img src={profile.coverPhoto} alt="Cover Banner" className="nfc-cover-photo" />
+                </div>
+              )}
+
+              <div className="nfc-header-content-wrapper">
+                <div className={`nfc-avatar-wrap ${!profile.coverPhoto ? "nfc-avatar-no-cover" : ""}`}>
+                  {profile.profilePhoto ? (
+                    <img
+                      src={profile.profilePhoto}
+                      alt={profile.name || profile.username}
+                      className="nfc-profile-photo"
+                    />
+                  ) : (
+                    <div className="nfc-avatar-placeholder">
+                      {getInitials(profile.name || profile.username)}
+                    </div>
+                  )}
+                </div>
+
+                <div className="nfc-header-info">
+                  <h1>{profile.name || normalizedUsername || "NFC Profile"}</h1>
+                  {subtitle && <p className="nfc-sub-title">{subtitle}</p>}
+                  
+                  {profile.username && (
+                    <div className="nfc-username-badge">
+                      @{profile.username.toLowerCase()}
+                    </div>
+                  )}
+
+                  {profile.bio && <p className="nfc-bio-centered">{profile.bio}</p>}
+
+                  {/* Quick action circles row */}
+                  <div className="nfc-quick-actions-row">
+                    <button onClick={handleSaveContact} className="nfc-quick-action-btn">
+                      <div className="nfc-quick-action-icon-circle">
+                        <UserPlus size={20} />
+                      </div>
+                      <span className="nfc-quick-action-label">SAVE</span>
+                    </button>
+
+                    {profile.email && (
+                      <a href={`mailto:${profile.email}`} className="nfc-quick-action-btn">
+                        <div className="nfc-quick-action-icon-circle">
+                          <Mail size={20} />
+                        </div>
+                        <span className="nfc-quick-action-label">EMAIL</span>
+                      </a>
+                    )}
+
+                    {profile.phone && (
+                      <a href={`tel:${profile.phone}`} className="nfc-quick-action-btn">
+                        <div className="nfc-quick-action-icon-circle">
+                          <Phone size={20} />
+                        </div>
+                        <span className="nfc-quick-action-label">CALL</span>
+                      </a>
+                    )}
+
+                    {profile.phone && (
+                      <a
+                        href={`https://wa.me/${profile.phone.replace(/\D/g, "")}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="nfc-quick-action-btn"
+                      >
+                        <div className="nfc-quick-action-icon-circle">
+                          <MessageCircle size={20} />
+                        </div>
+                        <span className="nfc-quick-action-label">WHATSAPP</span>
+                      </a>
+                    )}
+
+                    <button onClick={() => setShareSheetOpen(true)} className="nfc-quick-action-btn">
+                      <div className="nfc-quick-action-icon-circle">
+                        <Share2 size={20} />
+                      </div>
+                      <span className="nfc-quick-action-label">SHARE</span>
+                    </button>
                   </div>
-                )}
-              </div>
 
-              <div className="nfc-header-info">
-                <p className="nfc-eyebrow">NFC Business Profile</p>
-                <h1>{profile?.name || (loading ? "Loading…" : normalizedUsername || "NFC Profile")}</h1>
-                {subtitle && <p className="nfc-sub-title">{subtitle}</p>}
-
-                <div className="nfc-btn-row">
-                  <button
-                    className="nfc-save-btn"
-                    disabled={!profile}
-                    onClick={handleSaveContact}
-                  >
-                    <UserPlus />
-                    Save Contact
-                  </button>
-                  {profile?.phone && (
-                    <a
-                      href={`tel:${profile.phone}`}
-                      className="nfc-action-btn"
-                    >
-                      <Phone />
-                      Call
-                    </a>
+                  {/* Primary CTA (Appointment Booking) */}
+                  {profile.appointmentBookingLink && (
+                    <div className="nfc-booking-cta-wrap">
+                      <a
+                        href={linkify(profile.appointmentBookingLink)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="nfc-booking-btn"
+                      >
+                        <Calendar size={18} />
+                        Book an Appointment
+                      </a>
+                    </div>
                   )}
-                  {profile?.phone && (
-                    <a
-                      href={`https://wa.me/${profile.phone.replace(/\D/g, '')}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="nfc-action-btn nfc-whatsapp-btn"
-                    >
-                      <MessageCircle />
-                      WhatsApp
-                    </a>
-                  )}
-                  {profile?.email && (
-                    <a
-                      href={`mailto:${profile.email}`}
-                      className="nfc-action-btn"
-                    >
-                      <Mail />
-                      Email
-                    </a>
-                  )}
-                  <button
-                    className="nfc-share-btn"
-                    onClick={() => setShareSheetOpen(true)}
-                  >
-                    <Share2 />
-                    Share
-                  </button>
                 </div>
               </div>
             </div>
-          </header>
 
-          {loading && (
-            <div className="nfc-loader-wrap">
-              <div className="nfc-spinner" />
-              <span className="nfc-loader-text">Loading profile…</span>
-            </div>
-          )}
-
-          {!loading && error && (
-            <div className="nfc-empty-state">
-              <h2>Profile not available</h2>
-              <p>{error}</p>
-            </div>
-          )}
-
-          {!loading && !error && profile && !hasContent && (
-            <div className="nfc-empty-state">
-              <h2>Profile is empty</h2>
-              <p>The owner hasn't added details yet. Check back soon.</p>
-            </div>
-          )}
-
-          {!loading && !error && profile && hasContent && (
-            <div className="nfc-profile-content">
-
-              {(profile.bio || profile.businessOverview || tagList.length > 0) && (
-                <div className="nfc-profile-section">
-                  <p className="nfc-section-title">About Me / Company</p>
-                  {profile.bio && <p className="nfc-bio">{profile.bio}</p>}
-                  {profile.businessOverview && <p className="nfc-bio">{profile.businessOverview}</p>}
+            {/* Individual Bento-Grid Widget Stack */}
+            <div className="nfc-cards-stack">
+              {/* About Card */}
+              {(profile.businessOverview || tagList.length > 0) && (
+                <div className="nfc-profile-card">
+                  <h3 className="nfc-card-title">About</h3>
+                  {profile.businessOverview && (
+                    <p className="nfc-about-text">
+                      {displayAboutText}
+                      {profile.businessOverview.length > 180 && (
+                        <button
+                          onClick={() => setIsAboutExpanded(!isAboutExpanded)}
+                          className="nfc-read-more-btn"
+                        >
+                          {isAboutExpanded ? "Read less" : "Read more"}
+                        </button>
+                      )}
+                    </p>
+                  )}
                   {tagList.length > 0 && (
                     <div className="nfc-chip-row">
-                      {tagList.map((tag) => <span className="nfc-chip" key={tag}>{tag}</span>)}
+                      {tagList.map((tag) => (
+                        <span className="nfc-chip" key={tag}>
+                          #{tag}
+                        </span>
+                      ))}
                     </div>
                   )}
                 </div>
               )}
 
-              {(profile.email || profile.phone || profile.website || profile.address) && (
-                <div className="nfc-profile-section">
-                  <p className="nfc-section-title">Contact</p>
-                  <ul className="nfc-detail-list">
+              {/* Contact Info Card */}
+              {(profile.email || profile.phone || profile.website || profile.address || profile.companyAddress) && (
+                <div className="nfc-profile-card">
+                  <ul className="nfc-contact-list">
                     {profile.email && (
-                      <li className="nfc-detail-item">
-                        <DetailIcon type="email" />
-                        <div className="nfc-detail-body">
-                          <div className="nfc-detail-label">Email</div>
-                          <a href={`mailto:${profile.email}`} className="nfc-detail-value">{profile.email}</a>
+                      <li className="nfc-contact-item">
+                        <div className="nfc-contact-icon-circle">
+                          <Mail size={16} />
                         </div>
+                        <div className="nfc-contact-body">
+                          <span className="nfc-contact-label">Personal Email</span>
+                          <a href={`mailto:${profile.email}`} className="nfc-contact-value">{profile.email}</a>
+                        </div>
+                        <button
+                          className="nfc-contact-copy-btn"
+                          onClick={() => handleCopyValue(profile.email || "", "email")}
+                          title="Copy Email"
+                        >
+                          {copiedField === "email" ? <Check size={16} className="text-green-400" /> : <Copy size={16} />}
+                        </button>
                       </li>
                     )}
+
                     {profile.phone && (
-                      <li className="nfc-detail-item">
-                        <DetailIcon type="phone" />
-                        <div className="nfc-detail-body">
-                          <div className="nfc-detail-label">Phone</div>
-                          <a href={`tel:${profile.phone}`} className="nfc-detail-value">{profile.phone}</a>
+                      <li className="nfc-contact-item">
+                        <div className="nfc-contact-icon-circle">
+                          <Phone size={16} />
                         </div>
+                        <div className="nfc-contact-body">
+                          <span className="nfc-contact-label">Phone</span>
+                          <a href={`tel:${profile.phone}`} className="nfc-contact-value">{profile.phone}</a>
+                        </div>
+                        <button
+                          className="nfc-contact-copy-btn"
+                          onClick={() => handleCopyValue(profile.phone || "", "phone")}
+                          title="Copy Phone"
+                        >
+                          {copiedField === "phone" ? <Check size={16} className="text-green-400" /> : <Copy size={16} />}
+                        </button>
                       </li>
                     )}
-                    {profile.website && (
-                      <li className="nfc-detail-item">
-                        <DetailIcon type="website" />
-                        <div className="nfc-detail-body">
-                          <div className="nfc-detail-label">Website</div>
-                          <a href={linkify(profile.website)} target="_blank" rel="noreferrer" className="nfc-detail-value">
-                            {profile.website}
-                          </a>
+
+                    {(profile.companyAddress || profile.address) && (
+                      <li className="nfc-contact-item">
+                        <div className="nfc-contact-icon-circle">
+                          <MapPin size={16} />
                         </div>
-                      </li>
-                    )}
-                    {profile.address && (
-                      <li className="nfc-detail-item">
-                        <DetailIcon type="address" />
-                        <div className="nfc-detail-body">
-                          <div className="nfc-detail-label">Address</div>
+                        <div className="nfc-contact-body">
+                          <span className="nfc-contact-label">Office Address</span>
                           <a
-                            href={buildGoogleMapsUrl(profile.address)}
+                            href={profile.googleMapsLink ? linkify(profile.googleMapsLink) : buildGoogleMapsUrl(profile.companyAddress || profile.address || "")}
                             target="_blank"
                             rel="noreferrer"
-                            className="nfc-detail-value"
+                            className="nfc-contact-value"
                           >
-                            {profile.address}
+                            {profile.companyAddress || profile.address}
                           </a>
                         </div>
+                        <button
+                          className="nfc-contact-copy-btn"
+                          onClick={() => handleCopyValue(profile.companyAddress || profile.address || "", "address")}
+                          title="Copy Address"
+                        >
+                          {copiedField === "address" ? <Check size={16} className="text-green-400" /> : <Copy size={16} />}
+                        </button>
                       </li>
                     )}
                   </ul>
                 </div>
               )}
 
-              {socialRows.length > 0 && (
-                <div className="nfc-profile-section">
-                  <p className="nfc-section-title">Social</p>
-                  <div className="nfc-social-grid">
-                    {socialRows.map((s) => (
-                      <a
-                        key={s.label}
-                        href={linkify(s.href || "")}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="nfc-social-btn"
+              {/* Pay Me Card */}
+              {(profile.upiId || profile.razorpayLink) && (
+                <div className="nfc-profile-card">
+                  <h3 className="nfc-card-title">Pay Me</h3>
+                  {profile.upiId && (
+                    <div className="nfc-upi-field-wrap">
+                      <div className="nfc-upi-field-body">
+                        <span className="nfc-upi-label">UPI ID</span>
+                        <span className="nfc-upi-value">{profile.upiId}</span>
+                      </div>
+                      <button
+                        className="nfc-upi-copy-btn"
+                        onClick={() => handleCopyValue(profile.upiId || "", "upi")}
+                        title="Copy UPI ID"
                       >
-                        {getSocialIcon(s.label)}
-                        {s.label}
-                      </a>
-                    ))}
-                  </div>
+                        {copiedField === "upi" ? <Check size={16} className="text-green-400" /> : <Copy size={16} />}
+                      </button>
+                    </div>
+                  )}
+
+                  {profile.razorpayLink && (
+                    <a
+                      href={linkify(profile.razorpayLink)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="nfc-razorpay-btn"
+                    >
+                      <CreditCard size={16} />
+                      Pay via Razorpay
+                    </a>
+                  )}
                 </div>
               )}
 
-              {profile.projects && profile.projects.length > 0 && (
-                <div className="nfc-profile-section">
-                  <p className="nfc-section-title">Portfolio / Gallery</p>
-                  <div className="nfc-projects-grid">
-                    {profile.projects.map((project, i) => (
-                      <article key={`${project.name}-${i}`} className="nfc-project-card">
-                        {project.photo && (
-                          <img src={project.photo} alt={project.name} className="nfc-project-photo" />
-                        )}
-                        <div className="nfc-project-body">
-                          <div className="nfc-project-type-badge">
-                            {getProjectTypeIcon(project.type)}
-                            {getProjectTypeLabel(project.type)}
-                          </div>
-                          <h4>{project.name}</h4>
-                          {project.description && <p>{project.description}</p>}
-                          {project.link && (
-                            <a href={linkify(project.link)} target="_blank" rel="noreferrer" className="nfc-project-link">
-                              View →
-                            </a>
-                          )}
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                </div>
-              )}
-
+              {/* Documents Card */}
               {profile.documents && profile.documents.length > 0 && (
-                <div className="nfc-profile-section">
-                  <p className="nfc-section-title">Documents</p>
-                  <ul className="nfc-detail-list">
+                <div className="nfc-profile-card">
+                  <h3 className="nfc-card-title">Documents</h3>
+                  <div className="nfc-docs-grid">
                     {profile.documents.map((doc, i) => (
-                      <li key={i} className="nfc-detail-item">
-                        <div className="nfc-detail-icon">
-                          <FileText />
+                      <div key={i} className="nfc-doc-item-card">
+                        <div className="nfc-doc-header-row">
+                          <div className="nfc-doc-icon-circle">
+                            <FileText size={18} />
+                          </div>
+                          <div className="nfc-doc-info-block">
+                            <h4 className="nfc-doc-title">{doc.title}</h4>
+                            <span className="nfc-doc-meta">
+                              {doc.type ? doc.type.toUpperCase() : "PDF"} • 1.2 MB
+                            </span>
+                          </div>
                         </div>
-                        <div className="nfc-detail-body">
-                          <div className="nfc-detail-label">{getDocumentTypeLabel(doc.type)}</div>
-                          <a href={linkify(doc.url)} target="_blank" rel="noreferrer" className="nfc-detail-value">
-                            {doc.title}
-                          </a>
-                        </div>
-                      </li>
+                        <a
+                          href={linkify(doc.url)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="nfc-doc-view-btn"
+                        >
+                          View Document
+                        </a>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               )}
 
-              {(profile.upiId || profile.razorpayLink || profile.appointmentBookingLink) && (
-                <div className="nfc-profile-section">
-                  <p className="nfc-section-title">Payment & Booking</p>
-                  <ul className="nfc-detail-list">
-                    {profile.upiId && (
-                      <li className="nfc-detail-item">
-                        <div className="nfc-detail-icon">
-                          <CreditCard />
-                        </div>
-                        <div className="nfc-detail-body">
-                          <div className="nfc-detail-label">UPI</div>
-                          {/Android|iPhone|iPad|iPod/i.test(typeof navigator !== "undefined" ? navigator.userAgent : "") ? (
-                            <a
-                              href={`upi://pay?pa=${encodeURIComponent(profile.upiId)}&pn=${encodeURIComponent(profile.name || "")}`}
-                              className="nfc-detail-value"
-                            >
-                              Pay Now
-                            </a>
-                          ) : (
-                            <span className="nfc-detail-value">{profile.upiId}</span>
-                          )}
-                        </div>
-                      </li>
-                    )}
-                    {profile.razorpayLink && (
-                      <li className="nfc-detail-item">
-                        <div className="nfc-detail-icon">
-                          <CreditCard />
-                        </div>
-                        <div className="nfc-detail-body">
-                          <div className="nfc-detail-label">Razorpay</div>
-                          <a href={linkify(profile.razorpayLink)} target="_blank" rel="noreferrer" className="nfc-detail-value">
-                            Pay Now
-                          </a>
-                        </div>
-                      </li>
-                    )}
-                    {profile.appointmentBookingLink && (
-                      <li className="nfc-detail-item">
-                        <div className="nfc-detail-icon">
-                          <Calendar />
-                        </div>
-                        <div className="nfc-detail-body">
-                          <div className="nfc-detail-label">Appointment Booking</div>
-                          <a href={linkify(profile.appointmentBookingLink)} target="_blank" rel="noreferrer" className="nfc-detail-value">
-                            Book Appointment
-                          </a>
-                        </div>
-                      </li>
-                    )}
-                  </ul>
+              {/* Connect Card (Social Links & Portfolio website) */}
+              {socialRows.length > 0 && (
+                <div className="nfc-profile-card">
+                  <h3 className="nfc-card-title">Connect</h3>
+                  <div className="nfc-social-grid">
+                    {socialRows.map((s) => {
+                      const IconComponent = getSocialIconComponent(s.label);
+                      return (
+                        <a
+                          key={s.label}
+                          href={linkify(s.href || "")}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="nfc-social-grid-item"
+                        >
+                          <span className="nfc-social-grid-icon">
+                            <IconComponent size={18} />
+                          </span>
+                          <span className="nfc-social-grid-label">
+                            {s.label === "X / Twitter" ? "Twitter" : s.label}
+                          </span>
+                        </a>
+                      );
+                    })}
+                  </div>
+                  {profile.website && (
+                    <a
+                      href={linkify(profile.website)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="nfc-portfolio-btn"
+                    >
+                      <Globe size={18} />
+                      View Portfolio
+                    </a>
+                  )}
                 </div>
               )}
-
-              {(profile.companyAddress || profile.googleMapsLink) && (
-                <div className="nfc-profile-section">
-                  <p className="nfc-section-title">Location</p>
-                  <ul className="nfc-detail-list">
-                    {profile.companyAddress && (
-                      <li className="nfc-detail-item">
-                        <div className="nfc-detail-icon">
-                          <MapPin />
-                        </div>
-                        <div className="nfc-detail-body">
-                          <div className="nfc-detail-label">Address</div>
-                          <a
-                            href={profile.googleMapsLink ? linkify(profile.googleMapsLink) : buildGoogleMapsUrl(profile.companyAddress)}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="nfc-detail-value"
-                          >
-                            {profile.companyAddress}
-                          </a>
-                        </div>
-                      </li>
-                    )}
-                    {profile.googleMapsLink && !profile.companyAddress && (
-                      <li className="nfc-detail-item">
-                        <div className="nfc-detail-icon">
-                          <MapPin />
-                        </div>
-                        <div className="nfc-detail-body">
-                          <div className="nfc-detail-label">Google Maps</div>
-                          <a href={linkify(profile.googleMapsLink)} target="_blank" rel="noreferrer" className="nfc-detail-value">
-                            View on Map
-                          </a>
-                        </div>
-                      </li>
-                    )}
-                  </ul>
-                </div>
-              )}
-
             </div>
-          )}
-        </section>
+          </>
+        )}
 
         <footer className="nfc-footer">
           <p className="nfc-footer-text">
-            Powered by <span className="nfc-footer-brand">PingME</span> — A Brand By Ping IFF LLP
+            POWERED BY PINGME — A BRAND BY PING IFF LLP
           </p>
         </footer>
 

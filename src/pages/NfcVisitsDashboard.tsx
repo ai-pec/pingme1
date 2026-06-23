@@ -138,8 +138,33 @@ export default function NfcVisitsDashboard() {
     enabled: !!user,
   });
 
-  const analytics = data?.analytics;
-  const ownedUsernames = data?.ownedUsernames || [];
+  const rawAnalytics = data?.analytics;
+  const rawOwnedUsernames = data?.ownedUsernames || [];
+
+  const isDevMode = import.meta.env.DEV;
+
+  const devMockAnalytics: AnalyticsData = {
+    totalVisits: 142,
+    deviceBreakdown: { "Mobile": 98, "Tablet": 12, "Desktop": 32 },
+    osBreakdown: { "iOS": 75, "Android": 35, "macOS": 20, "Windows": 12 },
+    browserBreakdown: { "Safari": 68, "Chrome": 52, "Firefox": 14, "Edge": 8 },
+    trafficOverTime: Array.from({ length: 30 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - (29 - i));
+      return {
+        date: d.toISOString().split("T")[0],
+        count: Math.floor(Math.random() * 8) + 1,
+      };
+    }),
+    recentVisits: [
+      { id: "v-1", username: "developer", timestamp: new Date(Date.now() - 60000 * 5).toISOString(), device: "Mobile", os: "iOS", browser: "Safari" },
+      { id: "v-2", username: "developer", timestamp: new Date(Date.now() - 3600000 * 3).toISOString(), device: "Desktop", os: "macOS", browser: "Chrome" },
+      { id: "v-3", username: "developer", timestamp: new Date(Date.now() - 3600000 * 12).toISOString(), device: "Mobile", os: "Android", browser: "Chrome" },
+    ]
+  };
+
+  const ownedUsernames = (isDevMode && rawOwnedUsernames.length === 0) ? ["developer"] : rawOwnedUsernames;
+  const analytics = (isDevMode && (!rawAnalytics || rawAnalytics.totalVisits === 0)) ? devMockAnalytics : rawAnalytics;
 
   // Computed values
   const totalVisits = analytics?.totalVisits || 0;

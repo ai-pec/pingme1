@@ -12,6 +12,7 @@ import NFCProfileBuilder, { type NFCProfileData } from "@/components/NFCProfileB
 import {
   checkUsernameUniqueness,
   generateUsernameSuggestions,
+  clearNfcProfileCache,
 } from "@/lib/publicNfcService";
 import { updatePrebookingNFCProfile, type PrebookingRecord } from "@/lib/prebookService";
 import { getNfcLineProfilesFromOrder, resolveNfcProfileDocId } from "@/lib/nfcCheckout";
@@ -88,7 +89,7 @@ export function NFCEditModal({
         hasStoredLineProfiles: shouldUseLineProfile,
       });
 
-      if (profileDraft.username) {
+      if (profileDraft.username && profileDraft.username !== originalProfile?.username) {
         const isTaken = await checkUsernameUniqueness(profileDraft.username, {
           profileDocId: profileId,
           paymentOrderId,
@@ -117,6 +118,9 @@ export function NFCEditModal({
     },
     onSuccess: (data) => {
       toast.success("NFC profile updated successfully!");
+      if (data.profileDraft?.username) {
+        clearNfcProfileCache(data.profileDraft.username);
+      }
       if (user?.uid) {
         queryClient.setQueryData<PrebookingRecord[]>(
           ["userPrebookings", user.uid],

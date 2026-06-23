@@ -97,6 +97,7 @@ export interface NFCProfileData {
   youtube?: string;
   facebook?: string;
   profilePhoto?: string;
+  coverPhoto?: string;
   projects?: NFCProjectData[];
   documents?: NFCDocumentData[];
   upiId?: string;
@@ -104,6 +105,8 @@ export interface NFCProfileData {
   appointmentBookingLink?: string;
   companyAddress?: string;
   googleMapsLink?: string;
+  themeBgColor?: string;
+  themeAccentColor?: string;
 }
 
 interface NFCProfileBuilderProps {
@@ -251,7 +254,7 @@ export default function NFCProfileBuilder({
     }
   };
 
-  const handlePhotoUpload = async (field: "profilePhoto", file?: File | null) => {
+  const handlePhotoUpload = async (field: "profilePhoto" | "coverPhoto", file?: File | null) => {
     if (!file) return;
     try {
       const compressedDataUrl = await readImageFileAsDataUrl(file);
@@ -369,16 +372,161 @@ export default function NFCProfileBuilder({
               Auto-saving in real time
             </div>
 
-            <div className="rounded-xl border p-4 space-y-3">
-              <h3 className="text-xl font-semibold">Profile Photo</h3>
-              <Label htmlFor="profile-photo-file">Upload Photo</Label>
-              <Input
-                id="profile-photo-file"
-                type="file"
-                accept="image/*"
-                onChange={(e) => handlePhotoUpload("profilePhoto", e.target.files?.[0])}
-              />
-              <p className="text-xs text-muted-foreground">Recommended: Square image, at least 200x200px</p>
+            <div className="rounded-xl border p-4 space-y-4">
+              <div className="flex items-center justify-between border-b pb-2">
+                <h3 className="text-xl font-semibold">Theme Customization</h3>
+                <span className="text-xs font-semibold px-2 py-0.5 rounded bg-primary/10 text-primary">Lumina System</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Customize your public NFC card colors. Select a preset or pick custom colors.
+              </p>
+
+              {/* Theme Presets */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Color Presets</Label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {[
+                    { name: "Deep Space (Default)", bg: "#0A0A0F", accent: "#00C2FF" },
+                    { name: "Electric Violet", bg: "#0E0D16", accent: "#D1BCFF" },
+                    { name: "Cyberpunk Gold", bg: "#110F0A", accent: "#FFE066" },
+                    { name: "Emerald Glow", bg: "#06100C", accent: "#52E0A0" },
+                    { name: "Crimson Cyber", bg: "#100608", accent: "#FF5C75" },
+                    { name: "Monochrome", bg: "#121212", accent: "#E4E1E9" },
+                  ].map((preset) => {
+                    const isSelected = 
+                      (profileData.themeBgColor || "#0A0A0F").toLowerCase() === preset.bg.toLowerCase() &&
+                      (profileData.themeAccentColor || "#00C2FF").toLowerCase() === preset.accent.toLowerCase();
+
+                    return (
+                      <button
+                        key={preset.name}
+                        type="button"
+                        onClick={() => {
+                          onProfileChange({
+                            ...profileData,
+                            themeBgColor: preset.bg,
+                            themeAccentColor: preset.accent,
+                          });
+                        }}
+                        className={`flex flex-col items-start p-2.5 rounded-lg border text-left transition-all ${
+                          isSelected 
+                            ? "border-primary bg-primary/5 ring-1 ring-primary" 
+                            : "border-border hover:bg-muted/50 bg-background"
+                        }`}
+                      >
+                        <span className="text-xs font-medium truncate w-full mb-1.5">{preset.name}</span>
+                        <div className="flex gap-1.5 items-center">
+                          <span className="w-4 h-4 rounded-full border border-white/20" style={{ backgroundColor: preset.bg }} />
+                          <span className="w-4 h-4 rounded-full border border-white/20" style={{ backgroundColor: preset.accent }} />
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Custom Color Pickers */}
+              <div className="grid grid-cols-2 gap-4 pt-2">
+                <div>
+                  <Label htmlFor="theme-bg-color" className="text-xs font-semibold">Custom Background</Label>
+                  <div className="flex gap-2 items-center mt-1">
+                    <input
+                      id="theme-bg-color"
+                      type="color"
+                      value={profileData.themeBgColor || "#0A0A0F"}
+                      onChange={(e) => handleInputChange("themeBgColor", e.target.value)}
+                      className="w-10 h-10 p-0 border-0 rounded cursor-pointer bg-transparent"
+                    />
+                    <Input
+                      type="text"
+                      value={profileData.themeBgColor || "#0A0A0F"}
+                      onChange={(e) => handleInputChange("themeBgColor", e.target.value)}
+                      className="h-8 font-mono text-xs uppercase"
+                      placeholder="#0A0A0F"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="theme-accent-color" className="text-xs font-semibold">Custom Accent / Glow</Label>
+                  <div className="flex gap-2 items-center mt-1">
+                    <input
+                      id="theme-accent-color"
+                      type="color"
+                      value={profileData.themeAccentColor || "#00C2FF"}
+                      onChange={(e) => handleInputChange("themeAccentColor", e.target.value)}
+                      className="w-10 h-10 p-0 border-0 rounded cursor-pointer bg-transparent"
+                    />
+                    <Input
+                      type="text"
+                      value={profileData.themeAccentColor || "#00C2FF"}
+                      onChange={(e) => handleInputChange("themeAccentColor", e.target.value)}
+                      className="h-8 font-mono text-xs uppercase"
+                      placeholder="#00C2FF"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Card Preview */}
+              <div className="pt-2">
+                <Label className="text-xs font-semibold">Live Preview Banner</Label>
+                <div 
+                  className="mt-1.5 p-4 rounded-xl border relative overflow-hidden transition-all flex flex-col justify-end min-h-[85px]"
+                  style={{ 
+                    backgroundColor: profileData.themeBgColor || "#0A0A0F", 
+                    borderColor: `${profileData.themeAccentColor || "#00C2FF"}20`
+                  }}
+                >
+                  {/* Subtle Background glow */}
+                  <div 
+                    className="absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl opacity-20 pointer-events-none"
+                    style={{ backgroundColor: profileData.themeAccentColor || "#00C2FF" }}
+                  />
+                  <div className="relative z-10 flex items-center gap-3">
+                    <div 
+                      className="w-10 h-10 rounded-full border-2 flex items-center justify-center text-xs font-bold"
+                      style={{ 
+                        borderColor: profileData.themeAccentColor || "#00C2FF",
+                        boxShadow: `0 0 10px ${profileData.themeAccentColor || "#00C2FF"}40`,
+                        color: profileData.themeAccentColor || "#00C2FF"
+                      }}
+                    >
+                      NFC
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-white truncate max-w-[150px]">{profileData.name || "Your Name"}</p>
+                      <p className="text-[10px] text-white/60 truncate max-w-[150px]">{profileData.jobTitle || "Your Role"}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="rounded-xl border p-4 space-y-3">
+                <h3 className="text-xl font-semibold">Profile Photo</h3>
+                <Label htmlFor="profile-photo-file">Upload Photo</Label>
+                <Input
+                  id="profile-photo-file"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handlePhotoUpload("profilePhoto", e.target.files?.[0])}
+                />
+                <p className="text-xs text-muted-foreground">Recommended: Square image, at least 200x200px</p>
+              </div>
+
+              <div className="rounded-xl border p-4 space-y-3">
+                <h3 className="text-xl font-semibold">Cover Banner</h3>
+                <Label htmlFor="cover-photo-file">Upload Cover Image</Label>
+                <Input
+                  id="cover-photo-file"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handlePhotoUpload("coverPhoto", e.target.files?.[0])}
+                />
+                <p className="text-xs text-muted-foreground">Recommended: Horizontal banner, e.g. 600x200px</p>
+              </div>
             </div>
 
             <div className="rounded-xl border p-4 space-y-4">

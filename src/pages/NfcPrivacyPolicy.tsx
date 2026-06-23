@@ -81,171 +81,168 @@ export default function NfcPrivacyPolicy() {
     );
   }
 
+  const customStyles = {
+    "--c-bg": "#0e0e13",
+    "--c-accent": "#7000ff",
+    "--c-accent-glow": "rgba(112, 0, 255, 0.4)",
+    "--c-accent-glow-subtle": "rgba(112, 0, 255, 0.15)",
+    "--c-border-accent": "rgba(112, 0, 255, 0.3)",
+  } as React.CSSProperties;
+
   return (
-    <div className="nfc-public-page">
-      <main className="nfc-app-shell" style={{ display: "flex", alignItems: "center", minHeight: "100vh", padding: "24px 20px" }}>
+    <div className="nfc-public-page" style={customStyles}>
+      <main className="nfc-app-shell">
 
-        <div style={{ width: "100%", maxWidth: "480px", margin: "0 auto" }}>
-
-          {/* Brand bar */}
-          <div className="nfc-brand-bar" style={{ opacity: 1, marginBottom: "28px" }}>
-            <div className="nfc-brand-dot" />
-            <span className="nfc-brand-name">PingME NFC</span>
-          </div>
-
-          {/* Main card */}
-          <div className="nfc-card" style={{ opacity: 1 }}>
-
-            <header className="nfc-card-header">
-              <div style={{ display: "flex", alignItems: "flex-start", gap: "16px" }}>
-                <div className="nfc-avatar-placeholder" style={{ width: 56, height: 56, borderRadius: 14, fontSize: "1.2rem" }}>
-                  <Nfc size={24} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <p className="nfc-eyebrow">Privacy Policy</p>
-                  <h1 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(1.4rem, 4vw, 1.9rem)", fontWeight: 600, letterSpacing: "-0.02em", lineHeight: 1.15, color: "var(--c-ink)", marginBottom: 4 }}>
-                    Welcome to PingME NFC.
-                  </h1>
-                  <p style={{ fontSize: "0.875rem", color: "var(--c-ink2)", lineHeight: 1.5 }}>
-                    Please review our Privacy Policy before accessing your NFC profile.
-                  </p>
-                </div>
-              </div>
-            </header>
-
-            <div className="nfc-profile-content">
-
-              <div className="nfc-profile-section">
-                <p className="nfc-section-title">What Data Is Collected</p>
-                <p style={{ fontSize: "0.875rem", color: "var(--c-ink2)", lineHeight: 1.7 }}>
-                  We collect the information you provide when setting up your NFC profile. This includes:
-                  your <strong>name</strong>, <strong>email address</strong>, <strong>phone number</strong>,
-                  <strong> job title</strong>, <strong>company name</strong>, <strong>profile photo</strong>,
-                  <strong> social media links</strong> (LinkedIn, Instagram, Twitter, YouTube, Facebook),
-                  <strong> website</strong>, <strong>address</strong>, <strong>UPI / payment links</strong>,
-                  and any <strong>portfolio items or documents</strong> you choose to add.
-                  Only information you explicitly enter is stored.
-                </p>
-              </div>
-
-              <div className="nfc-profile-section">
-                <p className="nfc-section-title">Why It Is Collected</p>
-                <p style={{ fontSize: "0.875rem", color: "var(--c-ink2)", lineHeight: 1.7 }}>
-                  This data is collected to create and power your public NFC profile — the page people
-                  see when they tap your PingME NFC card. It lets you share your contact details,
-                  business information, and social links instantly with anyone you meet, without
-                  exchanging paper cards.
-                </p>
-              </div>
-
-              <div className="nfc-profile-section">
-                <p className="nfc-section-title">How It Will Be Used</p>
-                <p style={{ fontSize: "0.875rem", color: "var(--c-ink2)", lineHeight: 1.7 }}>
-                  Your profile data is displayed on your public NFC profile page (accessible via your
-                  unique profile link). It is <strong>not sold</strong> to third parties, not used for
-                  advertising, and not shared with anyone outside of PingME's service infrastructure.
-                  The data is used solely to render and serve your NFC profile to visitors.
-                </p>
-              </div>
-
-              <div className="nfc-profile-section">
-                <p className="nfc-section-title">Data Retention</p>
-                <p style={{ fontSize: "0.875rem", color: "var(--c-ink2)", lineHeight: 1.7 }}>
-                  Your data is retained for as long as your NFC profile remains active. If you
-                  request deletion, your profile data will be removed or anonymized within a
-                  reasonable timeframe, except where retention is required by applicable law or
-                  for legitimate purposes such as fraud prevention or dispute resolution.
-                </p>
-              </div>
-
-              <div className="nfc-profile-section">
-                <p className="nfc-section-title">Account Deletion</p>
-                <p style={{ fontSize: "0.875rem", color: "var(--c-ink2)", lineHeight: 1.7 }}>
-                  If you choose to terminate or delete your account, we will delete or anonymize your
-                  personal data within a reasonable period, except where retention is required by
-                  applicable law, regulatory requirements, or for legitimate business purposes such as
-                  fraud prevention, dispute resolution, or legal compliance.
-                </p>
-              </div>
-
-              <div className="nfc-profile-section">
-                <p className="nfc-section-title">Privacy Concerns &amp; Contact</p>
-                <p style={{ fontSize: "0.875rem", color: "var(--c-ink2)", lineHeight: 1.7 }}>
-                  If you have any questions, concerns, or requests related to your data or this
-                  Privacy Policy, please reach out to us directly:
-                </p>
-                <p style={{ fontSize: "0.875rem", color: "var(--c-ink2)", lineHeight: 1.7, marginTop: 8 }}>
-                  📞 <a
-                    href="tel:+917347340007"
-                    style={{ color: "var(--c-accent)", fontWeight: 600, textDecoration: "none" }}
-                  >
-                    +91 73473 40007
-                  </a>
-                </p>
-              </div>
-
-              {/* Consent checkboxes */}
-              <div style={{
-                background: "var(--c-surface2)",
-                border: "1px solid var(--c-border)",
-                borderRadius: 12,
-                padding: "20px",
-                display: "flex",
-                flexDirection: "column",
-                gap: 14,
-              }}>
-                <label className="nfc-consent-check-row">
-                  <input
-                    type="checkbox"
-                    id="nfc-pp-policy"
-                    checked={agreedPolicy}
-                    disabled={accepted || saving}
-                    onChange={(e) => setAgreedPolicy(e.target.checked)}
-                  />
-                  <span>I agree to the <strong>Privacy Policy</strong></span>
-                </label>
-
-                <label className="nfc-consent-check-row">
-                  <input
-                    type="checkbox"
-                    id="nfc-pp-data"
-                    checked={agreedData}
-                    disabled={accepted || saving}
-                    onChange={(e) => setAgreedData(e.target.checked)}
-                  />
-                  <span>I consent to the processing of my data for managing my NFC profile</span>
-                </label>
-              </div>
-
-              {/* Accept button */}
-              <button
-                className="nfc-consent-accept-btn"
-                disabled={!canAccept || accepted}
-                onClick={handleAccept}
-                style={{ marginBottom: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
-              >
-                {saving && <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} />}
-                {accepted
-                  ? "✓ Accepted — Opening your profile…"
-                  : saving
-                  ? "Saving…"
-                  : "Accept & View My Profile"}
-              </button>
-
-              <p style={{ fontSize: "0.72rem", color: "var(--c-ink3)", textAlign: "center", lineHeight: 1.5 }}>
-                By accepting you confirm you have read and understood the above policy.
-                Your consent is recorded securely.
-              </p>
-
-            </div>
-          </div>
-
-          <footer className="nfc-footer">
-            <p className="nfc-footer-text">
-              Powered by <span className="nfc-footer-brand">PingME</span> — A Brand By Ping IFF LLP
-            </p>
-          </footer>
+        {/* Brand bar */}
+        <div className="nfc-brand-bar">
+          <div className="nfc-brand-dot" />
+          <span className="nfc-brand-name">PingME NFC</span>
         </div>
+
+        {/* Main card */}
+        <div className="nfc-profile-card">
+
+          <header className="nfc-card-header" style={{ borderBottom: "1px solid var(--c-border)", paddingBottom: "24px", marginBottom: "24px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+              <div className="nfc-avatar-placeholder" style={{ width: 52, height: 52, borderRadius: "50%", flexShrink: 0 }}>
+                <Nfc size={22} />
+              </div>
+              <div style={{ flex: 1, textAlign: "left" }}>
+                <p className="nfc-contact-label" style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--c-accent)", fontWeight: 600 }}>Privacy Policy</p>
+                <h1 style={{ fontSize: "18px", fontWeight: 700, color: "var(--c-ink)", letterSpacing: "-0.01em", margin: "2px 0 4px" }}>
+                  Welcome to PingME NFC
+                </h1>
+                <p style={{ fontSize: "13px", color: "var(--c-ink2)", lineHeight: 1.4 }}>
+                  Please review our Privacy Policy before accessing your NFC profile.
+                </p>
+              </div>
+            </div>
+          </header>
+
+          <div className="nfc-profile-content" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+
+            <div>
+              <h3 className="nfc-card-title" style={{ fontSize: "14px", marginBottom: "6px" }}>What Data Is Collected</h3>
+              <p style={{ fontSize: "13px", color: "rgba(255, 255, 255, 0.8)", lineHeight: 1.6 }}>
+                We collect the information you provide when setting up your NFC profile. This includes:
+                your <strong>name</strong>, <strong>email address</strong>, <strong>phone number</strong>,
+                <strong> job title</strong>, <strong>company name</strong>, <strong>profile photo</strong>,
+                <strong> social media links</strong> (LinkedIn, Instagram, Twitter, YouTube, Facebook),
+                <strong> website</strong>, <strong>address</strong>, <strong>UPI / payment links</strong>,
+                and any <strong>portfolio items or documents</strong> you choose to add.
+                Only information you explicitly enter is stored.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="nfc-card-title" style={{ fontSize: "14px", marginBottom: "6px" }}>Why It Is Collected</h3>
+              <p style={{ fontSize: "13px", color: "rgba(255, 255, 255, 0.8)", lineHeight: 1.6 }}>
+                This data is collected to create and power your public NFC profile — the page people
+                see when they tap your PingME NFC card. It lets you share your contact details,
+                business information, and social links instantly with anyone you meet, without
+                exchanging paper cards.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="nfc-card-title" style={{ fontSize: "14px", marginBottom: "6px" }}>How It Will Be Used</h3>
+              <p style={{ fontSize: "13px", color: "rgba(255, 255, 255, 0.8)", lineHeight: 1.6 }}>
+                Your profile data is displayed on your public NFC profile page (accessible via your
+                unique profile link). It is <strong>not sold</strong> to third parties, not used for
+                advertising, and not shared with anyone outside of PingME's service infrastructure.
+                The data is used solely to render and serve your NFC profile to visitors.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="nfc-card-title" style={{ fontSize: "14px", marginBottom: "6px" }}>Data Retention</h3>
+              <p style={{ fontSize: "13px", color: "rgba(255, 255, 255, 0.8)", lineHeight: 1.6 }}>
+                Your data is retained for as long as your NFC profile remains active. If you
+                request deletion, your profile data will be removed or anonymized within a
+                reasonable timeframe, except where retention is required by applicable law or
+                for legitimate purposes such as fraud prevention or dispute resolution.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="nfc-card-title" style={{ fontSize: "14px", marginBottom: "6px" }}>Account Deletion</h3>
+              <p style={{ fontSize: "13px", color: "rgba(255, 255, 255, 0.8)", lineHeight: 1.6 }}>
+                If you choose to terminate or delete your account, we will delete or anonymize your
+                personal data within a reasonable period, except where retention is required by
+                applicable law, regulatory requirements, or for legitimate business purposes such as
+                fraud prevention, dispute resolution, or legal compliance.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="nfc-card-title" style={{ fontSize: "14px", marginBottom: "6px" }}>Privacy Concerns &amp; Contact</h3>
+              <p style={{ fontSize: "13px", color: "rgba(255, 255, 255, 0.8)", lineHeight: 1.6 }}>
+                If you have any questions, concerns, or requests related to your data or this
+                Privacy Policy, please reach out to us directly:
+              </p>
+              <p style={{ fontSize: "13px", color: "rgba(255, 255, 255, 0.8)", lineHeight: 1.6, marginTop: 4 }}>
+                📞 <a
+                  href="tel:+917347340007"
+                  style={{ color: "var(--c-accent)", fontWeight: 600, textDecoration: "none" }}
+                >
+                  +91 73473 40007
+                </a>
+              </p>
+            </div>
+
+            {/* Consent checkboxes */}
+            <div className="nfc-consent-card-box">
+              <label className="nfc-consent-check-row">
+                <input
+                  type="checkbox"
+                  id="nfc-pp-policy"
+                  checked={agreedPolicy}
+                  disabled={accepted || saving}
+                  onChange={(e) => setAgreedPolicy(e.target.checked)}
+                />
+                <span>I agree to the <strong>Privacy Policy</strong></span>
+              </label>
+
+              <label className="nfc-consent-check-row">
+                <input
+                  type="checkbox"
+                  id="nfc-pp-data"
+                  checked={agreedData}
+                  disabled={accepted || saving}
+                  onChange={(e) => setAgreedData(e.target.checked)}
+                />
+                <span>I consent to the processing of my data for managing my NFC profile</span>
+              </label>
+            </div>
+
+            {/* Accept button */}
+            <button
+              className="nfc-consent-accept-btn"
+              disabled={!canAccept || accepted}
+              onClick={handleAccept}
+            >
+              {saving && <Loader2 size={16} className="nfc-shareback-spinner" />}
+              {accepted
+                ? "✓ Accepted — Opening your profile…"
+                : saving
+                ? "Saving…"
+                : "Accept & View My Profile"}
+            </button>
+
+            <p style={{ fontSize: "11px", color: "var(--c-ink3)", textAlign: "center", lineHeight: 1.5, marginTop: 4 }}>
+              By accepting you confirm you have read and understood the above policy.
+              Your consent is recorded securely.
+            </p>
+
+          </div>
+        </div>
+
+        <footer className="nfc-footer">
+          <p className="nfc-footer-text">
+            POWERED BY PINGME — A BRAND BY PING IFF LLP
+          </p>
+        </footer>
+
       </main>
     </div>
   );

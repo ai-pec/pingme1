@@ -31,6 +31,7 @@ export interface PublicNfcProfile {
   youtube?: string;
   facebook?: string;
   profilePhoto?: string;
+  coverPhoto?: string;
   projects?: PublicNfcProject[];
   documents?: PublicNfcDocument[];
   upiId?: string;
@@ -38,6 +39,8 @@ export interface PublicNfcProfile {
   appointmentBookingLink?: string;
   companyAddress?: string;
   googleMapsLink?: string;
+  themeBgColor?: string;
+  themeAccentColor?: string;
 }
 
 const getPaymentApiBaseUrl = () => {
@@ -52,6 +55,10 @@ interface CacheEntry {
   expiresAt: number;
 }
 const profileCache = new Map<string, CacheEntry>();
+
+export const clearNfcProfileCache = (username: string): void => {
+  profileCache.delete(normalizeNfcUsername(username));
+};
 
 export const normalizeNfcUsername = (rawUsername: string): string => {
   return rawUsername.trim().toLowerCase().replace(/\/+$/, "");

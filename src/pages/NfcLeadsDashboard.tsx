@@ -116,8 +116,41 @@ export default function NfcLeadsDashboard() {
     enabled: !!user,
   });
 
-  const leads = data?.leads || [];
-  const ownedUsernames = data?.ownedUsernames || [];
+  const rawLeads = data?.leads || [];
+  const rawOwnedUsernames = data?.ownedUsernames || [];
+
+  // Fallback mock data in development mode so developers can test CRM views/flows immediately on localhost
+  const isDevMode = import.meta.env.DEV;
+  
+  const devMockLeads: LeadRecord[] = [
+    {
+      id: "mock-lead-1",
+      cardOwnerUsername: "developer",
+      visitorName: "Aarav Sharma",
+      visitorEmail: "aarav.sharma@techventures.in",
+      visitorPhone: "+91 98123 45678",
+      visitorCompany: "TechVentures India",
+      leadAssessment: "Strong fit. Aarav is the CTO at TechVentures and wants to roll out PingME cards to their 120-person engineering & product team. Highly interested in customized brand layouts.",
+      personalizedEmailSubject: "PingME NFC Cards / TechVentures Team Rollout",
+      personalizedEmailBody: "<p>Hi Aarav,</p><p>It was fantastic connecting with you today. I'm really excited about the possibility of equipping the TechVentures team with custom branded PingME NFC cards.</p><p>Let me know if we can schedule a quick 10-minute demo session next Tuesday to align on your custom layouts.</p><p>Best regards,<br/>Developer</p>",
+      createdAt: new Date(Date.now() - 3600000 * 3.5).toISOString(), // 3.5 hours ago
+    },
+    {
+      id: "mock-lead-2",
+      cardOwnerUsername: "developer",
+      visitorName: "Jessica Alvi",
+      visitorEmail: "jessica.a@designstudio.co",
+      visitorPhone: "+91 87654 32109",
+      visitorCompany: "Alvi & Co Design Studio",
+      leadAssessment: "Good opportunity. Jessica is a freelance UX designer looking to buy a premium gold card for herself. She requested pricing details for individual premium finishes.",
+      personalizedEmailSubject: "Premium Gold NFC Card details",
+      personalizedEmailBody: "<p>Hi Jessica,</p><p>Thanks for scanning my card! As requested, here is the direct link to preview our premium Gold and Rose Gold card custom finishes: <a href='/products/nfc-cards'>pingme.com/products/nfc-cards</a>.</p><p>Feel free to reach out if you have any questions about personalizing your vCard layout.</p><p>Warmly,<br/>Developer</p>",
+      createdAt: new Date(Date.now() - 3600000 * 25).toISOString(), // ~1 day ago
+    }
+  ];
+
+  const ownedUsernames = (isDevMode && rawOwnedUsernames.length === 0) ? ["developer"] : rawOwnedUsernames;
+  const leads = (isDevMode && rawLeads.length === 0) ? devMockLeads : rawLeads;
 
   // Export Leads to CSV helper
   const handleExportCSV = () => {
