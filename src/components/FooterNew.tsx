@@ -72,7 +72,7 @@ const FooterNew = () => {
   return (
     <footer
       className="relative text-foreground"
-      style={{ backgroundColor: "#FFF9EB", color: "hsl(var(--ping-dark))" }}
+      style={{ backgroundColor: "hsl(var(--ping-cream))", color: "hsl(var(--ping-dark))" }}
     >
       <div
         className="h-0.5 mb-12"

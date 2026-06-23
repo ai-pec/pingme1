@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import AdminRoute from "@/components/auth/AdminRoute";
 import DocsPage from "./components/DocsPage";
@@ -108,9 +109,10 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <CartProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
+        <ThemeProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
           <BrowserRouter>
             <SmoothScroll />
             <ChunkErrorBoundary>
@@ -211,6 +213,7 @@ const App = () => (
             </ChunkErrorBoundary>
           </BrowserRouter>
         </TooltipProvider>
+        </ThemeProvider>
       </CartProvider>
     </AuthProvider>
   </QueryClientProvider>

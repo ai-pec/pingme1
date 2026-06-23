@@ -376,10 +376,10 @@ const ScanStory: React.FC<{ offerings: ReturnType<typeof getOfferings> }> = ({ o
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -18, scale: 0.94 }}
             transition={{ duration: 0.48, ease: [0.22, 1, 0.36, 1] }}
-            className="relative overflow-hidden rounded-[2rem] bg-white"
+            className="relative overflow-hidden rounded-[2rem] bg-card"
             style={{
               boxShadow: `0 36px 90px rgba(81,60,9,0.15), 0 8px 28px rgba(0,0,0,0.08)`,
-              border: "1px solid rgba(255,255,255,0.9)",
+              border: "1px solid hsl(var(--border) / 0.6)",
             }}
           >
             {/* Card header */}
@@ -387,7 +387,7 @@ const ScanStory: React.FC<{ offerings: ReturnType<typeof getOfferings> }> = ({ o
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <div
-                    className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/90"
+                    className="flex h-9 w-9 items-center justify-center rounded-xl bg-background/90"
                     style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}
                   >
                     <ActiveIcon className="h-[18px] w-[18px]" style={{ color: active.color }} />
@@ -416,7 +416,7 @@ const ScanStory: React.FC<{ offerings: ReturnType<typeof getOfferings> }> = ({ o
             </div>
 
             {/* Product image zone */}
-            <div className="relative mx-5 my-3.5 h-[180px] sm:h-[198px] overflow-hidden rounded-2xl flex items-center justify-center" style={{ background: "rgba(248,246,242,0.9)" }}>
+            <div className="relative mx-5 my-3.5 h-[180px] sm:h-[198px] overflow-hidden rounded-2xl flex items-center justify-center" style={{ background: "hsl(var(--muted) / 0.9)" }}>
               {offerings[activeCard]?.image ? (
                 <img
                   src={offerings[activeCard].image}
@@ -463,7 +463,7 @@ const ScanStory: React.FC<{ offerings: ReturnType<typeof getOfferings> }> = ({ o
             </div>
 
             {/* Privacy footer */}
-            <div className="mx-5 mb-5 flex items-center gap-3 rounded-2xl px-4 py-3" style={{ background: "rgba(0,0,0,0.03)", border: "1px solid rgba(0,0,0,0.05)" }}>
+            <div className="mx-5 mb-5 flex items-center gap-3 rounded-2xl px-4 py-3" style={{ background: "hsl(var(--muted) / 0.3)", border: "1px solid hsl(var(--border) / 0.5)" }}>
               <div
                 className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full"
                 style={{ background: "rgba(245,166,35,0.12)" }}
@@ -565,7 +565,7 @@ const ScanStory: React.FC<{ offerings: ReturnType<typeof getOfferings> }> = ({ o
                 animate={
                   activeCard === i
                     ? { scale: 1.08, borderColor: prod.color + "70" }
-                    : { scale: 1, borderColor: "rgba(0,0,0,0.06)" }
+                    : { scale: 1, borderColor: "hsl(var(--border) / 0.5)" }
                 }
                 transition={{ duration: 0.35 }}
                 className="flex items-center gap-2 rounded-2xl bg-white/92 px-3.5 py-2.5 whitespace-nowrap"
@@ -575,7 +575,7 @@ const ScanStory: React.FC<{ offerings: ReturnType<typeof getOfferings> }> = ({ o
                     activeCard === i
                       ? `0 10px 32px ${prod.color}35, 0 2px 8px rgba(0,0,0,0.07)`
                       : "0 4px 18px rgba(0,0,0,0.08)",
-                  border: `1.5px solid ${activeCard === i ? prod.color + "50" : "rgba(0,0,0,0.06)"}`,
+                  border: `1.5px solid ${activeCard === i ? prod.color + "50" : "hsl(var(--border) / 0.5)"}`,
                   transition: "all 0.35s ease",
                 }}
               >
@@ -606,7 +606,7 @@ const ScanStory: React.FC<{ offerings: ReturnType<typeof getOfferings> }> = ({ o
             <motion.div
               animate={{ y: [-3, 3, -3] }}
               transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
-              className="flex items-center gap-2.5 rounded-2xl bg-white px-4 py-3"
+              className="flex items-center gap-2.5 rounded-2xl bg-card px-4 py-3"
               style={{
                 boxShadow: "0 16px 50px rgba(16,185,129,0.22), 0 4px 16px rgba(0,0,0,0.07)",
                 border: "1px solid rgba(16,185,129,0.20)",
@@ -635,7 +635,7 @@ const ScanStory: React.FC<{ offerings: ReturnType<typeof getOfferings> }> = ({ o
         <motion.div
           animate={{ y: [-4, 4, -4] }}
           transition={{ duration: 4.1, repeat: Infinity, ease: "easeInOut" }}
-          className="flex items-center gap-2 rounded-2xl bg-white/96 px-3.5 py-2.5"
+          className="flex items-center gap-2 rounded-2xl bg-card/96 px-3.5 py-2.5"
           style={{
             backdropFilter: "blur(14px)",
             boxShadow: "0 8px 30px rgba(200,130,10,0.18), 0 2px 8px rgba(0,0,0,0.06)",
@@ -737,7 +737,7 @@ const StatsBar: React.FC = () => {
         <div
           className="grid grid-cols-2 sm:grid-cols-4 overflow-hidden rounded-3xl"
           style={{
-            background: "rgba(255,255,255,0.72)",
+            background: "hsl(var(--card) / 0.72)",
             backdropFilter: "blur(22px)",
             border: "1px solid rgba(245,166,35,0.14)",
             boxShadow: "0 8px 44px rgba(200,130,10,0.09), 0 1px 4px rgba(0,0,0,0.04)",
@@ -832,7 +832,7 @@ const HowItWorks: React.FC = () => (
           return (
             <FadeUp key={step.step} delay={i * 0.12}>
               <div
-                className="relative flex flex-col items-center text-center p-6 rounded-[1.75rem] border border-border/40 bg-white/75 group cursor-default"
+                className="relative flex flex-col items-center text-center p-6 rounded-[1.75rem] border border-border/40 bg-card/75 group cursor-default"
                 style={{
                   backdropFilter: "blur(14px)",
                   boxShadow: "0 4px 28px rgba(0,0,0,0.055)",
@@ -871,7 +871,7 @@ const HowItWorks: React.FC = () => (
                 <p className="text-sm leading-7 text-muted-foreground">{step.body}</p>
 
                 {i < 2 && (
-                  <div className="absolute -right-3 top-14 z-10 hidden lg:flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-sm border border-border/30">
+                  <div className="absolute -right-3 top-14 z-10 hidden lg:flex h-6 w-6 items-center justify-center rounded-full bg-card shadow-sm border border-border/30">
                     <ChevronRight className="h-3 w-3 text-amber-500" />
                   </div>
                 )}
@@ -933,7 +933,7 @@ const OfferingCard: React.FC<{
             style={{
               minHeight: 240,
               order: imageFirst ? 0 : 1,
-              background: `linear-gradient(140deg, ${item.accentBg}, rgba(255,255,255,0.25))`,
+              background: `linear-gradient(140deg, ${item.accentBg}, hsl(var(--card) / 0.25))`,
             }}
           >
             <div
@@ -947,7 +947,7 @@ const OfferingCard: React.FC<{
             <div
               className="absolute inset-0 pointer-events-none"
               style={{
-                background: `linear-gradient(${imageFirst ? "to right" : "to left"}, transparent 60%, rgba(255,255,255,0.65) 100%)`,
+                background: `linear-gradient(${imageFirst ? "to right" : "to left"}, transparent 60%, hsl(var(--card) / 0.65) 100%)`,
               }}
             />
 

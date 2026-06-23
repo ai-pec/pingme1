@@ -21,17 +21,17 @@ import {
   subscribeToProductCategories,
 } from "../lib/productService";
 
-/* ─── Brand tokens ── */
-const GOLD       = "#edd09f";
-const GOLD_DEEP  = "#c9a96e";
-const GOLD_LIGHT = "#f5e6c8";
-const INK        = "#1a1410";
-const INK_SOFT   = "#2e261c";
-const SMOKE      = "#f9f4ec";
-const SMOKE_DEEP = "#f0e8d8";
-const MIST       = "#e8ddd0";
-const TEXT_SEC   = "#6b5d4f";
-const TEXT_MUTED = "#a89880";
+/* ─── Brand tokens (light mode values; dark overrides live in CSS vars) ── */
+const GOLD       = "hsl(var(--primary))";
+const GOLD_DEEP  = "hsl(var(--primary))";
+const GOLD_LIGHT = "hsl(var(--primary) / 0.15)";
+const INK        = "hsl(var(--foreground))";
+const INK_SOFT   = "hsl(var(--foreground) / 0.85)";
+const SMOKE      = "hsl(var(--muted))";
+const SMOKE_DEEP = "hsl(var(--muted))";
+const MIST       = "hsl(var(--border))";
+const TEXT_SEC   = "hsl(var(--muted-foreground))";
+const TEXT_MUTED = "hsl(var(--muted-foreground) / 0.7)";
 const SUCCESS    = "#4a7c59";
 
 const categoryEmojiBySlug: Record<string, string> = {
@@ -43,11 +43,11 @@ const categoryEmojiBySlug: Record<string, string> = {
 };
 
 const categoryBadgePalette: Record<string, { bg: string; color: string }> = {
-  "car-tags":          { bg: "#e8f0e8", color: SUCCESS },
-  "pet-tags":          { bg: "#fdecea", color: "#c0392b" },
-  "nfc-cards":         { bg: GOLD_LIGHT, color: GOLD_DEEP },
-  "keychain-tags":     { bg: "#e8eaf8", color: "#3d50a8" },
-  "backpack-stickers": { bg: "#fdf1e0", color: "#9a6b1e" },
+  "car-tags":          { bg: "rgba(74,124,89,0.12)",  color: SUCCESS },
+  "pet-tags":          { bg: "rgba(192,57,43,0.12)",  color: "#c0392b" },
+  "nfc-cards":         { bg: "hsl(var(--primary) / 0.12)", color: "hsl(var(--primary))" },
+  "keychain-tags":     { bg: "rgba(61,80,168,0.12)",  color: "#3d50a8" },
+  "backpack-stickers": { bg: "rgba(154,107,30,0.12)", color: "#9a6b1e" },
 };
 
 const TICKER_ITEMS = [
@@ -192,7 +192,7 @@ const FAQAccordion = () => {
                 color: TEXT_SEC,
                 lineHeight: 1.7,
                 margin: 0,
-                background: "#fdf8f2",
+                background: "hsl(var(--muted))",
                 borderRadius: 8,
                 padding: "12px 16px 16px",
                 marginBottom: 16,
@@ -261,9 +261,9 @@ const ProductCardItem = ({ product, categorySlug }: { product: ProductVariant & 
     <>
       <style>{`
         .pm-card {
-          background: #ffffff;
+          background: hsl(var(--card));
           border-radius: 16px;
-          border: 1px solid ${MIST};
+          border: 1px solid hsl(var(--border));
           overflow: hidden;
           cursor: pointer;
           transition: transform 0.28s cubic-bezier(0.4,0,0.2,1), box-shadow 0.28s cubic-bezier(0.4,0,0.2,1), border-color 0.28s ease;
@@ -274,7 +274,12 @@ const ProductCardItem = ({ product, categorySlug }: { product: ProductVariant & 
           position: relative;
           text-align: left;
         }
-        .pm-card:hover { transform: translateY(-6px); box-shadow: 0 16px 48px rgba(26,20,16,0.13); border-color: ${GOLD}; }
+        .pm-card:hover {
+          transform: translateY(-6px);
+          box-shadow: 0 16px 48px rgba(26,20,16,0.13);
+          border-color: hsl(var(--primary));
+        }
+        .dark .pm-card:hover { box-shadow: 0 16px 48px rgba(0,0,0,0.4); }
         .pm-card:hover .pm-card-img { transform: scale(1.05); }
         .pm-card-img { transition: transform 0.4s ease; }
       `}</style>
@@ -388,33 +393,71 @@ const Products = () => {
   return (
     <MainLayout>
       <style>{`
-        .pm-page { background: ${SMOKE}; min-height: 100vh; font-family: system-ui, -apple-system, sans-serif; }
+        .pm-page {
+          background: hsl(var(--background));
+          min-height: 100vh;
+          font-family: system-ui, -apple-system, sans-serif;
+          color: hsl(var(--foreground));
+        }
 
         .pm-cat-card {
-          background: #ffffff; border-radius: 16px; border: 1px solid ${MIST}; overflow: hidden; cursor: pointer;
+          background: hsl(var(--card));
+          border-radius: 16px;
+          border: 1px solid hsl(var(--border));
+          overflow: hidden;
+          cursor: pointer;
           transition: transform 0.28s cubic-bezier(0.4,0,0.2,1), box-shadow 0.28s cubic-bezier(0.4,0,0.2,1), border-color 0.28s ease;
-          box-shadow: 0 4px 24px rgba(26,20,16,0.07); text-align: left; display: flex; flex-direction: column;
+          box-shadow: 0 4px 24px rgba(26,20,16,0.07);
+          text-align: left;
+          display: flex;
+          flex-direction: column;
         }
-        .pm-cat-card:hover { transform: translateY(-6px); box-shadow: 0 16px 48px rgba(26,20,16,0.13); border-color: ${GOLD}; }
+        .pm-cat-card:hover {
+          transform: translateY(-6px);
+          box-shadow: 0 16px 48px rgba(26,20,16,0.13);
+          border-color: hsl(var(--primary));
+        }
+        .dark .pm-cat-card:hover { box-shadow: 0 16px 48px rgba(0,0,0,0.4); }
         .pm-cat-card:hover .pm-cat-img { transform: scale(1.07); }
         .pm-cat-img { transition: transform 0.5s ease; }
 
         .pm-tab {
-          border: 1px solid ${MIST}; border-radius: 999px; padding: 7px 18px;
-          font-family: system-ui, -apple-system, sans-serif; font-size: 13px; font-weight: 700;
-          cursor: pointer; transition: background 0.2s, color 0.2s, border-color 0.2s;
-          background: transparent; color: ${TEXT_MUTED}; white-space: nowrap;
+          border: 1px solid hsl(var(--border));
+          border-radius: 999px;
+          padding: 7px 18px;
+          font-family: system-ui, -apple-system, sans-serif;
+          font-size: 13px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: background 0.2s, color 0.2s, border-color 0.2s;
+          background: transparent;
+          color: hsl(var(--muted-foreground));
+          white-space: nowrap;
         }
-        .pm-tab:hover { border-color: ${GOLD_DEEP}; color: ${INK}; }
-        .pm-tab-active { background: ${GOLD} !important; color: ${INK} !important; border-color: ${GOLD} !important; }
+        .pm-tab:hover { border-color: hsl(var(--primary)); color: hsl(var(--foreground)); }
+        .pm-tab-active {
+          background: hsl(var(--primary)) !important;
+          color: hsl(var(--primary-foreground)) !important;
+          border-color: hsl(var(--primary)) !important;
+        }
 
         .pm-select {
-          border: 1px solid ${MIST}; border-radius: 8px; padding: 7px 32px 7px 12px;
-          font-family: system-ui, -apple-system, sans-serif; font-size: 13px; font-weight: 700; color: ${INK};
-          background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23a89880' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 10px center;
-          appearance: none; cursor: pointer; transition: border-color 0.2s;
+          border: 1px solid hsl(var(--border));
+          border-radius: 8px;
+          padding: 7px 32px 7px 12px;
+          font-family: system-ui, -apple-system, sans-serif;
+          font-size: 13px;
+          font-weight: 700;
+          color: hsl(var(--foreground));
+          background-color: hsl(var(--card));
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23a89880' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+          background-repeat: no-repeat;
+          background-position: right 10px center;
+          appearance: none;
+          cursor: pointer;
+          transition: border-color 0.2s;
         }
-        .pm-select:hover { border-color: ${GOLD_DEEP}; }
+        .pm-select:hover { border-color: hsl(var(--primary)); }
 
         @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .pm-fade { animation: fadeUp 0.55s ease both; }
@@ -424,7 +467,7 @@ const Products = () => {
         .pm-fade-4 { animation-delay: 0.29s; }
 
         .pm-rule { display: flex; align-items: center; gap: 12px; justify-content: center; margin: 20px auto 28px; max-width: 320px; }
-        .pm-rule::before, .pm-rule::after { content: ''; flex: 1; height: 1px; background: ${MIST}; }
+        .pm-rule::before, .pm-rule::after { content: ''; flex: 1; height: 1px; background: hsl(var(--border)); }
 
         .pm-product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 24px; }
         .pm-category-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
@@ -465,7 +508,7 @@ const Products = () => {
 
         {/* ── Filter Bar — NOT sticky ── */}
         {!selectedCategory && categories.length > 0 && (
-          <div style={{ background: "rgba(249,244,236,0.98)", borderBottom: `1px solid ${MIST}`, padding: "14px 0" }}>
+          <div style={{ background: "hsl(var(--card))", borderBottom: `1px solid ${MIST}`, padding: "14px 0" }}>
             <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
               <div className="pm-filter-scroll" style={{ display: "flex", gap: 8, flex: 1 }}>
                 <button className={`pm-tab${filterSlug === "all" ? " pm-tab-active" : ""}`} onClick={() => setFilterSlug("all")}>All Products</button>
@@ -483,7 +526,7 @@ const Products = () => {
         )}
 
         {selectedCategory && (
-          <div style={{ background: "rgba(249,244,236,0.98)", borderBottom: `1px solid ${MIST}`, padding: "14px 0" }}>
+          <div style={{ background: "hsl(var(--card))", borderBottom: `1px solid ${MIST}`, padding: "14px 0" }}>
             <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
               <button onClick={() => navigate("/products")} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", fontFamily: "system-ui, -apple-system, sans-serif", fontSize: 14, fontWeight: 700, color: TEXT_SEC, padding: 0 }}>
                 <ArrowLeft size={16} /> Back to All Categories
@@ -557,18 +600,18 @@ const Products = () => {
           {selectedCategory && activeCategory && (
             <div style={{ display: "flex", flexDirection: "column", gap: 40 }}>
               {activeTutorial && (
-                <div style={{ borderRadius: 16, border: `1px solid ${GOLD}`, background: `linear-gradient(135deg, ${GOLD_LIGHT} 0%, #ffffff 100%)`, padding: "clamp(24px, 4vw, 40px)" }}>
+                <div style={{ borderRadius: 16, border: `1px solid ${MIST}`, background: "hsl(var(--card))", padding: "clamp(24px, 4vw, 40px)" }}>
                   <h2 style={{ fontFamily: "system-ui, -apple-system, sans-serif", fontSize: "clamp(20px, 4vw, 30px)", fontWeight: 800, color: INK, marginBottom: 8, letterSpacing: "-0.02em" }}>{activeTutorial.title}</h2>
                   <p style={{ fontFamily: "system-ui, -apple-system, sans-serif", fontSize: 15, color: TEXT_SEC, marginBottom: 28, maxWidth: 600 }}>{activeTutorial.subtitle}</p>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 14, marginBottom: 20 }}>
                     {activeTutorial.steps.map((step, idx) => (
-                      <div key={idx} style={{ background: "#ffffff", borderRadius: 10, border: `1px solid ${MIST}`, padding: "14px 16px", display: "flex", gap: 12, alignItems: "flex-start" }}>
+                      <div key={idx} style={{ background: "hsl(var(--muted))", borderRadius: 10, border: `1px solid ${MIST}`, padding: "14px 16px", display: "flex", gap: 12, alignItems: "flex-start" }}>
                         <span style={{ width: 26, height: 26, borderRadius: "50%", background: GOLD_LIGHT, color: GOLD_DEEP, fontFamily: "system-ui, -apple-system, sans-serif", fontSize: 12, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{idx + 1}</span>
                         <p style={{ fontFamily: "system-ui, -apple-system, sans-serif", fontSize: 13, fontWeight: 500, color: TEXT_SEC, lineHeight: 1.5, margin: 0 }}>{step}</p>
                       </div>
                     ))}
                   </div>
-                  <div style={{ borderRadius: 10, border: `1px solid ${GOLD}`, background: GOLD_LIGHT, padding: "12px 16px", fontFamily: "system-ui, -apple-system, sans-serif", fontSize: 13, color: INK_SOFT }}>
+                  <div style={{ borderRadius: 10, border: `1px solid ${MIST}`, background: "hsl(var(--primary) / 0.08)", padding: "12px 16px", fontFamily: "system-ui, -apple-system, sans-serif", fontSize: 13, color: TEXT_SEC }}>
                     <strong style={{ color: INK, fontWeight: 800 }}>Pro Tip:</strong> {activeTutorial.tip}
                   </div>
                 </div>

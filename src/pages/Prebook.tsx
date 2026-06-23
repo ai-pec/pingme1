@@ -39,11 +39,11 @@ import {
 /* ─────────────────────────── CONSTANTS ─────────────────────────────────── */
 
 const indianStates = [
-  "Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chandigarh","Chhattisgarh",
-  "Delhi","Goa","Gujarat","Haryana","Himachal Pradesh","Jammu & Kashmir","Jharkhand",
-  "Karnataka","Kerala","Ladakh","Madhya Pradesh","Maharashtra","Manipur","Meghalaya",
-  "Mizoram","Nagaland","New Delhi","Odisha","Punjab","Rajasthan","Sikkim","Tamil Nadu",
-  "Telangana","Tripura","Uttar Pradesh","Uttarakhand","West Bengal",
+  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chandigarh", "Chhattisgarh",
+  "Delhi", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jammu & Kashmir", "Jharkhand",
+  "Karnataka", "Kerala", "Ladakh", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya",
+  "Mizoram", "Nagaland", "New Delhi", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
+  "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal",
 ];
 
 const VALID_COUPONS = {
@@ -53,10 +53,10 @@ const VALID_COUPONS = {
 const GST_RATE = 0.18;
 
 const PAYMENT_METHODS = [
-  { id: "upi",        icon: Smartphone,  label: "UPI",          sub: "GPay, PhonePe, Paytm" },
-  { id: "card",       icon: CreditCard,  label: "Card",         sub: "Visa, Mastercard, RuPay" },
-  { id: "netbanking", icon: Landmark,    label: "Net Banking",  sub: "All major banks" },
-  { id: "wallet",     icon: Wallet,      label: "Wallets",      sub: "Paytm, MobiKwik & more" },
+  { id: "upi", icon: Smartphone, label: "UPI", sub: "GPay, PhonePe, Paytm" },
+  { id: "card", icon: CreditCard, label: "Card", sub: "Visa, Mastercard, RuPay" },
+  { id: "netbanking", icon: Landmark, label: "Net Banking", sub: "All major banks" },
+  { id: "wallet", icon: Wallet, label: "Wallets", sub: "Paytm, MobiKwik & more" },
 ];
 
 const SESSION_KEY = "pingme_checkout_draft";
@@ -80,7 +80,7 @@ const emptyNfcProfile = () => ({
 });
 
 type DeliveryFieldKey = "fullName" | "phone" | "address" | "city" | "state" | "pincode";
-type FormErrors   = Partial<Record<DeliveryFieldKey, string>>;
+type FormErrors = Partial<Record<DeliveryFieldKey, string>>;
 type TouchedFields = Partial<Record<DeliveryFieldKey, boolean>>;
 type FieldProps = { label: string; required?: boolean; hint?: string; children: ReactNode; error?: string; optional?: boolean; };
 
@@ -131,6 +131,70 @@ const STYLES = `
     --r-sm:        8px;
     --error:       #dc2626;
     --success:     #16a34a;
+
+    /* Light Theme Variables */
+    --card-bg:     rgba(255,255,255,0.55);
+    --input-bg:    rgba(255,255,255,0.7);
+    --input-bg-focus: #fff;
+    --addr-bg:     rgba(255,247,228,0.6);
+    --addr-bg-hover: #fff;
+    --addr-bg-selected: #fff;
+    --toggle-bg:   #fff;
+    --coupon-apply-hover: #2e2010;
+    --pm-option-bg: rgba(255,255,255,0.5);
+    --pm-option-bg-hover: rgba(255,255,255,0.8);
+    --pm-option-bg-active: #fff;
+    --nfc-row-bg:  rgba(255,255,255,0.5);
+    --nfc-row-bg-hover: rgba(255,255,255,0.8);
+    --summary-bg:  rgba(255,255,255,0.65);
+    --summary-toggle-bg: rgba(255,255,255,0.65);
+    --sticky-cta-bg: rgba(255,247,228,0.96);
+    --btn-primary-hover: #2e2010;
+    --btn-secondary-bg-hover: #fff;
+    --success-meta-bg: rgba(255,255,255,.6);
+    --checklist-bg: rgba(255,255,255,0.5);
+    --brand-gold:  #C8820A;
+    --editor-card-bg: #fafafa;
+    --pending-color: #92400e;
+  }
+
+  .dark {
+    --cream:       #13110E;
+    --cream-soft:  #1F1B16;
+    --gold:        #C9922A;
+    --gold-light:  #E5B84A;
+    --gold-pale:   #3A2E16;
+    --gold-dim:    #E5B84A;
+    --ink:         #faf9f6;
+    --ink-muted:   #b3a288;
+    --ink-light:   #928068;
+    --border:      rgba(240, 208, 128, 0.15);
+    --border-soft: rgba(240, 208, 128, 0.08);
+    --shadow:      0 4px 24px rgba(0, 0, 0, 0.5);
+    --shadow-lg:   0 12px 48px rgba(0, 0, 0, 0.7);
+    --card-bg:     rgba(31, 27, 22, 0.6);
+    --input-bg:    rgba(25, 22, 18, 0.7);
+    --input-bg-focus: #181512;
+    --addr-bg:     rgba(31, 27, 22, 0.4);
+    --addr-bg-hover: #1f1b16;
+    --addr-bg-selected: #1f1b16;
+    --toggle-bg:   #1c1815;
+    --coupon-apply-hover: #e5dfd5;
+    --pm-option-bg: rgba(25,22,18,0.5);
+    --pm-option-bg-hover: rgba(35,31,26,0.8);
+    --pm-option-bg-active: #1f1b16;
+    --nfc-row-bg:  rgba(25,22,18,0.5);
+    --nfc-row-bg-hover: rgba(35,31,26,0.8);
+    --summary-bg:  rgba(30,26,21,0.65);
+    --summary-toggle-bg: rgba(30,26,21,0.65);
+    --sticky-cta-bg: rgba(19,17,14,0.96);
+    --btn-primary-hover: #e5dfd5;
+    --btn-secondary-bg-hover: #1f1b16;
+    --success-meta-bg: rgba(25,22,18,.6);
+    --checklist-bg: rgba(25,22,18,0.5);
+    --brand-gold:  #E5B84A;
+    --editor-card-bg: #1f1b16;
+    --pending-color: #E5B84A;
   }
 
   .pb * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -208,7 +272,7 @@ const STYLES = `
 
   /* ── SECTION CARD ── */
   .section-card {
-    background: rgba(255,255,255,0.55);
+    background: var(--card-bg);
     border: 1.5px solid var(--border-soft);
     border-radius: var(--r);
     padding: 18px 16px;
@@ -236,7 +300,7 @@ const STYLES = `
   .field-label span { font-weight: 400; color: var(--ink-light); font-size: 11px; }
   .field-input {
     width: 100%; height: 44px;
-    background: rgba(255,255,255,0.7);
+    background: var(--input-bg);
     border: 1.5px solid var(--border);
     border-radius: var(--r-sm); padding: 0 12px;
     font-size: 14px; font-family: inherit; color: var(--ink);
@@ -247,7 +311,7 @@ const STYLES = `
   .field-input:focus {
     border-color: var(--gold);
     box-shadow: 0 0 0 3px rgba(201,146,42,0.10);
-    background: #fff;
+    background: var(--input-bg-focus);
   }
   .field-input.error { border-color: var(--error) !important; box-shadow: 0 0 0 3px rgba(220,38,38,.08) !important; }
   .field-input.valid { border-color: var(--success) !important; }
@@ -263,11 +327,11 @@ const STYLES = `
     width: 100%; text-align: left;
     padding: 11px 13px; border-radius: var(--r-sm);
     border: 1.5px solid var(--border-soft);
-    background: rgba(255,247,228,0.6);
+    background: var(--addr-bg);
     cursor: pointer; transition: all .18s ease; font-family: inherit;
   }
-  .saved-addr-btn:hover   { border-color: var(--gold); background: #fff; }
-  .saved-addr-btn.selected { border-color: var(--gold); background: #fff; box-shadow: 0 0 0 3px rgba(201,146,42,.08); }
+  .saved-addr-btn:hover   { border-color: var(--gold); background: var(--addr-bg-hover); }
+  .saved-addr-btn.selected { border-color: var(--gold); background: var(--addr-bg-selected); box-shadow: 0 0 0 3px rgba(201,146,42,.08); }
   .saved-addr-main { font-size: 13px; font-weight: 500; color: var(--ink); display: block; }
   .saved-addr-sub  { font-size: 11.5px; color: var(--ink-muted); margin-top: 1px; display: block; }
 
@@ -282,7 +346,7 @@ const STYLES = `
   .toggle-row:hover { border-color: var(--gold); }
   .toggle-box {
     width: 18px; height: 18px; border-radius: 5px;
-    border: 1.5px solid var(--border); background: #fff;
+    border: 1.5px solid var(--border); background: var(--toggle-bg);
     display: flex; align-items: center; justify-content: center;
     transition: all .15s; flex-shrink: 0;
   }
@@ -312,7 +376,7 @@ const STYLES = `
     cursor: pointer; transition: background .18s; white-space: nowrap; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center; gap: 6px;
   }
-  .coupon-apply:hover:not(:disabled)    { background: #2e2010; }
+  .coupon-apply:hover:not(:disabled)    { background: var(--coupon-apply-hover); }
   .coupon-apply:disabled { opacity: .5; cursor: not-allowed; }
   .coupon-applied {
     display: flex; align-items: center; justify-content: space-between;
@@ -340,14 +404,14 @@ const STYLES = `
   .pm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .pm-option {
     padding: 11px 12px; border-radius: var(--r-sm);
-    border: 1.5px solid var(--border-soft); background: rgba(255,255,255,0.5);
+    border: 1.5px solid var(--border-soft); background: var(--pm-option-bg);
     cursor: pointer; transition: all .18s;
     display: flex; align-items: center; gap: 9px; font-family: inherit;
     text-align: left;
   }
-  .pm-option:hover  { border-color: var(--gold-pale); background: rgba(255,255,255,0.8); }
+  .pm-option:hover  { border-color: var(--gold-pale); background: var(--pm-option-bg-hover); }
   .pm-option.active {
-    border-color: var(--gold); background: #fff;
+    border-color: var(--gold); background: var(--pm-option-bg-active);
     box-shadow: 0 0 0 3px rgba(201,146,42,.08);
   }
   .pm-icon {
@@ -372,10 +436,10 @@ const STYLES = `
   .nfc-row {
     display: flex; align-items: center; justify-content: space-between; gap: 10px;
     padding: 13px 14px; border-radius: var(--r-sm);
-    border: 1.5px solid var(--border-soft); background: rgba(255,255,255,0.5);
+    border: 1.5px solid var(--border-soft); background: var(--nfc-row-bg);
     transition: all .18s; margin-bottom: 9px; flex-wrap: wrap;
   }
-  .nfc-row:hover { border-color: var(--gold-pale); background: rgba(255,255,255,0.8); }
+  .nfc-row:hover { border-color: var(--gold-pale); background: var(--nfc-row-bg-hover); }
   .nfc-row-info h4 { font-size: 13px; font-weight: 600; color: var(--ink); }
   .nfc-row-info p  { font-size: 11.5px; color: var(--ink-muted); margin-top: 2px; }
   .badge-ready {
@@ -386,7 +450,7 @@ const STYLES = `
   .badge-pending {
     display: inline-flex; align-items: center; gap: 4px;
     padding: 3px 9px; border-radius: 99px; font-size: 11px; font-weight: 600;
-    background: rgba(234,179,8,.1); color: #92400e; border: 1px solid rgba(234,179,8,.2);
+    background: rgba(234,179,8,.1); color: var(--pending-color); border: 1px solid rgba(234,179,8,.2);
   }
   .btn-nfc-setup {
     padding: 7px 13px; border-radius: var(--r-sm);
@@ -397,11 +461,11 @@ const STYLES = `
   .btn-nfc-setup.ready   { background: transparent; color: var(--ink-muted); border-color: var(--border); }
   .btn-nfc-setup.ready:hover { border-color: var(--gold); color: var(--ink); }
   .btn-nfc-setup.pending { background: var(--ink); color: var(--cream); border-color: var(--ink); box-shadow: 0 3px 10px rgba(28,20,9,.18); }
-  .btn-nfc-setup.pending:hover { background: #2e2010; }
+  .btn-nfc-setup.pending:hover { background: var(--btn-primary-hover); }
 
   /* ── ORDER SUMMARY CARD ── */
   .summary-card {
-    background: rgba(255,255,255,0.65);
+    background: var(--summary-bg);
     border: 1.5px solid var(--border);
     border-radius: 16px; padding: 18px;
     box-shadow: var(--shadow-lg);
@@ -418,7 +482,7 @@ const STYLES = `
     .summary-toggle-header {
       display: flex; align-items: center; justify-content: space-between;
       padding: 14px 15px; cursor: pointer; user-select: none;
-      background: rgba(255,255,255,0.65);
+      background: var(--summary-toggle-bg);
     }
     .summary-body-mobile { padding: 0 15px 15px; }
   }
@@ -431,7 +495,7 @@ const STYLES = `
   .summary-title svg { color: var(--gold); }
   .order-item { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 11px; }
   .order-thumb {
-    width: 46px; height: 46px; border-radius: 9px;
+    width: 46px; height: 46px; border-radius: 99px;
     background: rgba(201,146,42,0.07); border: 1px solid var(--border-soft);
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0; overflow: hidden;
@@ -445,11 +509,11 @@ const STYLES = `
   .qty-ctrl { display: flex; align-items: center; gap: 5px; margin-top: 5px; }
   .qty-btn {
     width: 22px; height: 22px; border-radius: 5px; border: 1px solid var(--border);
-    background: rgba(255,247,228,0.8); cursor: pointer; font-family: inherit;
+    background: var(--cream-soft); cursor: pointer; font-family: inherit;
     display: flex; align-items: center; justify-content: center; color: var(--ink-muted);
     transition: all .15s;
   }
-  .qty-btn:hover:not(:disabled) { border-color: var(--gold); color: var(--ink); background: #fff; }
+  .qty-btn:hover:not(:disabled) { border-color: var(--gold); color: var(--ink); background: var(--btn-secondary-bg-hover); }
   .qty-btn:disabled { opacity: .35; cursor: not-allowed; }
   .qty-btn.remove { color: var(--error); border-color: rgba(220,38,38,.2); }
   .qty-btn.remove:hover { background: rgba(220,38,38,.07); border-color: var(--error); }
@@ -490,7 +554,7 @@ const STYLES = `
       display: flex;
       position: fixed; bottom: 0; left: 0; right: 0;
       z-index: 50;
-      background: rgba(255,247,228,0.96);
+      background: var(--sticky-cta-bg);
       border-top: 1.5px solid var(--border);
       padding: 12px 16px 16px;
       gap: 10px; align-items: center;
@@ -518,7 +582,7 @@ const STYLES = `
     box-shadow: 0 4px 16px rgba(28,20,9,.2);
     -webkit-tap-highlight-color: transparent;
   }
-  .btn-primary:hover:not(:disabled) { background: #2e2010; box-shadow: 0 8px 24px rgba(28,20,9,.28); transform: translateY(-1px); }
+  .btn-primary:hover:not(:disabled) { background: var(--btn-primary-hover); box-shadow: 0 8px 24px rgba(28,20,9,.28); transform: translateY(-1px); }
   .btn-primary:active:not(:disabled) { transform: none; }
   .btn-primary:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; transform: none; }
 
@@ -537,12 +601,12 @@ const STYLES = `
   .btn-secondary {
     display: inline-flex; align-items: center; gap: 6px;
     padding: 0 20px; height: 44px; border-radius: var(--r);
-    background: rgba(255,247,228,0.8); color: var(--ink);
+    background: var(--cream-soft); color: var(--ink);
     border: 1.5px solid var(--border); font-family: inherit;
     font-size: 13.5px; font-weight: 500; cursor: pointer; transition: all .18s;
     -webkit-tap-highlight-color: transparent;
   }
-  .btn-secondary:hover { border-color: var(--gold); background: #fff; }
+  .btn-secondary:hover { border-color: var(--gold); background: var(--btn-secondary-bg-hover); }
 
   .btn-back {
     display: inline-flex; align-items: center; gap: 5px;
@@ -572,7 +636,7 @@ const STYLES = `
   .success-btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 22px; }
   .success-meta {
     margin-top: 20px; padding: 15px;
-    background: rgba(255,255,255,.6); border: 1px solid var(--border-soft);
+    background: var(--success-meta-bg); border: 1px solid var(--border-soft);
     border-radius: var(--r); text-align: left;
   }
   .success-meta p { font-size: 12.5px; color: var(--ink-muted); line-height: 1.6; }
@@ -678,7 +742,7 @@ const STYLES = `
   .nfc-progress-bar-wrap {
     margin-bottom: 14px;
     padding: 11px 14px;
-    background: rgba(255,255,255,0.5);
+    background: var(--checklist-bg);
     border: 1.5px solid var(--border-soft);
     border-radius: var(--r-sm);
     display: flex; align-items: center; gap: 12px;
@@ -802,7 +866,7 @@ const STYLES = `
   /* ── Completeness checklist below preview ── */
   .nfc-checklist {
     margin-top: 14px; padding: 13px 14px;
-    background: rgba(255,255,255,0.5);
+    background: var(--checklist-bg);
     border: 1.5px solid var(--border-soft);
     border-radius: var(--r-sm);
   }
@@ -826,6 +890,16 @@ const STYLES = `
   /* ── Save button area ── */
   .nfc-editor-actions { display: flex; gap: 10px; margin-top: 16px; }
   .nfc-editor-actions .btn-primary { flex: 1; }
+
+  /* ── Project / Document editor cards ── */
+  .nfc-editor-card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    position: relative;
+    background: var(--editor-card-bg);
+  }
 `;
 
 /* ─────────────────────────── HELPERS ───────────────────────────────────── */
@@ -845,16 +919,16 @@ function getInitials(name: string): string {
 
 function calcProfileCompletion(p: ReturnType<typeof emptyNfcProfile>) {
   const items = [
-    { label: "Name",             done: !!p.name?.trim() },
-    { label: "Bio",              done: !!p.bio?.trim() },
-    { label: "Phone",            done: !!p.phone?.trim() },
-    { label: "Email",            done: !!p.email?.trim() },
+    { label: "Name", done: !!p.name?.trim() },
+    { label: "Bio", done: !!p.bio?.trim() },
+    { label: "Phone", done: !!p.phone?.trim() },
+    { label: "Email", done: !!p.email?.trim() },
     { label: "Social / Website", done: !!(p.website || p.linkedin || p.twitter || p.instagram || p.facebook || (p as any).youtube) },
-    { label: "Business Info",    done: !!(((p as any).companyName || (p as any).jobTitle || (p as any).businessOverview)) },
-    { label: "Payment / Booking",done: !!(((p as any).upiId || (p as any).razorpayLink || (p as any).appointmentBookingLink)) },
-    { label: "Location",         done: !!(((p as any).address || (p as any).googleMapsLink)) },
-    { label: "Portfolio",        done: !!(p.projects?.length) },
-    { label: "Documents",        done: !!(p.documents?.length) },
+    { label: "Business Info", done: !!(((p as any).companyName || (p as any).jobTitle || (p as any).businessOverview)) },
+    { label: "Payment / Booking", done: !!(((p as any).upiId || (p as any).razorpayLink || (p as any).appointmentBookingLink)) },
+    { label: "Location", done: !!(((p as any).address || (p as any).googleMapsLink)) },
+    { label: "Portfolio", done: !!(p.projects?.length) },
+    { label: "Documents", done: !!(p.documents?.length) },
   ];
   const done = items.filter(i => i.done).length;
   return { pct: Math.round((done / items.length) * 100), items };
@@ -865,8 +939,8 @@ function calcProfileCompletion(p: ReturnType<typeof emptyNfcProfile>) {
 function StepTrack({ current }) {
   const steps = [
     { key: "profileHub", label: "NFC Profiles" },
-    { key: "delivery",   label: "Delivery"     },
-    { key: "payment",    label: "Payment"      },
+    { key: "delivery", label: "Delivery" },
+    { key: "payment", label: "Payment" },
   ];
   const idx = steps.findIndex(s => s.key === current);
   return (
@@ -914,15 +988,15 @@ function CheckToggle({ checked, onChange, label, icon: Icon }) {
 
 /* ─── Live NFC Card Preview ─── */
 function NfcCardPreview({ profile }: { profile: ReturnType<typeof emptyNfcProfile> }) {
-  const hasName   = !!profile.name?.trim();
+  const hasName = !!profile.name?.trim();
   const hasHandle = !!profile.username?.trim();
-  const hasBio    = !!profile.bio?.trim();
+  const hasBio = !!profile.bio?.trim();
   const socialLinks = [
-    profile.website   && { icon: Globe,     label: "Website"   },
-    profile.linkedin  && { icon: Linkedin,  label: "LinkedIn"  },
-    profile.twitter   && { icon: Twitter,   label: "Twitter"   },
+    profile.website && { icon: Globe, label: "Website" },
+    profile.linkedin && { icon: Linkedin, label: "LinkedIn" },
+    profile.twitter && { icon: Twitter, label: "Twitter" },
     profile.instagram && { icon: Instagram, label: "Instagram" },
-    profile.facebook  && { icon: Facebook,  label: "Facebook"  },
+    profile.facebook && { icon: Facebook, label: "Facebook" },
     (profile as any).youtube && { icon: Youtube, label: "YouTube" },
   ].filter(Boolean) as { icon: any; label: string }[];
 
@@ -1010,12 +1084,12 @@ function NfcProfileEditor({
   const { pct } = calcProfileCompletion(profile);
 
   const socialFields = [
-    { key: "linkedin",  icon: Linkedin,  cls: "social-li",  placeholder: "linkedin.com/in/yourname",   label: "LinkedIn"   },
-    { key: "instagram", icon: Instagram, cls: "social-ig",  placeholder: "instagram.com/yourhandle",  label: "Instagram"  },
-    { key: "facebook",  icon: Facebook,  cls: "social-fb",  placeholder: "facebook.com/yourname",      label: "Facebook"   },
-    { key: "youtube",   icon: Youtube,   cls: "social-yt",  placeholder: "youtube.com/@yourchannel",   label: "YouTube"    },
-    { key: "twitter",   icon: Twitter,   cls: "social-tw",  placeholder: "x.com/yourhandle",           label: "X / Twitter"},
-    { key: "website",   icon: Globe,     cls: "social-web", placeholder: "yourwebsite.com",            label: "Website"    },
+    { key: "linkedin", icon: Linkedin, cls: "social-li", placeholder: "linkedin.com/in/yourname", label: "LinkedIn" },
+    { key: "instagram", icon: Instagram, cls: "social-ig", placeholder: "instagram.com/yourhandle", label: "Instagram" },
+    { key: "facebook", icon: Facebook, cls: "social-fb", placeholder: "facebook.com/yourname", label: "Facebook" },
+    { key: "youtube", icon: Youtube, cls: "social-yt", placeholder: "youtube.com/@yourchannel", label: "YouTube" },
+    { key: "twitter", icon: Twitter, cls: "social-tw", placeholder: "x.com/yourhandle", label: "X / Twitter" },
+    { key: "website", icon: Globe, cls: "social-web", placeholder: "yourwebsite.com", label: "Website" },
   ];
 
   const addProject = () =>
@@ -1106,7 +1180,7 @@ function NfcProfileEditor({
                       style={{
                         padding: "10px 18px",
                         backgroundColor: usernameStatus?.[lineKey] === "available" ? "var(--success)" : "var(--ink)",
-                        color: "#fff",
+                        color: "var(--cream)",
                         border: "1.5px solid",
                         borderColor: usernameStatus?.[lineKey] === "available" ? "var(--success)" : "var(--ink)",
                         borderRadius: "var(--r-sm)",
@@ -1244,7 +1318,7 @@ function NfcProfileEditor({
             <div className="section-card-title"><ImageIcon />Portfolio / Gallery</div>
             <p className="nfc-section-sub">Add images, videos, brochures, or certificates to showcase your work.</p>
             {(profile.projects || []).map((proj, i) => (
-              <div key={i} style={{ border: "1px solid var(--border-color, #e5e7eb)", borderRadius: 10, padding: "12px 14px", marginBottom: 10, position: "relative", background: "#fafafa" }}>
+              <div key={i} className="nfc-editor-card">
                 <button onClick={() => removeProject(i)} style={{ position: "absolute", top: 8, right: 10, background: "none", border: "none", cursor: "pointer", color: "#ef4444", fontSize: 16 }} title="Remove">×</button>
                 <div className="grid-2" style={{ marginBottom: 8 }}>
                   <Field label="Title" optional>
@@ -1281,7 +1355,7 @@ function NfcProfileEditor({
             <div className="section-card-title"><FileText />Documents</div>
             <p className="nfc-section-sub">Share company profile, catalogue, resume, or presentations.</p>
             {(profile.documents || []).map((doc, i) => (
-              <div key={i} style={{ border: "1px solid var(--border-color, #e5e7eb)", borderRadius: 10, padding: "12px 14px", marginBottom: 10, position: "relative", background: "#fafafa" }}>
+              <div key={i} className="nfc-editor-card">
                 <button onClick={() => removeDocument(i)} style={{ position: "absolute", top: 8, right: 10, background: "none", border: "none", cursor: "pointer", color: "#ef4444", fontSize: 16 }} title="Remove">×</button>
                 <div className="grid-2" style={{ marginBottom: 8 }}>
                   <Field label="Document Title" optional>
@@ -1394,7 +1468,7 @@ function OrderSummaryCard({
                   {expandNfcCartUnits([item]).map(unit => {
                     const done = isNfcLineProfileComplete(nfcProfilesByLine[unit.lineKey]);
                     return (
-                      <span key={unit.lineKey} style={{ fontSize: 10.5, color: done ? "var(--success)" : "#92400e", display: "block" }}>
+                      <span key={unit.lineKey} style={{ fontSize: 10.5, color: done ? "var(--success)" : "var(--pending-color)", display: "block" }}>
                         {unit.displayTitle}: {done ? "✓ Ready" : "Pending"}
                       </span>
                     );
@@ -1506,45 +1580,45 @@ const Prebook = () => {
   const { user, profile } = useAuth();
 
   /* ── Delivery form ── */
-  const [fullName,   setFullName]   = useState("");
-  const [email,      setEmail]      = useState("");
-  const [phone,      setPhone]      = useState("");
-  const [address,    setAddress]    = useState("");
-  const [city,       setCity]       = useState("");
-  const [state,      setState]      = useState("");
-  const [pincode,    setPincode]    = useState("");
-  const [orderNote,  setOrderNote]  = useState("");
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [pincode, setPincode] = useState("");
+  const [orderNote, setOrderNote] = useState("");
 
   /* ── Validation ── */
-  const [errors,  setErrors]  = useState<FormErrors>({});
+  const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<TouchedFields>({});
 
   /* ── NFC state ── */
-  const nfcCartUnits        = useMemo(() => expandNfcCartUnits(items), [items]);
-  const hasNFCCards         = nfcCartUnits.length > 0;
+  const nfcCartUnits = useMemo(() => expandNfcCartUnits(items), [items]);
+  const hasNFCCards = nfcCartUnits.length > 0;
   const showProfileBuilding = hasNFCCards;
 
   /* ── Flow ── */
-  const [step,              setStep]              = useState(() => hasNFCCards ? "profileHub" : "delivery");
-  const [activeLineKey,     setActiveLineKey]     = useState(null);
+  const [step, setStep] = useState(() => hasNFCCards ? "profileHub" : "delivery");
+  const [activeLineKey, setActiveLineKey] = useState(null);
   const [nfcProfilesByLine, setNfcProfilesByLine] = useState({});
-  const [usernameStatus,    setUsernameStatus]    = useState({});  // { lineKey: "idle" | "checking" | "available" | "taken" }
-  const [usernameError,     setUsernameError]     = useState({});  // { lineKey: errorMessage }
+  const [usernameStatus, setUsernameStatus] = useState({});  // { lineKey: "idle" | "checking" | "available" | "taken" }
+  const [usernameError, setUsernameError] = useState({});  // { lineKey: errorMessage }
   const [usernameSuggestions, setUsernameSuggestions] = useState({});  // { lineKey: [suggestions...] }
-  const [submitting,        setSubmitting]        = useState(false);
-  const [success,           setSuccess]           = useState(false);
-  const [receiptOrder,      setReceiptOrder]      = useState(null);
-  const [invoiceEmail,      setInvoiceEmail]      = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [receiptOrder, setReceiptOrder] = useState(null);
+  const [invoiceEmail, setInvoiceEmail] = useState("");
 
   /* ── Extra features ── */
-  const [couponInput,       setCouponInput]       = useState("");
-  const [appliedCoupon,     setAppliedCoupon]     = useState(null);
-  const [couponLoading,     setCouponLoading]     = useState(false);
-  const [couponError,       setCouponError]       = useState("");
-  const [paymentMethod,     setPaymentMethod]     = useState("upi");
-  const [saveAddress,       setSaveAddress]       = useState(false);
+  const [couponInput, setCouponInput] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponError, setCouponError] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("upi");
+  const [saveAddress, setSaveAddress] = useState(false);
   const [selectedSavedAddr, setSelectedSavedAddr] = useState(null);
-  const [pincodeStatus,     setPincodeStatus]     = useState(null);
+  const [pincodeStatus, setPincodeStatus] = useState(null);
 
   const pincodeTimer = useRef(null);
 
@@ -1570,7 +1644,7 @@ const Prebook = () => {
         } else {
           setUsernameStatus(prev => ({ ...prev, [lineKey]: "taken" }));
           setUsernameError(prev => ({ ...prev, [lineKey]: result.error || "Username is not available" }));
-          
+
           // Generate suggestions when username is taken
           try {
             const suggestions = await generateUsernameSuggestions(username);
@@ -1591,18 +1665,18 @@ const Prebook = () => {
     checkAsync();
   }, []);
 
-  const activeUnit             = nfcCartUnits.find(u => u.lineKey === activeLineKey);
+  const activeUnit = nfcCartUnits.find(u => u.lineKey === activeLineKey);
   const allNfcProfilesComplete = nfcCartUnits.every(u => isNfcLineProfileComplete(nfcProfilesByLine[u.lineKey]));
 
   /* ── Pricing ── */
-  const subtotal    = cartTotal;
+  const subtotal = cartTotal;
   const discountAmt = appliedCoupon
     ? appliedCoupon.type === "percent"
       ? Math.round(subtotal * appliedCoupon.value) / 100
       : appliedCoupon.value
     : 0;
   const taxableAmt = Math.max(0, subtotal - discountAmt);
-  const gstAmt     = parseFloat((taxableAmt * GST_RATE).toFixed(2));
+  const gstAmt = parseFloat((taxableAmt * GST_RATE).toFixed(2));
   const finalTotal = parseFloat((taxableAmt).toFixed(2));
 
   /* ── Session restore ── */
@@ -1611,30 +1685,30 @@ const Prebook = () => {
       const saved = sessionStorage.getItem(SESSION_KEY);
       if (saved) {
         const d = JSON.parse(saved);
-        if (d.fullName)  setFullName(d.fullName);
-        if (d.email)     setEmail(d.email);
-        if (d.phone)     setPhone(d.phone);
-        if (d.address)   setAddress(d.address);
-        if (d.city)      setCity(d.city);
-        if (d.state)     setState(d.state);
-        if (d.pincode)   setPincode(d.pincode);
+        if (d.fullName) setFullName(d.fullName);
+        if (d.email) setEmail(d.email);
+        if (d.phone) setPhone(d.phone);
+        if (d.address) setAddress(d.address);
+        if (d.city) setCity(d.city);
+        if (d.state) setState(d.state);
+        if (d.pincode) setPincode(d.pincode);
         if (d.orderNote) setOrderNote(d.orderNote);
       }
-    } catch {}
+    } catch { }
   }, []);
 
   useEffect(() => {
     try {
       sessionStorage.setItem(SESSION_KEY, JSON.stringify({ fullName, email, phone, address, city, state, pincode, orderNote }));
-    } catch {}
+    } catch { }
   }, [fullName, email, phone, address, city, state, pincode, orderNote]);
 
   /* ── Prefill from auth ── */
   useEffect(() => {
     if (profile) {
       if (profile.displayName && !fullName) setFullName(profile.displayName);
-      if (profile.email       && !email)    setEmail(profile.email);
-      if (profile.mobile      && !phone)    setPhone(profile.mobile);
+      if (profile.email && !email) setEmail(profile.email);
+      if (profile.mobile && !phone) setPhone(profile.mobile);
     }
   }, [profile]);
 
@@ -1645,13 +1719,13 @@ const Prebook = () => {
     setPincodeStatus("loading");
     pincodeTimer.current = setTimeout(async () => {
       try {
-        const res  = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+        const res = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
         const data = await res.json();
         if (data?.[0]?.Status === "Success") {
           const po = data[0].PostOffice?.[0];
           if (po) {
-            if (!city)  setCity(po.District || "");
-            if (!state) setState(po.State   || "");
+            if (!city) setCity(po.District || "");
+            if (!state) setState(po.State || "");
             setPincodeStatus("found");
             setErrors(p => ({ ...p, pincode: undefined, city: undefined, state: undefined }));
           }
@@ -1664,14 +1738,14 @@ const Prebook = () => {
   /* ── Validation ── */
   const validate = useCallback((): FormErrors => {
     const e: FormErrors = {};
-    if (!fullName.trim())                               e.fullName = "Full name is required";
-    if (!phone.trim())                                  e.phone    = "Phone number is required";
-    else if (!/^[+]?[\d\s-]{10,}$/.test(phone.trim())) e.phone    = "Enter a valid phone number";
-    if (!address.trim())                                e.address  = "Street address is required";
-    if (!city.trim())                                   e.city     = "City is required";
-    if (!state)                                         e.state    = "Select a state";
-    if (!pincode.trim())                                e.pincode  = "Pincode is required";
-    else if (!/^\d{6}$/.test(pincode.trim()))           e.pincode  = "Enter a valid 6-digit pincode";
+    if (!fullName.trim()) e.fullName = "Full name is required";
+    if (!phone.trim()) e.phone = "Phone number is required";
+    else if (!/^[+]?[\d\s-]{10,}$/.test(phone.trim())) e.phone = "Enter a valid phone number";
+    if (!address.trim()) e.address = "Street address is required";
+    if (!city.trim()) e.city = "City is required";
+    if (!state) e.state = "Select a state";
+    if (!pincode.trim()) e.pincode = "Pincode is required";
+    else if (!/^\d{6}$/.test(pincode.trim())) e.pincode = "Enter a valid 6-digit pincode";
     return e;
   }, [fullName, phone, address, city, state, pincode]);
 
@@ -1713,7 +1787,7 @@ const Prebook = () => {
 
   /* ── NFC helpers ── */
   const seedLineProfile = (lineKey, unitIndex, dName, dEmail, dPhone) => {
-    const base   = dName.trim().split(" ")[0].toLowerCase().replace(/[^a-z0-9]/g, "") || "user";
+    const base = dName.trim().split(" ")[0].toLowerCase().replace(/[^a-z0-9]/g, "") || "user";
     const suffix = unitIndex > 0 ? String(unitIndex + 1) : "";
     return { ...emptyNfcProfile(), name: dName.trim(), email: dEmail.trim(), phone: dPhone.trim(), username: `${base}${suffix}` };
   };
@@ -1829,7 +1903,7 @@ const Prebook = () => {
         onDismiss: () => {
           if (showProfileBuilding)
             for (const unit of nfcCartUnits)
-              void deleteNfcProfileDraft(getNfcProfileDocId(order.orderId, unit.lineKey)).catch(() => {});
+              void deleteNfcProfileDraft(getNfcProfileDocId(order.orderId, unit.lineKey)).catch(() => { });
           setSubmitting(false);
           toast({ title: "Payment cancelled", description: "You can retry anytime." });
           navigate("/booking");
@@ -1929,7 +2003,7 @@ const Prebook = () => {
                     <div className="section-card">
                       <div className="section-card-title"><Sparkles />Your NFC Cards</div>
                       {nfcCartUnits.map(unit => {
-                        const lp       = nfcProfilesByLine[unit.lineKey];
+                        const lp = nfcProfilesByLine[unit.lineKey];
                         const complete = isNfcLineProfileComplete(lp);
                         return (
                           <div key={unit.lineKey} className="nfc-row">
@@ -1937,7 +2011,7 @@ const Prebook = () => {
                               <h4>{unit.displayTitle}</h4>
                               {complete && lp?.username
                                 ? <p>@{lp.username}</p>
-                                : <p style={{ color: "#92400e" }}>Profile not set up yet</p>}
+                                : <p style={{ color: "var(--pending-color)" }}>Profile not set up yet</p>}
                             </div>
                             <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                               <span className={complete ? "badge-ready" : "badge-pending"}>
@@ -2059,8 +2133,8 @@ const Prebook = () => {
                               value={pincode} onChange={e => setPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                               onBlur={() => handleBlur("pincode")} maxLength={6} inputMode="numeric" />
                             {pincodeStatus === "loading" && <span className="pincode-badge loading">Looking up…</span>}
-                            {pincodeStatus === "found"   && <span className="pincode-badge found">✓ Found</span>}
-                            {pincodeStatus === "error"   && <span className="pincode-badge error">Not found</span>}
+                            {pincodeStatus === "found" && <span className="pincode-badge found">✓ Found</span>}
+                            {pincodeStatus === "error" && <span className="pincode-badge error">Not found</span>}
                           </div>
                         </Field>
                         <div className="grid-2">
@@ -2213,9 +2287,9 @@ const Prebook = () => {
                 {submitting
                   ? <Loader2 size={16} className="animate-spin" />
                   : <>
-                      <span>{stickyCtaLabel}</span>
-                      {step === "payment" ? <CreditCard size={14} /> : <ChevronRight size={14} />}
-                    </>}
+                    <span>{stickyCtaLabel}</span>
+                    {step === "payment" ? <CreditCard size={14} /> : <ChevronRight size={14} />}
+                  </>}
               </button>
             </div>
           )}

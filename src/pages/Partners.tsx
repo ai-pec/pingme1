@@ -20,8 +20,6 @@ import {
 const pingMeLogo = { src: "/collab-logo.jpeg" };
 const collaborationCard = {src: "/pingme-collab.jpeg"};
 
-const THEME_BG = "#FDF2D4";
-
 const programHighlights = [
   {
     icon: Rocket,
@@ -174,7 +172,7 @@ const Partners = () => {
 
   return (
     <MainLayout>
-      <section className="relative overflow-hidden py-14 md:py-20 text-stone-900" style={{ backgroundColor: THEME_BG }}>
+      <section className="relative overflow-hidden py-14 md:py-20 bg-background text-foreground">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute inset-0 bg-[linear-gradient(105deg,rgba(250,204,21,0.08)_0%,rgba(250,204,21,0.02)_20%,rgba(0,0,0,0)_42%,rgba(0,0,0,0)_58%,rgba(239,68,68,0.02)_80%,rgba(239,68,68,0.08)_100%)]" />
           <div className="absolute -left-40 top-10 h-[40rem] w-[40rem] rounded-full bg-yellow-300/30 blur-[170px] opacity-60" />
@@ -186,15 +184,15 @@ const Partners = () => {
         <div className="container relative space-y-12">
           {/* -- HERO -- */}
           <div className="mx-auto max-w-4xl text-center space-y-5">
-            <p className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-amber-800 shadow-sm backdrop-blur-sm">
+            <p className="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-primary shadow-sm backdrop-blur-sm">
               Partners
             </p>
-            <h1 className="text-4xl font-extrabold tracking-tight text-stone-900 md:text-5xl">
+            <h1 className="text-4xl font-extrabold tracking-tight text-foreground md:text-5xl">
               Building Safer Experiences Through Strategic Collaboration
             </h1>
-            <p className="mx-auto max-w-3xl text-lg leading-8 text-stone-600">
+            <p className="mx-auto max-w-3xl text-lg leading-8 text-muted-foreground">
               PingME is proud to announce a pilot partnership with{" "}
-              <span className="font-semibold text-amber-800">Pro Ultimate Gym Chain</span>, our first collaborator. This
+              <span className="font-semibold text-primary">Pro Ultimate Gym Chain</span>, our first collaborator. This
               program validates how privacy-first communication can improve member safety and day-to-day operations.
             </p>
           </div>
@@ -204,7 +202,7 @@ const Partners = () => {
               <a
                 href="#partner-form"
                 role="button"
-                className="inline-block w-full sm:w-auto text-center bg-amber-200/40 hover:bg-amber-300/50 border border-amber-400/40 text-amber-950 font-extrabold text-2xl md:text-3xl px-6 py-4 rounded-2xl shadow-md transition-colors"
+                className="inline-block w-full sm:w-auto text-center bg-primary/20 hover:bg-primary/30 border border-primary/40 text-foreground font-extrabold text-2xl md:text-3xl px-6 py-4 rounded-2xl shadow-md transition-colors"
               >
                 Want to collaborate with us? Contact us
               </a>
@@ -216,27 +214,27 @@ const Partners = () => {
             {stats.map((stat) => (
               <div
                 key={stat.label}
-                className="rounded-2xl border border-stone-200 bg-white/70 p-4 text-center shadow-sm backdrop-blur-sm"
+                className="rounded-2xl border border-border bg-card/70 backdrop-blur-sm p-4 text-center shadow-sm"
               >
-                <p className="text-2xl font-extrabold text-amber-800 md:text-3xl">{stat.value}</p>
-                <p className="mt-1 text-xs font-medium uppercase tracking-wide text-stone-600">{stat.label}</p>
+                <p className="text-2xl font-extrabold text-primary md:text-3xl">{stat.value}</p>
+                <p className="mt-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">{stat.label}</p>
               </div>
             ))}
           </div>
 
           {/* -- PILOT PARTNER + SNAPSHOT -- */}
           <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
-            <article className="rounded-[1.75rem] border border-stone-200 bg-white/80 p-6 shadow-lg backdrop-blur-xl md:p-8">
+            <article className="rounded-[1.75rem] border border-border bg-card/80 p-6 shadow-lg backdrop-blur-xl md:p-8">
               <div className="flex flex-wrap items-center gap-4">
-                <div className="rounded-2xl border border-stone-200 bg-white p-2 shadow-md">
+                <div className="rounded-2xl border border-border bg-card p-2 shadow-md">
                   <img src={pingMeLogo.src} alt="PingME logo" className="h-12 w-auto object-contain rounded-xl" />
                 </div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-red-500/25 to-amber-400/20 text-amber-800 shadow-sm">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-red-500/25 to-primary/20 text-primary shadow-sm">
                   <Handshake className="h-6 w-6" />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-800/80">Collaboration Partner</p>
-                  <h2 className="text-2xl font-bold text-stone-900">Pro Ultimate Gym Chain</h2>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/70">Collaboration Partner</p>
+                  <h2 className="text-2xl font-bold text-foreground">Pro Ultimate Gym Chain</h2>
                 </div>
               </div>
 
@@ -244,25 +242,25 @@ const Partners = () => {
                 {programHighlights.map((item) => {
                   const Icon = item.icon;
                   return (
-                    <div key={item.title} className="rounded-2xl border border-stone-200 bg-white/70 p-4 backdrop-blur-sm shadow-sm">
-                      <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-red-500/20 to-amber-400/20 shadow-sm">
-                        <Icon className="h-5 w-5 text-amber-800" />
+                    <div key={item.title} className="rounded-2xl border border-border bg-card/70 backdrop-blur-sm p-4 shadow-sm">
+                      <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-red-500/20 to-primary/20 shadow-sm">
+                        <Icon className="h-5 w-5 text-primary" />
                       </div>
-                      <h3 className="text-sm font-bold text-stone-900">{item.title}</h3>
-                      <p className="mt-2 text-sm leading-6 text-stone-600">{item.description}</p>
+                      <h3 className="text-sm font-bold text-foreground">{item.title}</h3>
+                      <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.description}</p>
                     </div>
                   );
                 })}
               </div>
 
-              <div className="mt-6 rounded-2xl border border-amber-300/30 bg-white/50 p-5 shadow-sm">
-                <div className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.2em] text-amber-800">
+              <div className="mt-6 rounded-2xl border border-primary/20 bg-primary/5 p-5 shadow-sm">
+                <div className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.2em] text-primary">
                   <BadgeCheck className="h-4 w-4 text-red-500" />
                   Pilot Program Objectives
                 </div>
                 <ul className="space-y-2">
                   {outcomes.map((item) => (
-                    <li key={item} className="flex items-start gap-2 text-sm text-stone-600">
+                    <li key={item} className="flex items-start gap-2 text-sm text-muted-foreground">
                       <span className="mt-1 inline-block h-2 w-2 shrink-0 rounded-full bg-gradient-to-r from-red-400 to-amber-400 shadow-none" />
                       <span>{item}</span>
                     </li>
@@ -271,28 +269,28 @@ const Partners = () => {
               </div>
             </article>
 
-            <aside className="rounded-[1.75rem] border border-stone-200 bg-white/80 p-6 shadow-lg backdrop-blur-xl md:p-8">
+            <aside className="rounded-[1.75rem] border border-border bg-card/80 p-6 shadow-lg backdrop-blur-xl md:p-8">
               <div className="mb-4 flex items-center gap-3">
-                <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-red-500/20 to-amber-400/20">
-                  <Building2 className="h-5 w-5 text-amber-800" />
+                <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-red-500/20 to-primary/20">
+                  <Building2 className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-800/80">Partnership Preview</p>
-                  <h3 className="text-xl font-bold text-stone-900">Collaboration Snapshot</h3>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/70">Partnership Preview</p>
+                  <h3 className="text-xl font-bold text-foreground">Collaboration Snapshot</h3>
                 </div>
               </div>
 
-              <div className="overflow-hidden rounded-xl border border-stone-200 bg-stone-100/80">
+              <div className="overflow-hidden rounded-xl border border-border bg-muted">
                 <img src={collaborationCard.src} alt="PingME collaboration card" className="w-full object-cover" />
               </div>
 
-              <p className="mt-4 text-sm leading-7 text-stone-600">
+              <p className="mt-4 text-sm leading-7 text-muted-foreground">
                 This pilot marks the beginning of PingME's partnership track. We are working closely with Pro Ultimate Gym
                 Chain to shape reliable, privacy-first communication at scale.
               </p>
-              <p className="mt-4 text-sm leading-7 text-stone-600">
+              <p className="mt-4 text-sm leading-7 text-muted-foreground">
                 Want to collaborate with us?{" "}
-                <a href="#partner-form" className="font-semibold text-amber-800 hover:underline">
+                <a href="#partner-form" className="font-semibold text-primary hover:underline">
                   Fill out the form below
                 </a>
                 .
@@ -301,13 +299,13 @@ const Partners = () => {
           </div>
 
           {/* -- FAQ ACCORDION -- */}
-          <div className="rounded-[1.75rem] border border-stone-200 bg-white/80 p-6 shadow-lg backdrop-blur-xl md:p-8">
+          <div className="rounded-[1.75rem] border border-border bg-card/80 p-6 shadow-lg backdrop-blur-xl md:p-8">
             <div className="mb-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-800/80">Good to Know</p>
-              <h2 className="text-xl font-bold text-stone-900">Partnership FAQs</h2>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/70">Good to Know</p>
+              <h2 className="text-xl font-bold text-foreground">Partnership FAQs</h2>
             </div>
 
-            <div className="divide-y divide-stone-200">
+            <div className="divide-y divide-border">
               {faqs.map((faq, index) => {
                 const isOpen = openFaq === index;
                 return (
@@ -318,13 +316,13 @@ const Partners = () => {
                       aria-expanded={isOpen}
                       className="flex w-full items-center justify-between gap-4 text-left"
                     >
-                      <span className="text-sm font-semibold text-stone-900">{faq.question}</span>
+                      <span className="text-sm font-semibold text-foreground">{faq.question}</span>
                       <ChevronDown
-                        className={`h-4 w-4 shrink-0 text-amber-800 transition-transform ${isOpen ? "rotate-180" : ""}`}
+                        className={`h-4 w-4 shrink-0 text-primary transition-transform ${isOpen ? "rotate-180" : ""}`}
                       />
                     </button>
                     {isOpen && (
-                      <p className="mt-2 text-sm leading-6 text-stone-600">{faq.answer}</p>
+                      <p className="mt-2 text-sm leading-6 text-muted-foreground">{faq.answer}</p>
                     )}
                   </div>
                 );
@@ -333,27 +331,27 @@ const Partners = () => {
           </div>
 
           {/* -- BECOME A PARTNER -- */}
-          <div className="rounded-[1.75rem] border border-stone-200 bg-white/80 p-6 shadow-lg backdrop-blur-xl md:p-8">
+          <div className="rounded-[1.75rem] border border-border bg-card/80 p-6 shadow-lg backdrop-blur-xl md:p-8">
             <div className="mb-5 flex items-center gap-3">
-              <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-red-500/20 to-amber-400/20 shadow-sm">
-                <Handshake className="h-5 w-5 text-amber-800" />
+              <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-red-500/20 to-primary/20 shadow-sm">
+                <Handshake className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-800/80">Get Started</p>
-                <h2 className="text-xl font-bold text-stone-900">Become a Partner</h2>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/70">Get Started</p>
+                <h2 className="text-xl font-bold text-foreground">Become a Partner</h2>
               </div>
             </div>
 
-            <p className="mb-6 text-sm leading-7 text-stone-600">
+            <p className="mb-6 text-sm leading-7 text-muted-foreground">
               Interested in bringing PingME to your gym, society, or office? Reach out to us and let's build something
               together.
             </p>
 
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {contactDetails.map(({ label, value, href, copyable, icon: Icon }) => (
-                <div key={label} className="rounded-2xl border border-stone-200 bg-white/60 p-4 backdrop-blur-sm">
+                <div key={label} className="rounded-2xl border border-border bg-card/60 p-4 backdrop-blur-sm">
                   <div className="mb-1.5 flex items-center justify-between">
-                    <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-amber-800/70">
+                    <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-primary/70">
                       <Icon className="h-3.5 w-3.5" />
                       {label}
                     </p>
@@ -362,10 +360,10 @@ const Partners = () => {
                         type="button"
                         onClick={() => handleCopy(label, value)}
                         aria-label={`Copy ${label.toLowerCase()}`}
-                        className="rounded-md p-1 text-stone-400 transition-colors hover:bg-amber-100 hover:text-amber-800"
+                        className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
                       >
                         {copiedField === label ? (
-                          <Check className="h-3.5 w-3.5 text-emerald-600" />
+                          <Check className="h-3.5 w-3.5 text-emerald-500" />
                         ) : (
                           <Copy className="h-3.5 w-3.5" />
                         )}
@@ -375,15 +373,15 @@ const Partners = () => {
                   {href ? (
                     <a
                       href={href}
-                      className="break-all text-sm font-medium text-stone-700 transition-colors hover:text-amber-800"
+                      className="break-all text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
                     >
                       {value}
                     </a>
                   ) : (
-                    <p className="break-words text-sm font-medium leading-5 text-stone-700">{value}</p>
+                    <p className="break-words text-sm font-medium leading-5 text-muted-foreground">{value}</p>
                   )}
                   {copiedField === label && (
-                    <p className="mt-1 text-[10px] font-medium text-emerald-600">Copied to clipboard</p>
+                    <p className="mt-1 text-[10px] font-medium text-emerald-500">Copied to clipboard</p>
                   )}
                 </div>
               ))}
@@ -391,27 +389,27 @@ const Partners = () => {
           </div>
 
           {/* -- PARTNER INQUIRY FORM -- */}
-          <div id="partner-form" className="rounded-[1.75rem] border border-stone-200 bg-white/80 p-6 shadow-lg backdrop-blur-xl md:p-8">
+          <div id="partner-form" className="rounded-[1.75rem] border border-border bg-card/80 p-6 shadow-lg backdrop-blur-xl md:p-8">
             <div className="mb-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-800/80">Let's Talk</p>
-              <h2 className="text-xl font-bold text-stone-900">Tell Us About Your Business</h2>
-              <p className="mt-2 text-sm leading-6 text-stone-600">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/70">Let's Talk</p>
+              <h2 className="text-xl font-bold text-foreground">Tell Us About Your Business</h2>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
                 Share a few details and our partnerships team will get back to you about next steps.
               </p>
             </div>
 
             {formStatus === "success" ? (
-              <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
-                <Check className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+              <div className="flex items-start gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-5">
+                <Check className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" />
                 <div>
-                  <p className="text-sm font-semibold text-emerald-800">Thanks — your request has been received.</p>
-                  <p className="mt-1 text-sm text-emerald-700">
+                  <p className="text-sm font-semibold text-foreground">Thanks — your request has been received.</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
                     Our team will reach out to the email you provided shortly.
                   </p>
                   <button
                     type="button"
                     onClick={() => setFormStatus("idle")}
-                    className="mt-3 text-sm font-semibold text-emerald-700 underline hover:text-emerald-900"
+                    className="mt-3 text-sm font-semibold text-emerald-500 underline hover:text-emerald-400"
                   >
                     Submit another request
                   </button>
@@ -420,7 +418,7 @@ const Partners = () => {
             ) : (
               <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="businessName" className="text-xs font-semibold uppercase tracking-widest text-amber-800/70">
+                  <label htmlFor="businessName" className="text-xs font-semibold uppercase tracking-widest text-primary/70">
                     Business Name *
                   </label>
                   <input
@@ -430,12 +428,12 @@ const Partners = () => {
                     value={form.businessName}
                     onChange={handleChange}
                     placeholder="e.g. Pro Ultimate Gym Chain"
-                    className="rounded-xl border border-stone-200 bg-white/80 px-4 py-2.5 text-sm text-stone-800 outline-none transition-colors focus:border-amber-400 focus:ring-2 focus:ring-amber-200"
+                    className="rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="contactName" className="text-xs font-semibold uppercase tracking-widest text-amber-800/70">
+                  <label htmlFor="contactName" className="text-xs font-semibold uppercase tracking-widest text-primary/70">
                     Your Name *
                   </label>
                   <input
@@ -445,12 +443,12 @@ const Partners = () => {
                     value={form.contactName}
                     onChange={handleChange}
                     placeholder="Full name"
-                    className="rounded-xl border border-stone-200 bg-white/80 px-4 py-2.5 text-sm text-stone-800 outline-none transition-colors focus:border-amber-400 focus:ring-2 focus:ring-amber-200"
+                    className="rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="email" className="text-xs font-semibold uppercase tracking-widest text-amber-800/70">
+                  <label htmlFor="email" className="text-xs font-semibold uppercase tracking-widest text-primary/70">
                     Email *
                   </label>
                   <input
@@ -460,12 +458,12 @@ const Partners = () => {
                     value={form.email}
                     onChange={handleChange}
                     placeholder="you@company.com"
-                    className="rounded-xl border border-stone-200 bg-white/80 px-4 py-2.5 text-sm text-stone-800 outline-none transition-colors focus:border-amber-400 focus:ring-2 focus:ring-amber-200"
+                    className="rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="phone" className="text-xs font-semibold uppercase tracking-widest text-amber-800/70">
+                  <label htmlFor="phone" className="text-xs font-semibold uppercase tracking-widest text-primary/70">
                     Phone (optional)
                   </label>
                   <input
@@ -475,12 +473,12 @@ const Partners = () => {
                     value={form.phone}
                     onChange={handleChange}
                     placeholder="+91 00000 00000"
-                    className="rounded-xl border border-stone-200 bg-white/80 px-4 py-2.5 text-sm text-stone-800 outline-none transition-colors focus:border-amber-400 focus:ring-2 focus:ring-amber-200"
+                    className="rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1.5 sm:col-span-2">
-                  <label htmlFor="message" className="text-xs font-semibold uppercase tracking-widest text-amber-800/70">
+                  <label htmlFor="message" className="text-xs font-semibold uppercase tracking-widest text-primary/70">
                     How would you like to collaborate? *
                   </label>
                   <textarea
@@ -490,35 +488,35 @@ const Partners = () => {
                     value={form.message}
                     onChange={handleChange}
                     placeholder="Tell us about your locations and what you'd like to pilot with PingME."
-                    className="resize-none rounded-xl border border-stone-200 bg-white/80 px-4 py-2.5 text-sm text-stone-800 outline-none transition-colors focus:border-amber-400 focus:ring-2 focus:ring-amber-200"
+                    className="resize-none rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
 
                 {formStatus === "error" && (
-                  <p className="sm:col-span-2 text-sm font-medium text-red-600">{formError}</p>
+                  <p className="sm:col-span-2 text-sm font-medium text-destructive">{formError}</p>
                 )}
 
                 <div className="sm:col-span-2">
                   <button
                     type="submit"
                     disabled={formStatus === "submitting"}
-                    className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-200/40 px-6 py-2.5 text-sm font-semibold text-amber-950 transition-all hover:bg-amber-300/50 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {formStatus === "submitting" && <Loader2 className="h-4 w-4 animate-spin" />}
                     {formStatus === "submitting" ? "Sending..." : "Send Partnership Request"}
-                    {formStatus !== "submitting" && <span className="text-amber-800">→</span>}
+                    {formStatus !== "submitting" && <span>→</span>}
                   </button>
                 </div>
               </form>
             )}
 
-            <p className="mt-6 text-sm leading-7 text-stone-600">
+            <p className="mt-6 text-sm leading-7 text-muted-foreground">
               Prefer email or a call? Reach us directly at{" "}
-              <a href="mailto:contact@pingiff.ai" className="font-semibold text-amber-800 hover:underline">
+              <a href="mailto:contact@pingiff.ai" className="font-semibold text-primary hover:underline">
                 contact@pingiff.ai
               </a>{" "}
               or{" "}
-              <a href="tel:+917347340007" className="font-semibold text-amber-800 hover:underline">
+              <a href="tel:+917347340007" className="font-semibold text-primary hover:underline">
                 +91 73473 40007
               </a>
               .

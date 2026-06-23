@@ -34,17 +34,18 @@ import {
 } from "../lib/productCatalog";
 
 /* ─── Brand Tokens ────────────────────────────────────────────── */
-const GOLD       = "#edd09f";
-const GOLD_DEEP  = "#c9a96e";
-const GOLD_LIGHT = "#f5e6c8";
-const INK        = "#1a1410";
-const INK_SOFT   = "#2e261c";
-const SMOKE      = "#f9f4ec";
-const SMOKE_DEEP = "#f0e8d8";
-const MIST       = "#e8ddd0";
-const TEXT_SEC   = "#6b5d4f";
-const TEXT_MUTED = "#a89880";
-const SUCCESS    = "#4a7c59";
+const GOLD       = "var(--pm-gold)";
+const GOLD_DEEP  = "var(--pm-gold-deep)";
+const GOLD_LIGHT = "var(--pm-gold-light)";
+const INK        = "var(--pm-ink)";
+const INK_SOFT   = "var(--pm-ink-soft)";
+const SMOKE      = "var(--pm-smoke)";
+const SMOKE_DEEP = "var(--pm-smoke-deep)";
+const MIST       = "var(--pm-mist)";
+const TEXT_SEC   = "var(--pm-text-sec)";
+const TEXT_MUTED = "var(--pm-text-muted)";
+const SUCCESS    = "var(--pm-success)";
+const WHITE      = "var(--pm-white)";
 
 /* ─── Static Trust Items ──────────────────────────────────────── */
 const TRUST_PERKS = [
@@ -280,7 +281,7 @@ const QtySelector = ({
       border: `1px solid ${MIST}`,
       borderRadius: 10,
       overflow: "hidden",
-      background: "#fff",
+      background: WHITE,
       height: 46,
     }}
   >
@@ -390,7 +391,7 @@ const RelatedProducts = ({
             key={prod.id}
             onClick={() => navigate(`/products/${categorySlug}/${prod.id}`)}
             style={{
-              background: "#fff",
+              background: WHITE,
               border: `1px solid ${MIST}`,
               borderRadius: 14,
               overflow: "hidden",
@@ -526,7 +527,7 @@ const SupportBanner = () => (
       {/* Right — text */}
       <div
         style={{
-          background: "#fff",
+          background: WHITE,
           padding: "clamp(28px, 4vw, 48px)",
           display: "flex",
           flexDirection: "column",
@@ -619,7 +620,7 @@ const ProductDetail = () => {
     productId: string;
   }>();
   const navigate = useNavigate();
-  const { addToCart, clearCart } = useCart();
+  const { addToCart, clearCart, removeFromCart } = useCart();
   const { toast } = useToast();
 
   const [dbProducts, setDbProducts] = useState<DbProduct[]>([]);
@@ -780,11 +781,42 @@ const ProductDetail = () => {
 
   return (
     <MainLayout>
-      {/* ── Global Styles ── */}
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500;600&display=swap');
+      <div className="pm-detail-page">
+        {/* ── Global Styles ── */}
+        <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500;600&display=swap');
 
-        .pm-detail-page { background: ${SMOKE}; min-height: 100vh; }
+          :root {
+            --pm-gold: #edd09f;
+            --pm-gold-deep: #c9a96e;
+            --pm-gold-light: #f5e6c8;
+            --pm-ink: #1a1410;
+            --pm-ink-soft: #2e261c;
+            --pm-smoke: #f9f4ec;
+            --pm-smoke-deep: #f0e8d8;
+            --pm-mist: #e8ddd0;
+            --pm-text-sec: #6b5d4f;
+            --pm-text-muted: #a89880;
+            --pm-success: #4a7c59;
+            --pm-white: #ffffff;
+          }
+
+          .dark {
+            --pm-gold: #edd09f;
+            --pm-gold-deep: #c9a96e;
+            --pm-gold-light: #2c251a;
+            --pm-ink: #faf9f6;
+            --pm-ink-soft: #e5dfd5;
+            --pm-smoke: #0d0c0a;
+            --pm-smoke-deep: #161512;
+            --pm-mist: rgba(255, 255, 255, 0.08);
+            --pm-text-sec: #c5beae;
+            --pm-text-muted: #8c8473;
+            --pm-success: #4fa87a;
+            --pm-white: #171613;
+          }
+
+          .pm-detail-page { background: ${SMOKE}; min-height: 100vh; }
 
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(18px); }
@@ -1192,7 +1224,21 @@ const ProductDetail = () => {
               {/* Wishlist + Share row */}
               <div style={{ display: "flex", gap: 10 }}>
                 <button
-                  onClick={() => setWishlist((w) => !w)}
+                  onClick={() => {
+                    const newWish = !wishlist;
+                    setWishlist(newWish);
+                    if (newWish) {
+                      handleAddToCart();
+                    } else {
+                      if (product) {
+                        removeFromCart(product.id);
+                        toast({
+                          title: "Removed from Cart",
+                          description: `${product.title} removed.`,
+                        });
+                      }
+                    }
+                  }}
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -1462,7 +1508,7 @@ const ProductDetail = () => {
         {/* ── Trust Perks Strip ── */}
         <div
           style={{
-            background: "#fff",
+            background: WHITE,
             borderTop: `1px solid ${MIST}`,
             borderBottom: `1px solid ${MIST}`,
           }}
@@ -1517,8 +1563,7 @@ const ProductDetail = () => {
             categorySlug={normalizedSlug}
           />
         )}
-
-      
+      </div>
     </MainLayout>
   );
 };

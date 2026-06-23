@@ -188,19 +188,22 @@ const Sheet = ({
   children: React.ReactNode;
 }) => (
   <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-    <DialogContent className={[
-      /* mobile: slide up from bottom, full-width, max 90vh */
-      "fixed bottom-0 left-0 right-0 top-auto",
-      "translate-x-0 translate-y-0",
-      "rounded-t-2xl rounded-b-none",
-      "max-h-[92dvh] w-full overflow-y-auto",
-      "px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]",
-      /* desktop: centered card, max width */
-      "sm:bottom-auto sm:left-1/2 sm:right-auto sm:top-1/2",
-      "sm:-translate-x-1/2 sm:-translate-y-1/2",
-      "sm:rounded-2xl sm:max-w-lg sm:w-[calc(100vw-2rem)]",
-      "sm:max-h-[85dvh] sm:px-6 sm:py-6",
-    ].join(" ")}>
+    <DialogContent
+      data-lenis-prevent
+      className={[
+        /* mobile: slide up from bottom, full-width, max 90vh */
+        "fixed bottom-0 left-0 right-0 top-auto",
+        "translate-x-0 translate-y-0",
+        "rounded-t-2xl rounded-b-none",
+        "max-h-[92dvh] w-full overflow-y-auto",
+        "px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]",
+        /* desktop: centered card, max width */
+        "sm:bottom-auto sm:left-1/2 sm:right-auto sm:top-1/2",
+        "sm:-translate-x-1/2 sm:-translate-y-1/2",
+        "sm:rounded-2xl sm:max-w-lg sm:w-[calc(100vw-2rem)]",
+        "sm:max-h-[85dvh] sm:px-6 sm:py-6",
+      ].join(" ")}
+    >
       {/* drag handle – mobile only */}
       <div className="sm:hidden mx-auto mb-3 w-10 h-1 rounded-full bg-muted-foreground/30" />
       <DialogHeader className="text-left mb-4">

@@ -180,7 +180,7 @@ const ScrollBar = () => {
 
 // ─── Floating pill ────────────────────────────────────────────────────────────
 const Pill = ({ icon: Icon, text, style }: { icon: React.ElementType; text: string; style?: React.CSSProperties }) => (
-  <div style={{ position: "absolute", display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 999, fontSize: 10, fontWeight: 700, background: "rgba(255,255,255,0.92)", border: "1px solid rgba(0,0,0,0.08)", backdropFilter: "blur(10px)", color: "#555", boxShadow: "0 4px 16px rgba(0,0,0,0.08)", whiteSpace: "nowrap", pointerEvents: "none", userSelect: "none", animation: "floatIn 0.8s ease both", ...style }}>
+  <div style={{ position: "absolute", display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 999, fontSize: 10, fontWeight: 700, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", backdropFilter: "blur(10px)", color: "hsl(var(--muted-foreground))", boxShadow: "0 4px 16px rgba(0,0,0,0.08)", whiteSpace: "nowrap", pointerEvents: "none", userSelect: "none", animation: "floatIn 0.8s ease both", ...style }}>
     <Icon style={{ width: 12, height: 12, color: "hsl(var(--primary))" }} />{text}
   </div>
 );
@@ -203,13 +203,13 @@ const ValueCard = ({ icon: Icon, label, description, color, index, inView }: (ty
   const [hov, setHov] = useState(false);
   return (
     <div onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      style={{ display: "flex", gap: 16, alignItems: "flex-start", background: "white", border: `1.5px solid ${hov ? color + "55" : "rgba(0,0,0,0.07)"}`, borderRadius: 20, padding: 24, cursor: "default", opacity: inView ? 1 : 0, transform: inView ? (hov ? "translateY(-5px)" : "translateY(0)") : "translateY(28px)", transition: `opacity 0.5s ease ${index*120+100}ms, transform 0.35s ease, border-color 0.3s ease, box-shadow 0.3s ease`, boxShadow: hov ? `0 16px 48px ${color}22` : "0 2px 12px rgba(0,0,0,0.04)" }}>
+      style={{ display: "flex", gap: 16, alignItems: "flex-start", background: "hsl(var(--card))", border: `1.5px solid ${hov ? color + "55" : "hsl(var(--border))"}`, borderRadius: 20, padding: 24, cursor: "default", opacity: inView ? 1 : 0, transform: inView ? (hov ? "translateY(-5px)" : "translateY(0)") : "translateY(28px)", transition: `opacity 0.5s ease ${index*120+100}ms, transform 0.35s ease, border-color 0.3s ease, box-shadow 0.3s ease`, boxShadow: hov ? `0 16px 48px ${color}22` : "0 2px 12px rgba(0,0,0,0.04)" }}>
       <div style={{ width: 52, height: 52, background: color + "18", borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transform: hov ? "scale(1.15) rotate(6deg)" : "scale(1)", transition: "transform 0.3s ease", border: `1.5px solid ${color}30` }}>
         <Icon style={{ width: 22, height: 22, color }} />
       </div>
       <div>
-        <h3 style={{ fontWeight: 800, fontSize: 17, marginBottom: 6, color: "#1a1a0a" }}>{label}</h3>
-        <p style={{ color: "#666", fontSize: 14, lineHeight: 1.65 }}>{description}</p>
+        <h3 style={{ fontWeight: 800, fontSize: 17, marginBottom: 6, color: "hsl(var(--foreground))" }}>{label}</h3>
+        <p style={{ color: "hsl(var(--muted-foreground))", fontSize: 14, lineHeight: 1.65 }}>{description}</p>
       </div>
     </div>
   );
@@ -225,11 +225,11 @@ const ProductCard = ({ emoji, label, tag, description, href, accent, index, inVi
   };
   return (
     <a href={href} onClick={handleClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      style={{ position: "relative", display: "flex", flexDirection: "column", borderRadius: 20, border: `1.5px solid ${hov ? accent + "55" : "rgba(0,0,0,0.07)"}`, background: "white", padding: 24, textDecoration: "none", overflow: "hidden", cursor: "pointer", opacity: inView ? 1 : 0, transform: inView ? (hov ? "translateY(-9px) scale(1.02)" : "translateY(0) scale(1)") : "translateY(32px) scale(0.96)", transition: `opacity 0.5s ease ${index*90+100}ms, transform 0.35s ease, box-shadow 0.35s ease, border-color 0.3s ease`, boxShadow: hov ? `0 24px 56px ${accent}28, 0 4px 16px rgba(0,0,0,0.06)` : "0 2px 10px rgba(0,0,0,0.05)" }}>
+      style={{ position: "relative", display: "flex", flexDirection: "column", borderRadius: 20, border: `1.5px solid ${hov ? accent + "55" : "hsl(var(--border))"}`, background: "hsl(var(--card))", padding: 24, textDecoration: "none", overflow: "hidden", cursor: "pointer", opacity: inView ? 1 : 0, transform: inView ? (hov ? "translateY(-9px) scale(1.02)" : "translateY(0) scale(1)") : "translateY(32px) scale(0.96)", transition: `opacity 0.5s ease ${index*90+100}ms, transform 0.35s ease, box-shadow 0.35s ease, border-color 0.3s ease`, boxShadow: hov ? `0 24px 56px ${accent}28, 0 4px 16px rgba(0,0,0,0.06)` : "0 2px 10px rgba(0,0,0,0.05)" }}>
       {tag && <span style={{ position: "absolute", top: 16, right: 16, fontSize: 9, fontWeight: 900, letterSpacing: "0.15em", textTransform: "uppercase", background: accent + "18", color: accent, padding: "3px 9px", borderRadius: 999, border: `1px solid ${accent}30` }}>{tag}</span>}
       <div style={{ width: 52, height: 52, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16, background: accent + "18", border: `1.5px solid ${accent}33`, fontSize: 24, transform: hov ? "scale(1.18) rotate(-5deg)" : "scale(1)", transition: "transform 0.3s ease" }}>{emoji}</div>
-      <h3 style={{ fontWeight: 800, fontSize: 16, color: "#1a1a0a", marginBottom: 8 }}>{label}</h3>
-      <p style={{ color: "#666", fontSize: 13, lineHeight: 1.65, flex: 1 }}>{description}</p>
+      <h3 style={{ fontWeight: 800, fontSize: 16, color: "hsl(var(--foreground))", marginBottom: 8 }}>{label}</h3>
+      <p style={{ color: "hsl(var(--muted-foreground))", fontSize: 13, lineHeight: 1.65, flex: 1 }}>{description}</p>
       <div style={{ marginTop: 18, display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 700, color: accent, opacity: hov ? 1 : 0, transform: hov ? "translateX(0)" : "translateX(-10px)", transition: "opacity 0.25s, transform 0.25s" }}>
         Learn more <ArrowRight style={{ width: 12, height: 12 }} />
       </div>
@@ -253,8 +253,8 @@ const TimelineItem = ({ year, title, description, icon, index, inView, isLast }:
       </div>
       <div style={{ paddingBottom: 36, paddingTop: 6 }}>
         <span style={{ fontSize: 10, fontWeight: 900, letterSpacing: "0.2em", textTransform: "uppercase", color: "hsl(var(--primary))" }}>{year}</span>
-        <h4 style={{ fontWeight: 800, fontSize: 16, margin: "4px 0 6px", color: "#1a1a0a" }}>{title}</h4>
-        <p style={{ color: "#666", fontSize: 13, lineHeight: 1.65, maxWidth: 280 }}>{description}</p>
+        <h4 style={{ fontWeight: 800, fontSize: 16, margin: "4px 0 6px", color: "hsl(var(--foreground))" }}>{title}</h4>
+        <p style={{ color: "hsl(var(--muted-foreground))", fontSize: 13, lineHeight: 1.65, maxWidth: 280 }}>{description}</p>
       </div>
     </div>
   );
@@ -265,16 +265,16 @@ const TestiCard = ({ name, city, text, rating, emoji, index, inView }: (typeof T
   const [hov, setHov] = useState(false);
   return (
     <div onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      style={{ background: "white", borderRadius: 20, padding: 24, border: "1.5px solid rgba(0,0,0,0.07)", display: "flex", flexDirection: "column", gap: 12, cursor: "default", opacity: inView ? 1 : 0, transform: inView ? (hov ? "translateY(-6px)" : "translateY(0)") : "translateY(28px)", transition: `opacity 0.55s ease ${index*100+100}ms, transform 0.35s ease, box-shadow 0.3s ease`, boxShadow: hov ? "0 20px 50px rgba(0,0,0,0.1)" : "0 2px 10px rgba(0,0,0,0.05)" }}>
+      style={{ background: "hsl(var(--card))", borderRadius: 20, padding: 24, border: "1.5px solid hsl(var(--border))", display: "flex", flexDirection: "column", gap: 12, cursor: "default", opacity: inView ? 1 : 0, transform: inView ? (hov ? "translateY(-6px)" : "translateY(0)") : "translateY(28px)", transition: `opacity 0.55s ease ${index*100+100}ms, transform 0.35s ease, box-shadow 0.3s ease`, boxShadow: hov ? "0 20px 50px rgba(0,0,0,0.15)" : "0 2px 10px rgba(0,0,0,0.05)" }}>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <div style={{ width: 44, height: 44, borderRadius: "50%", background: "hsl(var(--primary)/0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, border: "1.5px solid hsl(var(--primary)/0.2)" }}>{emoji}</div>
         <div>
-          <p style={{ fontWeight: 800, fontSize: 14, color: "#1a1a0a" }}>{name}</p>
-          <p style={{ fontSize: 11, color: "#aaa" }}>{city}</p>
+          <p style={{ fontWeight: 800, fontSize: 14, color: "hsl(var(--foreground))" }}>{name}</p>
+          <p style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>{city}</p>
         </div>
       </div>
       <div style={{ display: "flex", gap: 2 }}>{Array.from({ length: rating }).map((_, i) => <Star key={i} style={{ width: 14, height: 14, fill: "#F59E0B", color: "#F59E0B" }} />)}</div>
-      <p style={{ color: "#555", fontSize: 13, lineHeight: 1.7, fontStyle: "italic" }}>"{text}"</p>
+      <p style={{ color: "hsl(var(--muted-foreground))", fontSize: 13, lineHeight: 1.7, fontStyle: "italic" }}>"{text}"</p>
     </div>
   );
 };
@@ -283,13 +283,13 @@ const TestiCard = ({ name, city, text, rating, emoji, index, inView }: (typeof T
 const FAQItem = ({ q, a, index, inView }: { q: string; a: string; index: number; inView: boolean }) => {
   const [open, setOpen] = useState(false);
   return (
-    <div style={{ background: "white", borderRadius: 16, border: `1.5px solid ${open ? "hsl(var(--primary)/0.4)" : "rgba(0,0,0,0.07)"}`, overflow: "hidden", transition: "border-color 0.3s", opacity: inView ? 1 : 0, transform: inView ? "translateY(0)" : "translateY(20px)", transition2: `opacity 0.5s ease ${index*80+100}ms, transform 0.5s ease ${index*80+100}ms` } as React.CSSProperties}>
+    <div style={{ background: "hsl(var(--card))", borderRadius: 16, border: `1.5px solid ${open ? "hsl(var(--primary)/0.4)" : "hsl(var(--border))"}`, overflow: "hidden", transition: "border-color 0.3s", opacity: inView ? 1 : 0, transform: inView ? "translateY(0)" : "translateY(20px)", transition2: `opacity 0.5s ease ${index*80+100}ms, transform 0.5s ease ${index*80+100}ms` } as React.CSSProperties}>
       <button onClick={() => setOpen(o => !o)} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px", background: "none", border: "none", cursor: "pointer", textAlign: "left", gap: 12 }}>
-        <span style={{ fontWeight: 700, fontSize: 15, color: "#1a1a0a", flex: 1 }}>{q}</span>
+        <span style={{ fontWeight: 700, fontSize: 15, color: "hsl(var(--foreground))", flex: 1 }}>{q}</span>
         <ChevronDown style={{ width: 18, height: 18, color: "hsl(var(--primary))", flexShrink: 0, transform: open ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.3s ease" }} />
       </button>
       <div style={{ maxHeight: open ? 200 : 0, overflow: "hidden", transition: "max-height 0.4s cubic-bezier(0.4,0,0.2,1)" }}>
-        <p style={{ padding: "0 22px 18px", color: "#666", fontSize: 14, lineHeight: 1.7 }}>{a}</p>
+        <p style={{ padding: "0 22px 18px", color: "hsl(var(--muted-foreground))", fontSize: 14, lineHeight: 1.7 }}>{a}</p>
       </div>
     </div>
   );
@@ -305,9 +305,9 @@ const PingTicker = () => {
     return () => clearInterval(t);
   }, []);
   return (
-    <div style={{ display: "inline-flex", alignItems: "center", gap: 10, background: "white", border: "1.5px solid hsl(var(--primary)/0.25)", borderRadius: 999, padding: "8px 16px", boxShadow: "0 4px 16px rgba(0,0,0,0.06)", marginBottom: 24 }}>
+    <div style={{ display: "inline-flex", alignItems: "center", gap: 10, background: "hsl(var(--card))", border: "1.5px solid hsl(var(--primary)/0.25)", borderRadius: 999, padding: "8px 16px", boxShadow: "0 4px 16px rgba(0,0,0,0.06)", marginBottom: 24 }}>
       <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#22c55e", display: "inline-block", animation: "dotPulse 1.5s ease-in-out infinite", flexShrink: 0 }} />
-      <span style={{ fontSize: 12, fontWeight: 700, color: "#555", opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(6px)", transition: "opacity 0.35s, transform 0.35s", whiteSpace: "nowrap" }}>{EVENTS[idx]}</span>
+      <span style={{ fontSize: 12, fontWeight: 700, color: "hsl(var(--muted-foreground))", opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(6px)", transition: "opacity 0.35s, transform 0.35s", whiteSpace: "nowrap" }}>{EVENTS[idx]}</span>
     </div>
   );
 };
@@ -438,11 +438,11 @@ const About = () => {
 
         .g-text{background:linear-gradient(135deg,hsl(var(--primary)),#c07000,hsl(var(--primary)));background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmerTxt 4s linear infinite}
 
-        .about-root{background:#FFF8E3;min-height:100vh}
+        .about-root{background:hsl(var(--background));min-height:100vh;color:hsl(var(--foreground))}
 
         .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:hsl(var(--primary));margin-bottom:12px}
 
-        .hero-bg{position:relative;overflow:hidden;border-radius:28px;background:linear-gradient(135deg,#FFF8E3 0%,#FFF0C0 50%,#FFF8E3 100%);background-size:200% 200%;animation:gradShift 9s ease infinite;padding:52px 44px;margin-bottom:72px}
+        .hero-bg{position:relative;overflow:hidden;border-radius:28px;background:linear-gradient(135deg,hsl(var(--card)) 0%,hsl(var(--muted)) 50%,hsl(var(--card)) 100%);background-size:200% 200%;animation:gradShift 9s ease infinite;padding:52px 44px;margin-bottom:72px}
         .hero-bg::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 70% 50%,hsl(var(--primary)/.08) 0%,transparent 65%);pointer-events:none}
 
         .pm-sec{margin-bottom:72px}
@@ -453,16 +453,16 @@ const About = () => {
         .btn-sec{background:transparent;color:hsl(var(--primary));padding:14px 32px;border-radius:999px;font-weight:700;font-size:15px;text-decoration:none;transition:background .2s,box-shadow .2s;border:2px solid hsl(var(--primary));display:inline-flex;align-items:center;gap:8px}
         .btn-sec:hover{background:hsl(var(--primary)/.08);box-shadow:0 4px 20px hsl(var(--primary)/.15)}
 
-        .story-block{background:white;border-radius:20px;border-left:4px solid hsl(var(--primary));padding:28px 28px 28px 32px;box-shadow:0 4px 24px rgba(0,0,0,.05)}
+        .story-block{background:hsl(var(--card));border-radius:20px;border-left:4px solid hsl(var(--primary));padding:28px 28px 28px 32px;box-shadow:0 4px 24px rgba(0,0,0,.05)}
 
         .stats-bg{background:linear-gradient(135deg,hsl(var(--ping-brown)) 0%,hsl(30 75% 18%) 100%);border-radius:28px;padding:52px 36px;position:relative;overflow:hidden}
         .stats-bg::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 30% 50%,hsl(var(--primary)/.35) 0%,transparent 60%);pointer-events:none}
 
-        .cta-bg{background:linear-gradient(135deg,#FFF8E3 0%,#FFF0C0 100%);border-radius:28px;padding:72px 44px;text-align:center;position:relative;overflow:hidden}
+        .cta-bg{background:hsl(var(--card));border-radius:28px;padding:72px 44px;text-align:center;position:relative;overflow:hidden;border:1.5px solid hsl(var(--border))}
         .cta-bg::before{content:'';position:absolute;top:-70px;right:-70px;width:240px;height:240px;border-radius:50%;background:hsl(var(--primary)/.12);filter:blur(40px)}
         .cta-bg::after{content:'';position:absolute;bottom:-70px;left:-70px;width:200px;height:200px;border-radius:50%;background:hsl(var(--primary)/.08);filter:blur(35px)}
 
-        .office-card{background:white;border-radius:24px;padding:34px;box-shadow:0 4px 24px rgba(0,0,0,.06);border:1.5px solid rgba(0,0,0,.06)}
+        .office-card{background:hsl(var(--card));border-radius:24px;padding:34px;box-shadow:0 4px 24px rgba(0,0,0,.06);border:1.5px solid hsl(var(--border))}
         .c-row{display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;transition:transform .2s}
         .c-row:hover{transform:translateX(5px)}
         .c-icon{width:38px;height:38px;background:hsl(var(--primary)/.1);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -470,13 +470,13 @@ const About = () => {
         .page-title{position:relative;display:inline-block;font-size:clamp(38px,5.5vw,56px);font-weight:900;letter-spacing:-.03em;padding:4px 0}
         .page-title-bar{position:absolute;bottom:-4px;left:0;height:4px;width:100%;background:linear-gradient(90deg,hsl(var(--primary)),hsl(var(--primary)/.3));border-radius:2px;animation:revealW .9s cubic-bezier(.22,1,.36,1) .4s both}
 
-        .ping-diag{position:relative;border-radius:20px;border:1.5px solid rgba(0,0,0,.08);background:linear-gradient(135deg,#fffdf5,#fff8e3);padding:28px;overflow:hidden}
+        .ping-diag{position:relative;border-radius:20px;border:1.5px solid hsl(var(--border));background:hsl(var(--muted));padding:28px;overflow:hidden}
 
-        .faq-item{background:white;border-radius:16px;border:1.5px solid rgba(0,0,0,.07);overflow:hidden;transition:border-color .3s}
+        .faq-item{background:hsl(var(--card));border-radius:16px;border:1.5px solid hsl(var(--border));overflow:hidden;transition:border-color .3s}
         .faq-item:hover{border-color:hsl(var(--primary)/.35)}
         .faq-btn{width:100%;display:flex;align-items:center;justify-content:space-between;padding:18px 22px;background:none;border:none;cursor:pointer;text-align:left;gap:12px}
 
-        .trust-badge{display:inline-flex;align-items:center;gap:8px;background:white;border:1.5px solid rgba(0,0,0,.07);border-radius:999px;padding:8px 16px;font-size:12px;font-weight:600;color:#555;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+        .trust-badge{display:inline-flex;align-items:center;gap:8px;background:hsl(var(--card));border:1.5px solid hsl(var(--border));border-radius:999px;padding:8px 16px;font-size:12px;font-weight:600;color:hsl(var(--muted-foreground));box-shadow:0 2px 10px rgba(0,0,0,.05)}
 
         @media(max-width:640px){
           .stats-grid{grid-template-columns:repeat(2,1fr)!important}
@@ -507,14 +507,14 @@ const About = () => {
                   <div className="hero-a"><PingTicker /></div>
 
                   <div className="hero-a eyebrow">Privacy-first connectivity</div>
-                  <h1 className="hero-b" style={{ fontSize: "clamp(26px,3.5vw,40px)", fontWeight: 900, lineHeight: 1.16, marginBottom: 18, letterSpacing: "-0.02em", color: "#1a1a0a" }}>
+                  <h1 className="hero-b" style={{ fontSize: "clamp(26px,3.5vw,40px)", fontWeight: 900, lineHeight: 1.16, marginBottom: 18, letterSpacing: "-0.02em", color: "hsl(var(--foreground))" }}>
                     Reach people,{" "}
                     <Typewriter words={["not their data.", "always safely.", "without fear.", "on your terms."]} />
                     <br />
-                    <span style={{ color: "#888", fontSize: "clamp(16px,2vw,20px)", fontWeight: 600 }}>For every moment that matters.</span>
+                    <span style={{ color: "hsl(var(--muted-foreground))", fontSize: "clamp(16px,2vw,20px)", fontWeight: 600 }}>For every moment that matters.</span>
                   </h1>
 
-                  <p className="hero-c" style={{ color: "#666", fontSize: 16, lineHeight: 1.75, marginBottom: 28, maxWidth: 420 }}>
+                  <p className="hero-c" style={{ color: "hsl(var(--muted-foreground))", fontSize: 16, lineHeight: 1.75, marginBottom: 28, maxWidth: 420 }}>
                     PingME protects your privacy across vehicles, belongings, and pets — one scan or tap is all it takes to reach you, without ever exposing your number.
                   </p>
 
@@ -534,9 +534,9 @@ const About = () => {
                 {/* Right: 3-D tilt QR card */}
                 <div style={{ flex: 1, display: "flex", justifyContent: "center", position: "relative", padding: "44px 44px", transform: `translate(${mouse.x * -8}px, ${mouse.y * -5}px)`, transition: "transform 0.5s ease-out" }}>
                   <TiltCard style={{ width: 200 }}>
-                    <div className="tag-float" style={{ background: "white", border: "1.5px solid rgba(0,0,0,0.08)", borderRadius: 28, padding: 24, display: "flex", flexDirection: "column", alignItems: "center", gap: 16, boxShadow: "0 28px 64px rgba(0,0,0,0.13), 0 6px 18px rgba(0,0,0,0.06)" }}>
+                    <div className="tag-float" style={{ background: "hsl(var(--card))", border: "1.5px solid hsl(var(--border))", borderRadius: 28, padding: 24, display: "flex", flexDirection: "column", alignItems: "center", gap: 16, boxShadow: "0 28px 64px rgba(0,0,0,0.13), 0 6px 18px rgba(0,0,0,0.06)" }}>
                       {/* QR */}
-                      <div style={{ position: "relative", width: 112, height: 112, borderRadius: 12, overflow: "hidden", background: "white", padding: 10, border: "1.5px solid rgba(0,0,0,0.07)" }}>
+                      <div style={{ position: "relative", width: 112, height: 112, borderRadius: 12, overflow: "hidden", background: "hsl(var(--card))", padding: 10, border: "1.5px solid hsl(var(--border))" }}>
                         <svg viewBox="0 0 100 100" style={{ width: "100%", height: "100%" }}>
                           <rect x="5" y="5" width="28" height="28" rx="3" fill="#111"/><rect x="9" y="9" width="20" height="20" rx="2" fill="white"/><rect x="12" y="12" width="14" height="14" rx="1" fill="#111"/>
                           <rect x="67" y="5" width="28" height="28" rx="3" fill="#111"/><rect x="71" y="9" width="20" height="20" rx="2" fill="white"/><rect x="74" y="12" width="14" height="14" rx="1" fill="#111"/>
@@ -549,8 +549,8 @@ const About = () => {
                         <div className="scan-line" />
                       </div>
                       <div style={{ textAlign: "center" }}>
-                        <p style={{ fontWeight: 800, fontSize: 14, color: "#1a1a0a" }}>PingME Tag</p>
-                        <p style={{ color: "#aaa", fontSize: 11, marginTop: 2 }}>Scan to ping safely</p>
+                        <p style={{ fontWeight: 800, fontSize: 14, color: "hsl(var(--foreground))" }}>PingME Tag</p>
+                        <p style={{ color: "hsl(var(--muted-foreground))", fontSize: 11, marginTop: 2 }}>Scan to ping safely</p>
                       </div>
                       <div style={{ display: "flex", gap: 6 }}>
                         {[1, 0.55, 0.25].map((o, i) => <div key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: `hsl(var(--primary)/${o})`, animation: `dotPulse 1.6s ease-in-out ${i*0.3}s infinite` }} />)}
@@ -567,12 +567,12 @@ const About = () => {
           </section>
 
           {/* MARQUEE TRUST STRIP ─────────────────────────────────────────── */}
-          <div style={{ overflow: "hidden", marginBottom: 72, borderTop: "1px solid rgba(0,0,0,0.07)", borderBottom: "1px solid rgba(0,0,0,0.07)", padding: "14px 0", background: "white" }}>
+          <div style={{ overflow: "hidden", marginBottom: 72, borderTop: "1px solid hsl(var(--border))", borderBottom: "1px solid hsl(var(--border))", padding: "14px 0", background: "hsl(var(--card))" }}>
             <div style={{ display: "flex", gap: 0, animation: "marquee 22s linear infinite", width: "max-content" }}>
               {[...Array(2)].map((_, gi) => (
                 <div key={gi} style={{ display: "flex", gap: 48, alignItems: "center", paddingRight: 48 }}>
                   {["🔒 Privacy Protected", "📱 No App Needed", "🇮🇳 Made in India", "⚡ Instant Alerts", "🚗 Vehicle Safety", "🐾 Pet Safety", "🎒 Bag Recovery", "✨ Masked Calls"].map(t => (
-                    <span key={t} style={{ fontSize: 13, fontWeight: 700, color: "#999", whiteSpace: "nowrap", letterSpacing: "0.04em" }}>{t}</span>
+                    <span key={t} style={{ fontSize: 13, fontWeight: 700, color: "hsl(var(--muted-foreground))", whiteSpace: "nowrap", letterSpacing: "0.04em" }}>{t}</span>
                   ))}
                 </div>
               ))}
@@ -582,26 +582,26 @@ const About = () => {
           {/* STORY ──────────────────────────────────────────────────────── */}
           <section ref={storyV.ref} className="pm-sec" style={{ maxWidth: 900 }}>
             <Eyebrow style={{ opacity: storyV.inView ? 1 : 0, transition: "opacity .5s" }}>Why We Built This</Eyebrow>
-            <h2 style={{ fontSize: "clamp(26px,3vw,38px)", fontWeight: 900, letterSpacing: "-0.02em", marginBottom: 28, color: "#1a1a0a", opacity: storyV.inView ? 1 : 0, transform: storyV.inView ? "none" : "translateY(18px)", transition: "opacity .55s ease .08s, transform .55s ease .08s" }}>
+            <h2 style={{ fontSize: "clamp(26px,3vw,38px)", fontWeight: 900, letterSpacing: "-0.02em", marginBottom: 28, color: "hsl(var(--foreground))", opacity: storyV.inView ? 1 : 0, transform: storyV.inView ? "none" : "translateY(18px)", transition: "opacity .55s ease .08s, transform .55s ease .08s" }}>
               Privacy shouldn't be the <span className="g-text">price of being reachable.</span>
             </h2>
             <div style={{ opacity: storyV.inView ? 1 : 0, transform: storyV.inView ? "none" : "translateY(16px)", transition: "opacity .6s ease .18s, transform .6s ease .18s" }}>
               <div className="story-block">
                 <div className="grid md:grid-cols-2 gap-6">
-                  <p style={{ color: "#555", fontSize: 16, lineHeight: 1.78 }}>It started with a blocked car and a stranger who needed to reach the owner — but had no safe way to do it. We realised the same problem plays out everywhere: a lost bag, a wandering pet, a delivery gone wrong.</p>
-                  <p style={{ color: "#555", fontSize: 16, lineHeight: 1.78 }}>PingME fixes that with elegantly designed QR and NFC smart tags for vehicles, belongings, and pets. One scan connects the finder to you through a privacy-protected channel — masked calls, predefined alerts, no app needed. Your number stays yours. Always.</p>
+                  <p style={{ color: "hsl(var(--muted-foreground))", fontSize: 16, lineHeight: 1.78 }}>It started with a blocked car and a stranger who needed to reach the owner — but had no safe way to do it. We realised the same problem plays out everywhere: a lost bag, a wandering pet, a delivery gone wrong.</p>
+                  <p style={{ color: "hsl(var(--muted-foreground))", fontSize: 16, lineHeight: 1.78 }}>PingME fixes that with elegantly designed QR and NFC smart tags for vehicles, belongings, and pets. One scan connects the finder to you through a privacy-protected channel — masked calls, predefined alerts, no app needed. Your number stays yours. Always.</p>
                 </div>
               </div>
             </div>
           </section>
 
           {/* PRODUCTS ───────────────────────────────────────────────────── */}
-          <section ref={productsV.ref} className="pm-sec" id="how-it-works" style={{ borderTop: "1.5px solid rgba(0,0,0,0.07)", paddingTop: 52 }}>
+          <section ref={productsV.ref} className="pm-sec" id="how-it-works" style={{ borderTop: "1.5px solid hsl(var(--border))", paddingTop: 52 }}>
             <Eyebrow style={{ opacity: productsV.inView ? 1 : 0, transition: "opacity .5s" }}>What We Make</Eyebrow>
-            <h2 style={{ fontSize: "clamp(26px,3vw,38px)", fontWeight: 900, letterSpacing: "-0.02em", marginBottom: 8, color: "#1a1a0a", opacity: productsV.inView ? 1 : 0, transform: productsV.inView ? "none" : "translateY(16px)", transition: "opacity .55s ease .08s, transform .55s ease .08s" }}>
+            <h2 style={{ fontSize: "clamp(26px,3vw,38px)", fontWeight: 900, letterSpacing: "-0.02em", marginBottom: 8, color: "hsl(var(--foreground))", opacity: productsV.inView ? 1 : 0, transform: productsV.inView ? "none" : "translateY(16px)", transition: "opacity .55s ease .08s, transform .55s ease .08s" }}>
               One platform. <span className="g-text">Every situation.</span>
             </h2>
-            <p style={{ color: "#888", fontSize: 16, marginBottom: 36, maxWidth: 440, opacity: productsV.inView ? 1 : 0, transform: productsV.inView ? "none" : "translateY(16px)", transition: "opacity .6s ease .16s, transform .6s ease .16s" }}>
+            <p style={{ color: "hsl(var(--muted-foreground))", fontSize: 16, marginBottom: 36, maxWidth: 440, opacity: productsV.inView ? 1 : 0, transform: productsV.inView ? "none" : "translateY(16px)", transition: "opacity .6s ease .16s, transform .6s ease .16s" }}>
               Privacy-first contact for every moment life throws at you.
             </p>
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -612,7 +612,7 @@ const About = () => {
           {/* VALUES ─────────────────────────────────────────────────────── */}
           <section ref={valuesV.ref} className="pm-sec">
             <Eyebrow style={{ opacity: valuesV.inView ? 1 : 0, transition: "opacity .5s" }}>What We Stand For</Eyebrow>
-            <h2 style={{ fontSize: "clamp(26px,3vw,38px)", fontWeight: 900, letterSpacing: "-0.02em", marginBottom: 36, color: "#1a1a0a", opacity: valuesV.inView ? 1 : 0, transform: valuesV.inView ? "none" : "translateY(16px)", transition: "opacity .55s ease .08s, transform .55s ease .08s" }}>
+            <h2 style={{ fontSize: "clamp(26px,3vw,38px)", fontWeight: 900, letterSpacing: "-0.02em", marginBottom: 36, color: "hsl(var(--foreground))", opacity: valuesV.inView ? 1 : 0, transform: valuesV.inView ? "none" : "translateY(16px)", transition: "opacity .55s ease .08s, transform .55s ease .08s" }}>
               Principles we don't <span className="g-text">compromise on.</span>
             </h2>
             <div className="grid md:grid-cols-2 gap-5 items-start">
@@ -621,14 +621,14 @@ const About = () => {
           </section>
 
           {/* TIMELINE ──────────────────────────────────────────────────── */}
-          <section ref={timelineV.ref} className="pm-sec" style={{ borderTop: "1.5px solid rgba(0,0,0,0.07)", paddingTop: 52 }}>
+          <section ref={timelineV.ref} className="pm-sec" style={{ borderTop: "1.5px solid hsl(var(--border))", paddingTop: 52 }}>
             <div className="grid md:grid-cols-2 gap-16 items-start">
               <div style={{ opacity: timelineV.inView ? 1 : 0, transform: timelineV.inView ? "none" : "translateX(-28px)", transition: "opacity .55s ease, transform .55s ease" }}>
                 <Eyebrow>Our Journey</Eyebrow>
-                <h2 style={{ fontSize: "clamp(26px,3vw,38px)", fontWeight: 900, letterSpacing: "-0.02em", marginBottom: 10, color: "#1a1a0a" }}>
+                <h2 style={{ fontSize: "clamp(26px,3vw,38px)", fontWeight: 900, letterSpacing: "-0.02em", marginBottom: 10, color: "hsl(var(--foreground))" }}>
                   Small idea. <span className="g-text">Big impact.</span>
                 </h2>
-                <p style={{ color: "#888", lineHeight: 1.72, marginBottom: 32, fontSize: 15 }}>From a single frustrating parking incident to thousands of protected vehicles across India.</p>
+                <p style={{ color: "hsl(var(--muted-foreground))", lineHeight: 1.72, marginBottom: 32, fontSize: 15 }}>From a single frustrating parking incident to thousands of protected vehicles across India.</p>
 
                 {/* Ping diagram */}
                 <div className="ping-diag">
@@ -647,13 +647,13 @@ const About = () => {
                     </div>
                   </div>
                   <div style={{ marginTop:14,display:"flex",justifyContent:"space-between",padding:"0 4px" }}>
-                    <span style={{ fontSize:11,fontWeight:700,color:"#888" }}>Your vehicle</span>
+                    <span style={{ fontSize:11,fontWeight:700,color:"hsl(var(--muted-foreground))" }}>Your vehicle</span>
                     <span style={{ fontSize:11,fontWeight:700,color:"hsl(var(--primary))" }}>Private ping →</span>
-                    <span style={{ fontSize:11,fontWeight:700,color:"#888" }}>Your phone</span>
+                    <span style={{ fontSize:11,fontWeight:700,color:"hsl(var(--muted-foreground))" }}>Your phone</span>
                   </div>
                   <div style={{ marginTop:16,display:"flex",alignItems:"center",gap:8 }}>
                     <div style={{ width:6,height:6,borderRadius:"50%",background:"hsl(var(--primary))",animation:"dotPulse 1.5s ease-in-out infinite" }}/>
-                    <span style={{ fontSize:11,color:"#999" }}>Number never revealed · Works on any device · No app needed</span>
+                    <span style={{ fontSize:11,color:"hsl(var(--muted-foreground))" }}>Number never revealed · Works on any device · No app needed</span>
                   </div>
                 </div>
               </div>
@@ -680,23 +680,23 @@ const About = () => {
           </section>
 
           {/* TESTIMONIALS ───────────────────────────────────────────────── */}
-          <section ref={testiV.ref} className="pm-sec" style={{ borderTop: "1.5px solid rgba(0,0,0,0.07)", paddingTop: 52 }}>
+          <section ref={testiV.ref} className="pm-sec" style={{ borderTop: "1.5px solid hsl(var(--border))", paddingTop: 52 }}>
             <Eyebrow style={{ opacity: testiV.inView ? 1 : 0, transition: "opacity .5s" }}>Real Stories</Eyebrow>
-            <h2 style={{ fontSize: "clamp(26px,3vw,38px)", fontWeight: 900, letterSpacing: "-0.02em", marginBottom: 36, color: "#1a1a0a", opacity: testiV.inView ? 1 : 0, transform: testiV.inView ? "none" : "translateY(16px)", transition: "opacity .55s ease .08s, transform .55s ease .08s" }}>
+            <h2 style={{ fontSize: "clamp(26px,3vw,38px)", fontWeight: 900, letterSpacing: "-0.02em", marginBottom: 36, color: "hsl(var(--foreground))", opacity: testiV.inView ? 1 : 0, transform: testiV.inView ? "none" : "translateY(16px)", transition: "opacity .55s ease .08s, transform .55s ease .08s" }}>
               People who've been <span className="g-text">pinged safely.</span>
             </h2>
             <TestimonialsSection inView={testiV.inView} />
           </section>
 
           {/* FAQ ────────────────────────────────────────────────────────── */}
-          <section ref={faqV.ref} className="pm-sec" style={{ borderTop: "1.5px solid rgba(0,0,0,0.07)", paddingTop: 52 }}>
+          <section ref={faqV.ref} className="pm-sec" style={{ borderTop: "1.5px solid hsl(var(--border))", paddingTop: 52 }}>
             <div className="grid md:grid-cols-2 gap-12 items-start">
               <div>
                 <Eyebrow style={{ opacity: faqV.inView ? 1 : 0, transition: "opacity .5s" }}>Got Questions?</Eyebrow>
-                <h2 style={{ fontSize: "clamp(26px,3vw,38px)", fontWeight: 900, letterSpacing: "-0.02em", marginBottom: 12, color: "#1a1a0a", opacity: faqV.inView ? 1 : 0, transform: faqV.inView ? "none" : "translateY(16px)", transition: "opacity .55s ease .08s, transform .55s ease .08s" }}>
+                <h2 style={{ fontSize: "clamp(26px,3vw,38px)", fontWeight: 900, letterSpacing: "-0.02em", marginBottom: 12, color: "hsl(var(--foreground))", opacity: faqV.inView ? 1 : 0, transform: faqV.inView ? "none" : "translateY(16px)", transition: "opacity .55s ease .08s, transform .55s ease .08s" }}>
                   Frequently asked <span className="g-text">questions.</span>
                 </h2>
-                <p style={{ color: "#888", fontSize: 15, lineHeight: 1.7, opacity: faqV.inView ? 1 : 0, transition: "opacity .6s ease .16s" }}>
+                <p style={{ color: "hsl(var(--muted-foreground))", fontSize: 15, lineHeight: 1.7, opacity: faqV.inView ? 1 : 0, transition: "opacity .6s ease .16s" }}>
                   Everything you need to know about how PingME keeps you connected and safe.
                 </p>
                 <div style={{ marginTop: 28, opacity: faqV.inView ? 1 : 0, transition: "opacity .65s ease .24s" }}>
@@ -716,26 +716,26 @@ const About = () => {
           </section>
 
           {/* OFFICE ─────────────────────────────────────────────────────── */}
-          <section ref={officeV.ref} className="pm-sec" style={{ borderTop: "1.5px solid rgba(0,0,0,0.07)", paddingTop: 52 }}>
+          <section ref={officeV.ref} className="pm-sec" style={{ borderTop: "1.5px solid hsl(var(--border))", paddingTop: 52 }}>
             <div className="grid md:grid-cols-2 gap-10 items-center">
               <div className="office-card" style={{ opacity: officeV.inView ? 1 : 0, transform: officeV.inView ? "none" : "translateY(22px)", transition: "opacity .55s ease, transform .55s ease" }}>
                 <Eyebrow style={{ marginBottom: 4 }}>Find Us</Eyebrow>
-                <h3 style={{ fontWeight: 900, fontSize: 28, marginBottom: 24, color: "#1a1a0a" }}>Our Office</h3>
+                <h3 style={{ fontWeight: 900, fontSize: 28, marginBottom: 24, color: "hsl(var(--foreground))" }}>Our Office</h3>
                 <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
                   <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="c-row" style={{ alignItems: "flex-start" }}>
                     <div className="c-icon"><MapPin style={{ width:16,height:16,color:"hsl(var(--primary))" }}/></div>
                     <div>
-                      <p style={{ fontWeight:800,fontSize:14,marginBottom:3,color:"#1a1a0a" }}>Ping IFF LLP</p>
-                      <p style={{ fontSize:14,color:"#666",lineHeight:1.6 }}>745, Burail, Ekta Market,<br/>Burail Village, Sector 45,<br/>Chandigarh – 160047</p>
+                      <p style={{ fontWeight:800,fontSize:14,marginBottom:3,color:"hsl(var(--foreground))" }}>Ping IFF LLP</p>
+                      <p style={{ fontSize:14,color:"hsl(var(--muted-foreground))",lineHeight:1.6 }}>745, Burail, Ekta Market,<br/>Burail Village, Sector 45,<br/>Chandigarh – 160047</p>
                       <span style={{ marginTop:5,display:"inline-flex",alignItems:"center",gap:4,fontSize:11,fontWeight:700,color:"hsl(var(--primary))" }}>Open in Maps <ArrowRight style={{ width:11,height:11 }}/></span>
                     </div>
                   </a>
-                  <div style={{ height:1,background:"rgba(0,0,0,0.07)" }}/>
-                  <a href="tel:+917347340007" className="c-row"><div className="c-icon"><Phone style={{ width:16,height:16,color:"hsl(var(--primary))" }}/></div><span style={{ fontSize:14,color:"#666" }}>+91 73473 40007</span></a>
-                  <a href="mailto:contact@pingiff.ai" className="c-row"><div className="c-icon"><Mail style={{ width:16,height:16,color:"hsl(var(--primary))" }}/></div><span style={{ fontSize:14,color:"#666" }}>contact@pingiff.ai</span></a>
+                  <div style={{ height:1,background:"hsl(var(--border))" }}/>
+                  <a href="tel:+917347340007" className="c-row"><div className="c-icon"><Phone style={{ width:16,height:16,color:"hsl(var(--primary))" }}/></div><span style={{ fontSize:14,color:"hsl(var(--muted-foreground))" }}>+91 73473 40007</span></a>
+                  <a href="mailto:contact@pingiff.ai" className="c-row"><div className="c-icon"><Mail style={{ width:16,height:16,color:"hsl(var(--primary))" }}/></div><span style={{ fontSize:14,color:"hsl(var(--muted-foreground))" }}>contact@pingiff.ai</span></a>
                 </div>
               </div>
-              <div style={{ borderRadius:22,overflow:"hidden",height:340,border:"1.5px solid rgba(0,0,0,0.07)",boxShadow:"0 4px 24px rgba(0,0,0,0.07)",opacity:officeV.inView?1:0,transform:officeV.inView?"none":"translateX(24px)",transition:"opacity .6s ease .12s, transform .6s ease .12s" }}>
+              <div style={{ borderRadius:22,overflow:"hidden",height:340,border:"1.5px solid hsl(var(--border))",boxShadow:"0 4px 24px rgba(0,0,0,0.07)",opacity:officeV.inView?1:0,transform:officeV.inView?"none":"translateX(24px)",transition:"opacity .6s ease .12s, transform .6s ease .12s" }}>
                 <iframe title="PingME Office" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3431.9!2d76.7495!3d30.6905!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x390fef!2sBurail%2C%20Sector%2045%2C%20Chandigarh!5e0!3m2!1sen!2sin!4v1" width="100%" height="100%" style={{ border:0 }} loading="lazy" referrerPolicy="no-referrer-when-downgrade"/>
               </div>
             </div>
@@ -746,10 +746,10 @@ const About = () => {
             <div className="cta-bg" style={{ opacity:ctaV.inView?1:0,transform:ctaV.inView?"none":"translateY(24px)",transition:"opacity .65s ease, transform .65s ease" }}>
               <div style={{ position:"relative",zIndex:1 }}>
                 <Eyebrow style={{ justifyContent:"center" }}>Join The Movement</Eyebrow>
-                <h2 style={{ fontSize:"clamp(28px,4.5vw,48px)",fontWeight:900,letterSpacing:"-0.03em",marginBottom:14,color:"#1a1a0a" }}>
+                <h2 style={{ fontSize:"clamp(28px,4.5vw,48px)",fontWeight:900,letterSpacing:"-0.03em",marginBottom:14,color:"hsl(var(--foreground))" }}>
                   Your number. <span className="g-text">Your rules.</span> Always.
                 </h2>
-                <p style={{ color:"#777",fontSize:17,marginBottom:36,maxWidth:420,margin:"0 auto 36px",lineHeight:1.72 }}>
+                <p style={{ color:"hsl(var(--muted-foreground))",fontSize:17,marginBottom:36,maxWidth:420,margin:"0 auto 36px",lineHeight:1.72 }}>
                   Whether it's your car, your bag, or your pet — PingME keeps you reachable without compromise.
                 </p>
                 <div style={{ display:"flex",gap:14,justifyContent:"center",flexWrap:"wrap" }}>

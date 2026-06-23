@@ -4,6 +4,7 @@ import { Menu, X, ShoppingCart, Trash2, Plus, Minus, Sparkles, ChevronRight } fr
 import logo from "@/assets/ping-me-logo.png";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
+import ThemeToggle from "@/components/ThemeToggle";
 import UserAvatar from "@/components/profile/UserAvatar";
 import {
   Sheet,
@@ -203,6 +204,18 @@ const Navbar = () => {
         .header-wrapper:not(.scrolled) {
           background: rgba(255, 255, 255, 0.98);
           border-bottom: 1px solid rgba(244, 180, 0, 0.05);
+        }
+
+        /* ── Dark mode overrides ── */
+        :root.dark .header-wrapper.scrolled {
+          background: rgba(10, 10, 10, 0.95) !important;
+          border-bottom: 1px solid rgba(244, 180, 0, 0.08);
+          box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        :root.dark .header-wrapper:not(.scrolled) {
+          background: rgba(10, 10, 10, 0.98);
+          border-bottom: 1px solid rgba(244, 180, 0, 0.04);
         }
 
         /* ── Nav links ── */
@@ -537,11 +550,14 @@ const Navbar = () => {
                       </Button>
                     </div>
                   )}
-                </SheetContent>
-              </Sheet>
+</SheetContent>
+               </Sheet>
 
-              {/* User / Login */}
-              {!loading && (
+               {/* Theme Toggle */}
+               <ThemeToggle />
+
+               {/* User / Login */}
+               {!loading && (
                 user ? (
                   <UserAvatar />
                 ) : (
@@ -634,15 +650,17 @@ const Navbar = () => {
                       </Button>
                     </div>
                   )}
-                </SheetContent>
-              </Sheet>
+</SheetContent>
+               </Sheet>
 
-              {!loading && user && <UserAvatar />}
+               {!loading && user && <UserAvatar />}
 
-              <button
-                className={`menu-toggle ${mobileMenuOpen ? "open" : ""}`}
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              >
+               <ThemeToggle />
+
+               <button
+                 className={`menu-toggle ${mobileMenuOpen ? "open" : ""}`}
+                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+               >
                 <Menu className="menu-icon w-5 h-5" />
               </button>
             </div>
@@ -651,7 +669,7 @@ const Navbar = () => {
 
         {/* Mobile dropdown */}
         {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-gray-200 bg-white/98 backdrop-blur-md">
+          <div className="lg:hidden border-t border-border bg-background/98 backdrop-blur-md">
             <div className="px-4 py-6 space-y-4">
               <nav className="flex flex-col gap-2 pb-4">
                 {navLinks.map((link, idx) => (
@@ -660,7 +678,7 @@ const Navbar = () => {
                       key={link.label}
                       href={mainSiteUrl(link.to)}
                       onClick={() => setMobileMenuOpen(false)}
-                      className="mobile-menu-item px-4 py-3 rounded-lg font-semibold text-gray-700 hover:bg-yellow-50 hover:text-yellow-600 transition-all relative group"
+                      className="mobile-menu-item px-4 py-3 rounded-lg font-semibold text-foreground hover:bg-yellow-50 dark:hover:bg-yellow-400/10 hover:text-yellow-600 transition-all relative group"
                       style={{ animationDelay: `${idx * 0.06}s` }}
                     >
                       <div className="flex items-center justify-between">
@@ -671,22 +689,22 @@ const Navbar = () => {
                   ) : (
                     <Link
                       key={link.label}
-                      to={link.to}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="mobile-menu-item px-4 py-3 rounded-lg font-semibold text-gray-700 hover:bg-yellow-50 hover:text-yellow-600 transition-all relative group"
-                      style={{ animationDelay: `${idx * 0.06}s` }}
-                    >
-                      <div className="flex items-center justify-between">
-                        {link.label}
-                        <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity transform group-hover:translate-x-1" />
-                      </div>
-                      {isActive(link) && <div className="accent-line absolute left-4 bottom-0" />}
-                    </Link>
-                  )
-                ))}
-              </nav>
+to={link.to}
+                       onClick={() => setMobileMenuOpen(false)}
+                       className="mobile-menu-item px-4 py-3 rounded-lg font-semibold text-foreground hover:bg-yellow-50 dark:hover:bg-yellow-400/10 hover:text-yellow-600 transition-all relative group"
+                       style={{ animationDelay: `${idx * 0.06}s` }}
+                     >
+                       <div className="flex items-center justify-between">
+                         {link.label}
+                         <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity transform group-hover:translate-x-1" />
+                       </div>
+                       {isActive(link) && <div className="accent-line absolute left-4 bottom-0" />}
+                     </Link>
+                   )
+                 ))}
+               </nav>
 
-              <div className="border-t border-gray-200 pt-4 space-y-3">
+               <div className="border-t border-border pt-4 space-y-3">
                 {!loading && !user && (
                   isNfcSubdomain ? (
                     <a
@@ -708,43 +726,43 @@ const Navbar = () => {
                 )}
                 {!loading && user && (
                   <>
-                    <Link
-                      to="/profile"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="mobile-menu-item block py-3 px-4 rounded-lg border-2 border-gray-300 text-gray-700 font-semibold text-center hover:border-yellow-400 hover:text-yellow-600"
-                    >
-                      My Profile
-                    </Link>
-                    <Link
-                      to="/profile/visits"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="mobile-menu-item block py-3 px-4 rounded-lg border-2 border-gray-300 text-gray-700 font-semibold text-center hover:border-yellow-400 hover:text-yellow-600"
-                    >
+<Link
+                       to="/profile"
+                       onClick={() => setMobileMenuOpen(false)}
+                       className="mobile-menu-item block py-3 px-4 rounded-lg border-2 border-border text-foreground font-semibold text-center hover:border-yellow-400 hover:text-yellow-600"
+                     >
+                       My Profile
+                     </Link>
+                     <Link
+                       to="/profile/visits"
+                       onClick={() => setMobileMenuOpen(false)}
+                       className="mobile-menu-item block py-3 px-4 rounded-lg border-2 border-border text-foreground font-semibold text-center hover:border-yellow-400 hover:text-yellow-600"
+                     >
                       NFC Profile Visits
                     </Link>
-                    <Link
-                      to="/profile/leads"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="mobile-menu-item block py-3 px-4 rounded-lg border-2 border-gray-300 text-gray-700 font-semibold text-center hover:border-yellow-400 hover:text-yellow-600"
-                    >
-                      NFC Leads & Outreach
-                    </Link>
-                    <Link
-                      to="/admin"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="mobile-menu-item block py-3 px-4 rounded-lg border-2 border-gray-300 text-gray-700 font-semibold text-center hover:border-yellow-400 hover:text-yellow-600"
-                    >
-                      Admin Panel
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        setMobileMenuOpen(false);
-                        await logout();
-                        navigate("/");
-                      }}
-                      className="mobile-menu-item block w-full py-3 px-4 rounded-lg border-2 border-red-300 text-red-600 font-semibold hover:bg-red-50"
-                    >
+<Link
+                       to="/profile/leads"
+                       onClick={() => setMobileMenuOpen(false)}
+                       className="mobile-menu-item block py-3 px-4 rounded-lg border-2 border-border text-foreground font-semibold text-center hover:border-yellow-400 hover:text-yellow-600"
+                     >
+                       NFC Leads & Outreach
+                     </Link>
+                     <Link
+                       to="/admin"
+                       onClick={() => setMobileMenuOpen(false)}
+                       className="mobile-menu-item block py-3 px-4 rounded-lg border-2 border-border text-foreground font-semibold text-center hover:border-yellow-400 hover:text-yellow-600"
+                     >
+                       Admin Panel
+                     </Link>
+                     <button
+                       type="button"
+                       onClick={async () => {
+                         setMobileMenuOpen(false);
+                         await logout();
+                         navigate("/");
+                       }}
+                       className="mobile-menu-item block w-full py-3 px-4 rounded-lg border-2 border-red-300 text-red-600 font-semibold hover:bg-red-50 dark:hover:bg-red-900/20"
+                     >
                       Logout
                     </button>
                   </>

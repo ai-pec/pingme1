@@ -206,7 +206,7 @@
 
 .nfc-action-btn:hover {
   background: var(--c-ink);
-  color: #fff;
+  color: var(--c-bg);
   border-color: var(--c-ink);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(26,22,18,0.15);
@@ -295,7 +295,7 @@
 
 .nfc-share-btn:hover:not(:disabled) {
   background: var(--c-ink);
-  color: #fff;
+  color: var(--c-bg);
   border-color: var(--c-ink);
   transform: translateY(-1px);
   box-shadow: 0 4px 0 rgba(26,22,18,0.25), 0 8px 20px rgba(26,22,18,0.15);
@@ -509,7 +509,7 @@ a.nfc-detail-value:hover {
 
 .nfc-social-btn:hover {
   background: var(--c-ink);
-  color: #fff;
+  color: var(--c-bg);
   border-color: var(--c-ink);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(26,22,18,0.18);
@@ -1373,4 +1373,36 @@ a.nfc-detail-value:hover {
   .nfc-shareback-title {
     font-size: 1.3rem;
   }
+}
+
+/* ─── Dark Mode Overrides ────────────────────────────────────────────────── */
+.dark .nfc-public-page {
+  --c-bg:        #0d0c0a;
+  --c-surface:   #171613;
+  --c-surface2:  #201e1a;
+  --c-border:    rgba(255, 255, 255, 0.08);
+  --c-ink:       #faf9f6;
+  --c-ink2:      #c5beae;
+  --c-ink3:      #8c8473;
+  --c-accent:    #e06236;
+  --c-accent2:   #f0a068;
+  --c-gold:      #ecc276;
+  --c-green:     #4fa87a;
+  --shadow-card: 0 4px 20px rgba(0,0,0,0.4), 0 15px 45px rgba(0,0,0,0.5);
+  --shadow-btn:  0 2px 0 rgba(224,98,54,0.4), 0 4px 16px rgba(224,98,54,0.24);
+
+  background-image:
+    radial-gradient(ellipse 800px 600px at 10% 0%, rgba(224,98,54,0.09) 0%, transparent 60%),
+    radial-gradient(ellipse 600px 500px at 90% 100%, rgba(79,168,122,0.09) 0%, transparent 55%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Ccircle cx='1' cy='1' r='1' fill='rgba(255,255,255,0.02)'/%3E%3C/svg%3E");
+}
+
+.dark .nfc-share-overlay {
+  background: rgba(0, 0, 0, 0.75);
+}
+.dark .nfc-consent-overlay {
+  background: rgba(0, 0, 0, 0.82);
+}
+.dark .nfc-shareback-overlay {
+  background: rgba(0, 0, 0, 0.80);
 }

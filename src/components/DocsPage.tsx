@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import logo from "@/assets/ping-me-logo.png";
 import { Link } from "react-router-dom";
+import { useTheme } from "@/contexts/ThemeContext";
+import ThemeToggle from "@/components/ThemeToggle";
 import {
   Tag,
   Smartphone,
@@ -32,8 +34,6 @@ import {
   ChevronLeft,
   Link as LinkIcon,
   Clock,
-  Sun,
-  Moon,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -204,7 +204,7 @@ const StepCard = ({
       display: "flex",
       gap: "16px",
       padding: "20px",
-      background: "rgba(255,255,255,0.7)",
+      background: "hsl(var(--card) / 0.7)",
       border: "1px solid rgba(180, 130, 0, 0.15)",
       borderRadius: "12px",
       marginBottom: "12px",
@@ -268,7 +268,7 @@ const ProductCard = ({
   <div
     style={{
       padding: "24px",
-      background: "rgba(255,255,255,0.7)",
+      background: "hsl(var(--card) / 0.7)",
       border: "1px solid rgba(180, 130, 0, 0.15)",
       borderRadius: "14px",
       marginBottom: "16px",
@@ -670,7 +670,7 @@ const buildSections = (
         ].map(([device, info]) => (
           <div
             key={device as string}
-            style={{ padding: "14px 18px", background: "rgba(255,255,255,0.7)", border: "1px solid rgba(180,130,0,0.12)", borderRadius: "10px", marginBottom: "10px" }}
+            style={{ padding: "14px 18px", background: "hsl(var(--card) / 0.7)", border: "1px solid rgba(180,130,0,0.12)", borderRadius: "10px", marginBottom: "10px" }}
           >
             <div style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: "14px", color: "hsl(var(--ping-dark))", marginBottom: "4px" }}>{device as string}</div>
             <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: "13px", color: "hsl(var(--ping-ash))", lineHeight: "1.6" }}>{info as string}</div>
@@ -731,7 +731,7 @@ const buildSections = (
         ].map(([Icon, title, desc]) => {
           const I = Icon as React.ElementType;
           return (
-            <div key={title as string} style={{ display: "flex", gap: "14px", padding: "16px 18px", background: "rgba(255,255,255,0.7)", border: "1px solid rgba(180,130,0,0.12)", borderRadius: "10px", marginBottom: "10px", alignItems: "flex-start" }}>
+            <div key={title as string} style={{ display: "flex", gap: "14px", padding: "16px 18px", background: "hsl(var(--card) / 0.7)", border: "1px solid rgba(180,130,0,0.12)", borderRadius: "10px", marginBottom: "10px", alignItems: "flex-start" }}>
               <div style={{ width: "34px", height: "34px", borderRadius: "8px", background: "hsl(var(--ping-yellow))", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <I size={16} color="hsl(var(--ping-dark))" />
               </div>
@@ -765,7 +765,7 @@ const buildSections = (
         ].map(([field, desc]) => (
           <div
             key={field as string}
-            style={{ padding: "12px 16px", borderLeft: "3px solid hsl(var(--ping-yellow))", background: "rgba(255,255,255,0.5)", borderRadius: "0 8px 8px 0", marginBottom: "10px" }}
+            style={{ padding: "12px 16px", borderLeft: "3px solid hsl(var(--ping-yellow))", background: "hsl(var(--card) / 0.5)", borderRadius: "0 8px 8px 0", marginBottom: "10px" }}
           >
             <div style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: "13px", color: "hsl(var(--ping-dark))", marginBottom: "2px" }}>{field as string}</div>
             <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: "13px", color: "hsl(var(--ping-ash))" }}>{desc as string}</div>
@@ -847,7 +847,7 @@ const buildSections = (
             <a
               key={label as string}
               href={href as string}
-              style={{ display: "flex", gap: "14px", padding: "18px 20px", background: "rgba(255,255,255,0.7)", border: "1px solid rgba(180,130,0,0.15)", borderRadius: "12px", marginBottom: "12px", textDecoration: "none", alignItems: "center", transition: "border-color 0.2s" }}
+              style={{ display: "flex", gap: "14px", padding: "18px 20px", background: "hsl(var(--card) / 0.7)", border: "1px solid rgba(180,130,0,0.15)", borderRadius: "12px", marginBottom: "12px", textDecoration: "none", alignItems: "center", transition: "border-color 0.2s" }}
             >
               <div style={{ width: "38px", height: "38px", borderRadius: "9px", background: "hsl(var(--ping-yellow))", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <I size={18} color="hsl(var(--ping-dark))" />
@@ -952,7 +952,7 @@ const SidebarContent = ({
   scrollToSection: (id: string) => void;
   onClose?: () => void;
 }) => (
-  <div style={{ height: "100%", overflowY: "auto", padding: "24px 16px", scrollBehavior: "smooth" }}>
+  <div style={{ padding: "24px 16px" }}>
     {/* Search */}
     <div
       style={{
@@ -960,7 +960,7 @@ const SidebarContent = ({
         alignItems: "center",
         gap: "8px",
         padding: "8px 12px",
-        background: "rgba(255,255,255,0.7)",
+        background: "hsl(var(--card) / 0.7)",
         border: "1px solid rgba(180,130,0,0.2)",
         borderRadius: "8px",
         marginBottom: "24px",
@@ -1211,7 +1211,7 @@ const DocsPage = () => {
     <div
       style={{
         minHeight: "100vh",
-        backgroundColor: "#FFF9EB",
+        backgroundColor: "hsl(var(--background))",
         fontFamily: "'Poppins', sans-serif",
       }}
     >
@@ -1236,7 +1236,7 @@ const DocsPage = () => {
           position: "sticky",
           top: 0,
           zIndex: 100,
-          backgroundColor: "rgba(255,249,235,0.95)",
+          backgroundColor: "hsl(var(--background) / 0.95)",
           borderBottom: "1px solid rgba(180,130,0,0.15)",
           padding: isMobile ? "0 16px" : "0 24px",
           height: "60px",
@@ -1289,6 +1289,7 @@ const DocsPage = () => {
               Support
             </Link>
           )}
+          <ThemeToggle />
           <Link
             to="/products"
             style={{
@@ -1335,12 +1336,12 @@ const DocsPage = () => {
               width: "82vw",
               maxWidth: "320px",
               zIndex: 160,
-              background: "#FFF9EB",
               transform: drawerOpen ? "translateX(0)" : "translateX(-100%)",
               transition: "transform 0.28s cubic-bezier(0.4, 0, 0.2, 1)",
               display: "flex",
               flexDirection: "column",
               boxShadow: "4px 0 24px rgba(0,0,0,0.12)",
+              background: "hsl(var(--background))",
             }}
           >
             {/* Drawer header */}
@@ -1370,7 +1371,10 @@ const DocsPage = () => {
               </button>
             </div>
             {/* Drawer nav */}
-            <div style={{ flex: 1, overflow: "hidden" }}>
+            <div
+              data-lenis-prevent
+              style={{ flex: 1, overflowY: "auto", WebkitOverflowScrolling: "touch" }}
+            >
               <SidebarContent
                 activeSection={activeSection}
                 expandedGroups={expandedGroups}
@@ -1398,6 +1402,7 @@ const DocsPage = () => {
         {!isMobile && (
           <aside
             ref={sidebarRef}
+            data-lenis-prevent
             style={{
               width: isTablet ? "220px" : "260px",
               flexShrink: 0,
@@ -1405,6 +1410,7 @@ const DocsPage = () => {
               top: "60px",
               height: "calc(100vh - 60px)",
               overflowY: "auto",
+              WebkitOverflowScrolling: "touch",
               borderRight: "1px solid rgba(180,130,0,0.12)",
               scrollBehavior: "smooth",
             }}
@@ -1503,7 +1509,7 @@ const DocsPage = () => {
                   alignItems: "flex-start",
                   gap: "8px",
                   padding: isMobile ? "14px" : "16px",
-                  background: "rgba(255,255,255,0.6)",
+                  background: "hsl(var(--card) / 0.6)",
                   border: "1px solid rgba(180,130,0,0.15)",
                   borderRadius: "12px",
                   cursor: "pointer",
@@ -1513,13 +1519,13 @@ const DocsPage = () => {
                 onMouseEnter={(e) => {
                   const b = e.currentTarget as HTMLButtonElement;
                   b.style.borderColor = "hsl(var(--ping-yellow))";
-                  b.style.background = "rgba(255,255,255,0.9)";
+                  b.style.background = "hsl(var(--card) / 0.9)";
                   b.style.transform = "translateY(-1px)";
                 }}
                 onMouseLeave={(e) => {
                   const b = e.currentTarget as HTMLButtonElement;
                   b.style.borderColor = "rgba(180,130,0,0.15)";
-                  b.style.background = "rgba(255,255,255,0.6)";
+                  b.style.background = "hsl(var(--card) / 0.6)";
                   b.style.transform = "translateY(0)";
                 }}
               >
@@ -1589,11 +1595,11 @@ const DocsPage = () => {
                 onClick={() => scrollToSection(prevSection.id)}
                 style={{
                   flex: 1, display: "flex", alignItems: "center", gap: "12px", padding: "16px 20px",
-                  background: "rgba(255,255,255,0.6)", border: "1px solid rgba(180,130,0,0.15)",
+                  background: "hsl(var(--card) / 0.6)", border: "1px solid rgba(180,130,0,0.15)",
                   borderRadius: "12px", cursor: "pointer", textAlign: "left", transition: "all 0.2s",
                 }}
-                onMouseEnter={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor = "hsl(var(--ping-yellow))"; b.style.background = "rgba(255,255,255,0.9)"; }}
-                onMouseLeave={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor = "rgba(180,130,0,0.15)"; b.style.background = "rgba(255,255,255,0.6)"; }}
+                onMouseEnter={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor = "hsl(var(--ping-yellow))"; b.style.background = "hsl(var(--card) / 0.9)"; }}
+                onMouseLeave={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor = "rgba(180,130,0,0.15)"; b.style.background = "hsl(var(--card) / 0.6)"; }}
               >
                 <ChevronLeft size={16} style={{ color: "hsl(var(--ping-yellow))", flexShrink: 0 }} />
                 <div>
@@ -1608,11 +1614,11 @@ const DocsPage = () => {
                 onClick={() => scrollToSection(nextSection.id)}
                 style={{
                   flex: 1, display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "12px",
-                  padding: "16px 20px", background: "rgba(255,255,255,0.6)", border: "1px solid rgba(180,130,0,0.15)",
+                  padding: "16px 20px", background: "hsl(var(--card) / 0.6)", border: "1px solid rgba(180,130,0,0.15)",
                   borderRadius: "12px", cursor: "pointer", textAlign: "right", transition: "all 0.2s",
                 }}
-                onMouseEnter={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor = "hsl(var(--ping-yellow))"; b.style.background = "rgba(255,255,255,0.9)"; }}
-                onMouseLeave={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor = "rgba(180,130,0,0.15)"; b.style.background = "rgba(255,255,255,0.6)"; }}
+                onMouseEnter={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor = "hsl(var(--ping-yellow))"; b.style.background = "hsl(var(--card) / 0.9)"; }}
+                onMouseLeave={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor = "rgba(180,130,0,0.15)"; b.style.background = "hsl(var(--card) / 0.6)"; }}
               >
                 <div>
                   <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: "11px", color: "hsl(var(--ping-ash))", marginBottom: "2px" }}>Next</div>
@@ -1665,7 +1671,7 @@ const DocsPage = () => {
           transform: `translateX(-50%) translateY(${copyToast ? "0" : "12px"})`,
           zIndex: 300,
           background: "hsl(var(--ping-dark))",
-          color: "#FFF9EB",
+          color: "hsl(var(--ping-cream))",
           fontFamily: "'Poppins', sans-serif",
           fontSize: "13px",
           fontWeight: 600,

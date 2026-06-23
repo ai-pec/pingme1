@@ -118,10 +118,14 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Poppins', 'Space Grotesk', system-ui, sans-serif;
-    color: hsl(var(--ping-dark));
+    color: hsl(var(--foreground));
     background: radial-gradient(circle at 20% 20%, rgba(255, 231, 170, 0.4), transparent 50%),
       radial-gradient(circle at 80% 0%, rgba(255, 248, 226, 0.5), transparent 45%),
       hsl(var(--ping-white));
+  }
+
+  .dark body {
+    background: hsl(var(--background));
   }
 }
 
@@ -611,4 +615,357 @@
     hsl(45 100% 48%)   0px,  hsl(45 100% 48%)  5px,
     hsl(40 76% 7%)     5px,  hsl(40 76% 7%)   10px
   );
+}
+
+
+/* =============================================================================
+   DARK MODE — Site-wide overrides for hardcoded inline & class-based colors
+   Covers: About, Partners, Products, ProductDetail, FooterNew, DocsPage,
+           NfcVisitsDashboard, NfcLeadsDashboard, LandingHero and more.
+   ============================================================================= */
+
+/* ── Root page backgrounds ─────────────────────────────────────────────────── */
+.dark .about-root {
+  background: hsl(var(--background)) !important;
+}
+
+.dark .pm-page {
+  background: hsl(var(--background)) !important;
+}
+
+/* ── About page — hero / section backgrounds ─────────────────────────────── */
+.dark .hero-bg {
+  background: linear-gradient(135deg, hsl(0 0% 8%) 0%, hsl(0 0% 10%) 50%, hsl(0 0% 8%) 100%) !important;
+  background-size: 200% 200% !important;
+}
+
+.dark .cta-bg {
+  background: linear-gradient(135deg, hsl(0 0% 8%) 0%, hsl(0 0% 10%) 100%) !important;
+}
+
+.dark .ping-diag {
+  background: linear-gradient(135deg, hsl(0 0% 10%), hsl(0 0% 8%)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+/* ── Card & block backgrounds (white → card token) ─────────────────────── */
+.dark .story-block,
+.dark .office-card {
+  background: hsl(var(--card)) !important;
+  border-color: hsl(var(--border)) !important;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3) !important;
+}
+
+/* ── About inline "white" cards (ValueCard, ProductCard, TestiCard, FAQItem, PingTicker) */
+.dark .faq-item {
+  background: hsl(var(--card)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+.dark .trust-badge {
+  background: hsl(var(--card)) !important;
+  border-color: hsl(var(--border)) !important;
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+/* Marquee trust strip white bar */
+.dark .about-root [style*="background: white"],
+.dark .about-root [style*='background: "white"'],
+.dark .about-root [style*="background:white"] {
+  background: hsl(var(--card)) !important;
+}
+
+/* ── Products page ─────────────────────────────────────────────────────────── */
+.dark .pm-card {
+  background: hsl(var(--card)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+.dark .pm-cat-card {
+  background: hsl(var(--card)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+.dark .pm-tab {
+  color: hsl(var(--muted-foreground)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+.dark .pm-tab:hover {
+  color: hsl(var(--foreground)) !important;
+}
+
+.dark .pm-select {
+  background-color: hsl(var(--card)) !important;
+  color: hsl(var(--foreground)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+/* Products filter bar and category breadcrumb bar */
+.dark [class="pm-page"] > div[style*="rgba(249,244,236"],
+.dark .pm-page > div > div[style*="rgba(249,244,236"] {
+  background: hsl(var(--card) / 0.98) !important;
+}
+
+/* ── Partners page ─────────────────────────────────────────────────────────── */
+/* Override THEME_BG (#FDF2D4) applied as inline backgroundColor */
+.dark section[style*="FDF2D4"],
+.dark section[style*="#FDF2D4"] {
+  background-color: hsl(var(--background)) !important;
+}
+
+/* stone-* classes used throughout Partners */
+.dark .text-stone-900 { color: hsl(var(--foreground)) !important; }
+.dark .text-stone-600 { color: hsl(var(--muted-foreground)) !important; }
+.dark .text-stone-700 { color: hsl(var(--muted-foreground)) !important; }
+.dark .text-stone-400 { color: hsl(var(--muted-foreground) / 0.6) !important; }
+
+/* bg-white/* cards in Partners */
+.dark .bg-white\/70,
+.dark .bg-white\/80,
+.dark .bg-white\/60,
+.dark .bg-white\/50,
+.dark .bg-white\/90,
+.dark .bg-white {
+  background-color: hsl(var(--card)) !important;
+}
+
+.dark .border-stone-200 {
+  border-color: hsl(var(--border)) !important;
+}
+
+.dark .bg-stone-100\/80 {
+  background-color: hsl(var(--muted)) !important;
+}
+
+/* Partner form inputs */
+.dark .bg-white\/80.text-stone-800,
+.dark input.bg-white\/80,
+.dark textarea.bg-white\/80 {
+  background-color: hsl(var(--card)) !important;
+  color: hsl(var(--foreground)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+/* ── Footer ─────────────────────────────────────────────────────────────────── */
+.dark footer[style*="FFF9EB"],
+.dark footer[style*="#FFF9EB"] {
+  background-color: hsl(var(--background)) !important;
+}
+
+/* ── DocsPage — rgba(255,255,255,…) card backgrounds ───────────────────── */
+.dark [style*="rgba(255,255,255,0.7)"],
+.dark [style*="rgba(255,255,255,.7)"] {
+  background: hsl(var(--card) / 0.7) !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+.dark [style*="rgba(255,255,255,0.5)"],
+.dark [style*="rgba(255,255,255,.5)"] {
+  background: hsl(var(--card) / 0.5) !important;
+}
+
+.dark [style*="rgba(255,255,255,0.9)"],
+.dark [style*="rgba(255,255,255,.9)"] {
+  background: hsl(var(--card) / 0.9) !important;
+}
+
+/* DocsPage SidebarContent item hover */
+.dark [style*="rgba(255,249,235,0.95)"],
+.dark [style*="rgba(255,249,235,.95)"] {
+  background: hsl(var(--background) / 0.95) !important;
+}
+
+/* ── About page — hardcoded inline hex colors ───────────────────────────── */
+/* These target the inline style= attributes via CSS attribute selectors
+   which don't work for JS inline styles. We rely on the CSS class overrides
+   above and add targeted element overrides below for the remaining ones. */
+
+/* Pill floating badge */
+.dark [style*="rgba(255,255,255,0.92)"] {
+  background: hsl(var(--card) / 0.92) !important;
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+/* PingTicker white background */
+.dark [style*='"white"'],
+.dark [style*="background: white"],
+.dark [style*="background:white"] {
+  background: hsl(var(--card)) !important;
+}
+
+/* ── Dashboard pages (NfcVisitsDashboard, NfcLeadsDashboard) ───────────── */
+.dark .text-stone-900 { color: hsl(var(--foreground)) !important; }
+
+/* Chart tooltip white background */
+.dark [style*="rgba(255, 255, 255, 0.95)"],
+.dark [style*="rgba(255,255,255,0.95)"] {
+  background: hsl(var(--card) / 0.95) !important;
+  color: hsl(var(--foreground)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+/* ── LandingHero — bg-white / bg-white/N classes on cards ──────────────── */
+.dark .bg-white\/92 { background-color: hsl(var(--card) / 0.92) !important; }
+.dark .bg-white\/96 { background-color: hsl(var(--card) / 0.96) !important; }
+.dark .bg-white\/82 { background-color: hsl(var(--card) / 0.82) !important; }
+.dark .bg-white\/72 { background-color: hsl(var(--card) / 0.72) !important; }
+.dark .bg-white\/62 { background-color: hsl(var(--card) / 0.62) !important; }
+.dark .bg-white\/55 { background-color: hsl(var(--card) / 0.55) !important; }
+
+/* ── bg-cream / bg-ping-card sections (NFCLanding, Contact, Blog) ───────── */
+/* bg-cream is already defined as hsl(var(--ping-cream)) so we override
+   the CSS variable's effective value in dark mode */
+.dark {
+  --ping-cream: 220 15% 12%;  /* dark blue-gray replaces warm cream in dark mode */
+  --ping-card: 220 15% 14%;
+  --ping-white: 0 0% 5%;
+  --ping-dark: 0 0% 98%;
+  --ping-brown: 45 100% 48%;
+  --ping-ash: 0 0% 70%;
+}
+
+/* ── Products: Tutorial step cards and gradient header ──────────────────── */
+/* Targeted via inline style - use CSS var override approach for the
+   gradient header; step cards use .pm-step-card if possible, else general */
+.dark [style*="linear-gradient(135deg"][style*="#ffffff 100%)"],
+.dark [style*="linear-gradient(135deg"][style*="#ffffff"] {
+  background: hsl(var(--card)) !important;
+}
+
+/* Products step cards (#ffffff inline) */
+.dark [style*="background: \"#ffffff\""],
+.dark [style*='background:"#ffffff"'],
+.dark [style*="background: #ffffff"],
+.dark [style*="background:#ffffff"] {
+  background: hsl(var(--card)) !important;
+}
+
+/* Products FAQ answer background (#fdf8f2) */
+.dark [style*="#fdf8f2"] {
+  background: hsl(var(--muted)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+/* Products filter bar rgba background */
+.dark [style*="rgba(249,244,236"] {
+  background: hsl(var(--card) / 0.98) !important;
+}
+
+/* ── About / general: hardcoded text colors ─────────────────────────────── */
+/* We override the most common hardcoded hex colors used in inline styles
+   across About.tsx and other pages by targeting them via a global rule.
+   Note: CSS attr selectors on style= only match the literal string, so
+   we use a broad approach targeting common patterns. */
+.dark h1[style*="#1a1a0a"],
+.dark h2[style*="#1a1a0a"],
+.dark h3[style*="#1a1a0a"],
+.dark h4[style*="#1a1a0a"],
+.dark p[style*="#1a1a0a"],
+.dark span[style*="#1a1a0a"],
+.dark div[style*="color: \"#1a1a0a\""],
+.dark [style*='color: "#1a1a0a"'] {
+  color: hsl(var(--foreground)) !important;
+}
+
+.dark [style*='color: "#666"'],
+.dark [style*="color: '#666'"],
+.dark [style*="color:#666"],
+.dark p[style*="color: \"#666\""] {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+.dark [style*='color: "#555"'],
+.dark [style*="color:#555"] {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+.dark [style*='color: "#888"'],
+.dark [style*="color:#888"] {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+.dark [style*='color: "#aaa"'],
+.dark [style*='color: "#999"'],
+.dark [style*="color:#aaa"],
+.dark [style*="color:#999"] {
+  color: hsl(var(--muted-foreground) / 0.7) !important;
+}
+
+
+/* =============================================================================
+   DARK MODE — Dashboard & additional stone/white class overrides
+   ============================================================================= */
+.dark .text-stone-500 { color: hsl(var(--muted-foreground)) !important; }
+.dark .text-stone-800 { color: hsl(var(--foreground)) !important; }
+.dark .text-stone-600 { color: hsl(var(--muted-foreground)) !important; }
+.dark .text-stone-400 { color: hsl(var(--muted-foreground) / 0.6) !important; }
+.dark .text-stone-100 { color: hsl(var(--muted-foreground) / 0.4) !important; }
+
+.dark .bg-stone-100    { background-color: hsl(var(--muted)) !important; }
+.dark .bg-stone-50     { background-color: hsl(var(--muted)) !important; }
+.dark .border-stone-100 { border-color: hsl(var(--border)) !important; }
+.dark .border-stone-200 { border-color: hsl(var(--border)) !important; }
+
+/* Refresh button in dashboards */
+.dark .border-stone-200.bg-white {
+  background-color: hsl(var(--card)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+.dark .hover\:bg-stone-50:hover {
+  background-color: hsl(var(--muted)) !important;
+}
+
+/* Dashboard card bg (likely white from .dashboard-card) */
+.dark .dashboard-card {
+  background: hsl(var(--card)) !important;
+  border-color: hsl(var(--border)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+/* About page — inline white backgrounds via generic selector */
+/* ValueCard / ProductCard / TestiCard / FAQItem / PingTicker use background: "white" inline */
+/* We can't target CSS inline style text, so we target the class+element patterns */
+.dark .about-root div[style*="background: white"],
+.dark .about-root div[style*="background:white"],
+.dark .about-root a[style*="background: white"],
+.dark .about-root a[style*="background:white"] {
+  background: hsl(var(--card)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+/* About inline color overrides */
+.dark .about-root [style*="color: \"#1a1a0a\""],
+.dark .about-root h1[style],
+.dark .about-root h2[style],
+.dark .about-root h3[style],
+.dark .about-root h4[style] {
+  color: hsl(var(--foreground));
+}
+.dark .about-root p[style*="#666"],
+.dark .about-root p[style*="#555"],
+.dark .about-root span[style*="#888"],
+.dark .about-root span[style*="#999"],
+.dark .about-root span[style*="#aaa"] {
+  color: hsl(var(--muted-foreground));
+}
+
+/* About page section borders */
+.dark .about-root [style*="rgba(0,0,0,0.07)"] {
+  border-color: hsl(var(--border)) !important;
+}
+.dark .about-root [style*="rgba(0,0,0,.07)"] {
+  border-color: hsl(var(--border)) !important;
+}
+
+/* Products — inline background #fdf8f2, #ffffff in tutorial etc */
+.dark .pm-page [style*="background: \"#ffffff\""],
+.dark .pm-page [style*="background: #ffffff"],
+.dark .pm-page [style*="background:#ffffff"] {
+  background: hsl(var(--card)) !important;
+}
+.dark .pm-page [style*="background: \"#fdf8f2\""],
+.dark .pm-page [style*="background: #fdf8f2"],
+.dark .pm-page [style*="background:#fdf8f2"] {
+  background: hsl(var(--muted)) !important;
 }
