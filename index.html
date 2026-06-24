@@ -3,9 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>pingME</title>
+    <title>PingME</title>
     <meta name="description" content="PingME NFC cards — tap to share your contact, social links, and profile instantly" />
-    <meta name="author" content="pingME" />
+    <meta name="keywords" content="PingME, Ping IFF LLP, Ping, Pingiff, Pingiff.ai, plzpingme.com, NFC smart cards, NFC profile builder, contact sharing" />
+    <meta name="author" content="PingME" />
     <!-- Favicons -->
     <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -26,8 +27,9 @@
       }
     </style>
 
-    <!-- Open Graph -->
-    <meta property="og:title" content="pingME" />
+    <!-- Open Graph / Facebook -->
+    <meta property="og:site_name" content="PingME" />
+    <meta property="og:title" content="PingME" />
     <meta property="og:description" content="PingME NFC cards — tap to share your contact, social links, and profile instantly" />
     <meta property="og:type" content="website" />
     <meta property="og:image" content="https://plzpingme.com/og-image.png" />
@@ -39,12 +41,35 @@
     <meta name="twitter:description" content="PingME NFC cards — tap to share your contact, social links, and profile instantly" />
     <meta name="twitter:image" content="https://plzpingme.com/og-image.png" />
 
-    <!-- JSON-LD Schema -->
+    <!-- JSON-LD WebSite Schema (defines Site Name for Google Search) -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "PingME",
+        "alternateName": [
+          "PingME",
+          "Ping IFF LLP",
+          "Ping",
+          "Pingiff",
+          "plzpingme.com"
+        ],
+        "url": "https://plzpingme.com/"
+      }
+    </script>
+
+    <!-- JSON-LD Organization Schema (defines company relationship and aliases) -->
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "Organization",
         "name": "PingME",
+        "legalName": "Ping IFF LLP",
+        "alternateName": [
+          "Ping IFF LLP",
+          "Pingiff",
+          "Ping"
+        ],
         "url": "https://plzpingme.com",
         "logo": "https://plzpingme.com/logo.png",
         "sameAs": [
