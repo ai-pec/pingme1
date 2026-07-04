@@ -218,6 +218,11 @@ const Navbar = () => {
           border-bottom: 1px solid rgba(244, 180, 0, 0.04);
         }
 
+        :root.dark .menu-toggle {
+          color: var(--primary-yellow);
+          border-color: rgba(244, 180, 0, 0.25);
+        }
+
         /* ── Nav links ── */
         .nav-link-wrapper {
           position: relative;
