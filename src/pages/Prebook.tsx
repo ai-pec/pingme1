@@ -1852,6 +1852,7 @@ const Prebook = () => {
         amount: Math.round(finalTotal * 100), currency: "INR",
         receipt: `pingme_${Date.now()}`,
         notes: { userId: user?.uid || "guest", coupon: appliedCoupon?.code || "" },
+        prebooking: prebookingPayload,
       });
       if (showProfileBuilding) {
         for (const unit of nfcCartUnits) {
@@ -1889,6 +1890,7 @@ const Prebook = () => {
             await verifyRazorpayPaymentAndCreatePrebooking({
               orderId: resp.razorpay_order_id, paymentId: resp.razorpay_payment_id,
               signature: resp.razorpay_signature, prebooking: completed,
+              bookingId: order.bookingId,
             });
             setReceiptOrder(completed);
             setInvoiceEmail(email.trim());

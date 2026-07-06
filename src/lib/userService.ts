@@ -15,18 +15,18 @@ const USERS_COLLECTION = "users";
 export async function createUserProfile(
   uid: string,
   data: {
-    email: string;
+    email?: string;
     displayName: string;
     mobile?: string;
     photoURL?: string | null;
-    authProvider: "email" | "google";
+    authProvider: "email" | "google" | "phone";
   }
 ): Promise<void> {
   const userRef = doc(db, USERS_COLLECTION, uid);
 
   await setDoc(userRef, {
     uid,
-    email: data.email,
+    email: data.email || "",
     emailVerified: data.authProvider === "google", // Google users are verified
     displayName: data.displayName,
     mobile: data.mobile || "",
@@ -54,7 +54,7 @@ export async function getUserProfile(
 // Update user profile in Firestore
 export async function updateUserProfile(
   uid: string,
-  data: Partial<Pick<UserProfile, "displayName" | "mobile" | "emailVerified" | "addresses">>
+  data: Partial<Pick<UserProfile, "displayName" | "mobile" | "email" | "emailVerified" | "addresses">>
 ): Promise<void> {
   const userRef = doc(db, USERS_COLLECTION, uid);
 

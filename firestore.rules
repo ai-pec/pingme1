@@ -1,90 +1,148 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isSignedIn() {
-      return request.auth != null;
-    }
 
-    function hasAdminClaim() {
-      return isSignedIn() && request.auth.token.admin == true;
-    }
+    // ============================================================
+    // COMBINED RULES: app (plzping-me) + website (merged in).
+    // Deploy this single file. Make ONE repo the source of truth so a
+    // deploy never wipes the other side again.
+    // ============================================================
 
-    function hasAdminDoc() {
-      return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
-    }
-
-    function isAdmin() {
-      return hasAdminClaim() || hasAdminDoc();
-    }
-
-    function isOwner(uid) {
-      return isSignedIn() && request.auth.uid == uid;
-    }
-
-    function isOwnerOrder() {
+    // ---- Helper functions (website admin + canonical orders model) ----
+    function isSignedIn() { return request.auth != null; }
+    function hasAdminClaim() { return isSignedIn() && request.auth.token.admin == true; }
+    function hasAdminDoc() { return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)); }
+    function isAdmin() { return hasAdminClaim() || hasAdminDoc(); }
+    function isOwner(uid) { return isSignedIn() && request.auth.uid == uid; }
+    function isOwnerCanonicalOrder() {
       return isSignedIn() && (
-        request.auth.uid == resource.data.userId ||
-        request.auth.token.email == resource.data.email
+        request.auth.uid == resource.data.customer.uid ||
+        request.auth.token.email == resource.data.customer.email
       );
     }
-
-    function isOwnerOrderCreate() {
+    function isOwnerCanonicalOrderCreate() {
       return isSignedIn() && (
-        request.auth.uid == request.resource.data.userId ||
-        request.auth.token.email == request.resource.data.email
+        request.auth.uid == request.resource.data.customer.uid ||
+        request.auth.token.email == request.resource.data.customer.email
       );
     }
-
     function hasValidOrderStatus(status) {
-      return status in ['pending', 'confirmed', 'cancelled'];
+      return status in ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'];
     }
 
+    // ================= SHARED COLLECTIONS =================
+
+    // users — merged: app allowed owner full access + unauthenticated read
+    // (QR lookups); website added admin access.
     match /users/{uid} {
-      allow read: if isOwner(uid) || isAdmin();
+      allow read:   if request.auth == null || isOwner(uid) || isAdmin();
       allow create: if isOwner(uid);
       allow update: if isOwner(uid) || isAdmin();
+      allow delete: if isOwner(uid) || isAdmin();
+    }
+
+    // orders — unified, canonical nested shape. App must write source:"app",
+    // customer.uid = creator uid, customer.email, and a status from the list.
+    match /orders/{orderId} {
+      allow read:   if isOwnerCanonicalOrder() || isAdmin();
+      allow create: if (isOwnerCanonicalOrderCreate() || isAdmin()) && hasValidOrderStatus(request.resource.data.status);
+      allow update: if (isOwnerCanonicalOrder() || isAdmin()) && hasValidOrderStatus(request.resource.data.status);
       allow delete: if isAdmin();
     }
+
+    // ================= WEBSITE COLLECTIONS =================
 
     match /adminAccess/{docId} {
       allow read: if isAdmin();
       allow write: if false;
     }
-
     match /admins/{uid} {
       allow read: if isAdmin() || (isSignedIn() && request.auth.uid == uid);
       allow create, update, delete: if hasAdminClaim();
     }
-
-    match /booking/{orderId} {
-      allow read: if isOwnerOrder() || isAdmin();
-      allow create: if (isOwnerOrderCreate() || isAdmin()) && hasValidOrderStatus(request.resource.data.status);
-      allow update: if (isOwnerOrder() || isAdmin()) && hasValidOrderStatus(request.resource.data.status);
-      allow delete: if isAdmin();
-    }
-
-    match /prebookings/{orderId} {
-      allow read: if isOwnerOrder() || isAdmin();
-      allow create: if (isOwnerOrderCreate() || isAdmin()) && hasValidOrderStatus(request.resource.data.status);
-      allow update: if (isOwnerOrder() || isAdmin()) && hasValidOrderStatus(request.resource.data.status);
-      allow delete: if isAdmin();
-    }
-
     match /payments/{paymentId} {
       allow read: if isAdmin();
       allow write: if false;
     }
-
     match /products/{productId} {
       allow read: if true;
       allow write: if isAdmin();
     }
-
     match /productCategories/{categoryId} {
       allow read: if true;
       allow write: if isAdmin();
     }
+    match /faqs/{faqId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /blogPosts/{postId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    // legacy website orders (historical) — kept for backward reads
+    match /booking/{orderId} {
+      allow read: if isAdmin() || (isSignedIn() && (request.auth.uid == resource.data.userId || request.auth.token.email == resource.data.email));
+      allow write: if isAdmin();
+    }
+    match /prebookings/{orderId} {
+      allow read: if isAdmin() || (isSignedIn() && (request.auth.uid == resource.data.userId || request.auth.token.email == resource.data.email));
+      allow write: if isAdmin();
+    }
+    // NFC privacy consent — public read; create/update only ever sets consent true
+    match /nfc_consents/{username} {
+      allow read: if true;
+      allow create: if
+        request.resource.data.keys().hasOnly(['consentGiven', 'acceptedAt', 'username', 'userAgent']) &&
+        request.resource.data.keys().hasAll(['consentGiven', 'acceptedAt', 'username']) &&
+        request.resource.data.consentGiven == true &&
+        request.resource.data.username is string &&
+        request.resource.data.username.size() > 0 &&
+        request.resource.data.username.size() <= 100 &&
+        request.resource.data.acceptedAt == request.time;
+      allow update: if
+        request.resource.data.consentGiven == true &&
+        request.resource.data.acceptedAt == request.time;
+      allow delete: if false;
+    }
 
+    // ================= APP COLLECTIONS (from app rules) =================
+
+    match /messages/{document=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == resource.data.senderId;
+    }
+
+    match /notifications/{document=**} {
+      allow read: if true; // public read for QR lookups
+      allow create: if request.auth != null;
+      allow update: if request.auth != null && (
+        (resource.data.ownerId == request.auth.uid && (
+          request.resource.data.messages.size() > resource.data.get('messages', []).size() ||
+          request.resource.data.get('conversationEnded', false) != resource.data.get('conversationEnded', false) ||
+          request.resource.data.get('conversationEndedBy') != resource.data.get('conversationEndedBy') ||
+          request.resource.data.get('conversationStatus') != resource.data.get('conversationStatus') ||
+          request.resource.data.get('respondedAt') != resource.data.get('respondedAt') ||
+          request.resource.data.get('respondedBy') != resource.data.get('respondedBy') ||
+          request.resource.data.get('sessionId') != resource.data.get('sessionId')
+        )) ||
+        (resource.data.ownerId != request.auth.uid && (
+          request.resource.data.messages.size() > resource.data.get('messages', []).size() ||
+          request.resource.data.get('conversationEnded', false) != resource.data.get('conversationEnded', false) ||
+          request.resource.data.get('conversationEndedBy') != resource.data.get('conversationEndedBy')
+        )) ||
+        (request.resource.data.get('viewedByComplainant', false) == true &&
+         resource.data.get('viewedByComplainant', false) == false)
+      );
+      allow delete: if request.auth == null; // Cloud Functions only
+    }
+
+    match /conversations/{document=**} {
+      allow read, write: if request.auth != null;
+    }
+
+    // contacts: top-level = website contact-form messages;
+    //           {uid}/list/** = app per-user contact lists (nested).
     match /contacts/{contactId} {
       allow read: if isAdmin();
       allow create: if
@@ -105,40 +163,60 @@ service cloud.firestore {
         request.resource.data.status == 'new' &&
         request.resource.data.createdAt == request.time;
       allow update, delete: if isAdmin();
+
+      // app: a user's private contact list
+      match /list/{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == contactId;
+      }
     }
 
-    match /faqs/{faqId} {
-      allow read: if true;
-      allow write: if isAdmin();
+    match /vehicles/{vehicleId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
     }
 
-    match /blogPosts/{postId} {
+    match /articles/{articleId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
     }
 
-    // NFC privacy policy consent records — written once by the profile owner, never editable
-    match /nfc_consents/{username} {
-      // Anyone can check if consent was given for a username
+    match /settings/{settingId} {
       allow read: if true;
-      // Anyone can record consent (link is emailed only to the profile owner)
-      // Strict field validation: only allowed fields, consentGiven must be true
-      allow create: if
-        request.resource.data.keys().hasOnly(['consentGiven', 'acceptedAt', 'username', 'userAgent']) &&
-        request.resource.data.keys().hasAll(['consentGiven', 'acceptedAt', 'username']) &&
-        request.resource.data.consentGiven == true &&
-        request.resource.data.username is string &&
-        request.resource.data.username.size() > 0 &&
-        request.resource.data.username.size() <= 100 &&
-        request.resource.data.acceptedAt == request.time;
-      // Allow updating consent (e.g. if admin reset it to false, user can re-accept)
-      // Client can only ever set consentGiven to true — never downgrade
-      allow update: if
-        request.resource.data.consentGiven == true &&
-        request.resource.data.acceptedAt == request.time;
-      // Consent cannot be deleted via client
-      allow delete: if false;
+      allow write: if request.auth != null;
+    }
+
+    match /smartDoors/{homeId} {
+      allow read: if true;
+      allow create: if request.auth != null && request.resource.data.ownerUserId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.ownerUserId == request.auth.uid;
+    }
+
+    match /doorAccessRequests/{requestId} {
+      allow create: if true;
+      allow read: if request.auth != null;
+      allow update: if request.auth != null;
+    }
+
+    match /doorSessions/{sessionId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null;
+    }
+
+    match /codes/{codeId} {
+      allow read: if true;
+      allow create, update, delete: if request.auth != null;
+    }
+
+    // ================= FALLBACK (SECURE: default-deny) =================
+    // Any collection without an explicit rule above is now BLOCKED for direct
+    // client access. Add an explicit match block above for each collection that
+    // legitimately needs client access. (Cloud Functions use the Admin SDK and
+    // bypass these rules, so function-only collections need no rule.)
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
-

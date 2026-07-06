@@ -568,7 +568,7 @@ const ScanStory: React.FC<{ offerings: ReturnType<typeof getOfferings> }> = ({ o
                     : { scale: 1, borderColor: "hsl(var(--border) / 0.5)" }
                 }
                 transition={{ duration: 0.35 }}
-                className="flex items-center gap-2 rounded-2xl bg-white/92 px-3.5 py-2.5 whitespace-nowrap"
+                className="flex items-center gap-2 rounded-2xl bg-card/90 px-3.5 py-2.5 whitespace-nowrap"
                 style={{
                   backdropFilter: "blur(18px)",
                   boxShadow:
@@ -752,10 +752,9 @@ const StatsBar: React.FC = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-                className="relative flex flex-col items-center justify-center gap-1.5 px-4 py-6"
-                style={{
-                  borderRight: i < 3 ? "1px solid rgba(245,166,35,0.10)" : "none",
-                }}
+                className={`relative flex flex-col items-center justify-center gap-1.5 px-4 py-6 border-[#F5A623]/10 ${
+                  i % 2 === 0 ? "border-r" : ""
+                } ${i < 2 ? "border-b" : ""} sm:border-b-0 sm:border-r ${i === 3 ? "sm:border-r-0" : ""}`}
               >
                 <div
                   className="mb-1 flex h-9 w-9 items-center justify-center rounded-2xl"
@@ -904,7 +903,7 @@ const OfferingCard: React.FC<{
         onHoverEnd={() => setHovered(false)}
         whileHover={{ y: -4 }}
         transition={{ type: "spring", stiffness: 300, damping: 26 }}
-        className="group relative overflow-hidden rounded-[2rem] border border-border/35 bg-white/82 cursor-pointer"
+        className="group relative overflow-hidden rounded-[2rem] border border-border/35 bg-card/80 cursor-pointer"
         style={{
           backdropFilter: "blur(18px)",
           boxShadow: hovered
@@ -929,10 +928,10 @@ const OfferingCard: React.FC<{
         <div className="grid md:grid-cols-2 items-stretch">
           {/* Image panel */}
           <div
-            className="relative flex items-center justify-center overflow-hidden"
+            className={`relative flex items-center justify-center overflow-hidden min-h-[180px] md:min-h-[240px] ${
+              imageFirst ? "" : "md:order-last"
+            }`}
             style={{
-              minHeight: 240,
-              order: imageFirst ? 0 : 1,
               background: `linear-gradient(140deg, ${item.accentBg}, hsl(var(--card) / 0.25))`,
             }}
           >
@@ -955,7 +954,7 @@ const OfferingCard: React.FC<{
               <motion.img
                 src={item.image}
                 alt={item.title}
-                className="relative z-10 h-48 w-full object-contain px-8"
+                className="relative z-10 h-36 md:h-48 w-full object-contain px-8"
                 animate={hovered ? { scale: 1.06, y: -4 } : { scale: 1, y: 0 }}
                 transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
                 loading="lazy"
@@ -968,8 +967,9 @@ const OfferingCard: React.FC<{
 
           {/* Content panel */}
           <div
-            className="flex flex-col justify-center p-7 md:p-8"
-            style={{ order: imageFirst ? 1 : 0 }}
+            className={`flex flex-col justify-center p-5 md:p-8 ${
+              imageFirst ? "" : "md:order-first"
+            }`}
           >
             <div className="flex items-center gap-3 mb-5">
               <div
@@ -1023,7 +1023,7 @@ const OfferingCard: React.FC<{
 ----------------------------------------------------------------- */
 
 const FeatureStrip: React.FC = () => (
-  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
     {FEATURES.map((f, i) => {
       const Icon = f.icon;
       return (
@@ -1031,7 +1031,7 @@ const FeatureStrip: React.FC = () => (
           <motion.div
             whileHover={{ y: -5, boxShadow: `0 18px 44px ${f.color}20` }}
             transition={{ type: "spring", stiffness: 300, damping: 24 }}
-            className="relative h-full rounded-[1.5rem] border border-border/35 bg-white/72 p-5 cursor-default"
+            className="relative h-full rounded-[1.5rem] border border-border/35 bg-card/70 p-4 md:p-5 cursor-default"
             style={{ backdropFilter: "blur(14px)", boxShadow: "0 2px 14px rgba(0,0,0,0.045)" }}
           >
             <div
@@ -1581,7 +1581,7 @@ const LandingHero = () => {
               <motion.div
                 whileHover={{ y: -4, boxShadow: "0 18px 48px rgba(81,60,9,0.09)" }}
                 transition={{ type: "spring", stiffness: 280, damping: 24 }}
-                className="rounded-3xl border border-border/35 bg-white/72 p-7"
+                className="rounded-3xl border border-border/35 bg-card/70 p-5 md:p-7"
                 style={{ backdropFilter: "blur(14px)", boxShadow: "0 4px 24px rgba(0,0,0,0.055)" }}
               >
                 <div className="flex items-start gap-4">
@@ -1629,7 +1629,7 @@ const LandingHero = () => {
               <motion.div
                 whileHover={{ y: -4, boxShadow: "0 18px 48px rgba(81,60,9,0.09)" }}
                 transition={{ type: "spring", stiffness: 280, damping: 24 }}
-                className="flex flex-col gap-3 rounded-3xl border border-border/35 bg-white/72 p-6 min-w-[200px]"
+                className="flex flex-col gap-3 rounded-3xl border border-border/35 bg-card/70 p-5 md:p-6 min-w-[200px]"
                 style={{ backdropFilter: "blur(14px)", boxShadow: "0 4px 24px rgba(0,0,0,0.055)" }}
               >
                 <p className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-[0.26em] mb-1">

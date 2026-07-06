@@ -10,7 +10,8 @@ if (!fs.existsSync(serviceAccountPath)) {
 }
 
 const serviceAccount = require(serviceAccountPath);
-admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+const { credential } = require("firebase-admin");
+admin.initializeApp({ credential: credential.cert(serviceAccount) });
 const db = admin.firestore();
 
 const buyers = [
@@ -31,6 +32,9 @@ const buyers = [
   { fullName: "Vikas Mittal", companyName: "ERC MAX Ventures Pvt Ltd", jobTitle: "Director", phone: "9216003333", email: "ercmaxworld@gmail.com", username: "vikasmittal", address: "SCO 69, level 2, Sector 17D Chandigarh 160017", instagram: "https://www.instagram.com/zoogolindia" },
   { fullName: "Appul Jot Virdi", companyName: "Kontent Kai", jobTitle: "Founder", phone: "9814700270", email: "appul.virdi@gmail.com", username: "appuljotvird" },
   { fullName: "Lovepreet Singh", companyName: "Erosius", jobTitle: "Founder & CEO", phone: "8168510617", email: "erophilous@gmail.com", username: "lovepreetsingh", instagram: "https://www.instagram.com/erosius_" },
+  { fullName: "Neeta Basile", companyName: "", jobTitle: "", phone: "+1 (301) 514-0198", email: "", username: "neetabasile" },
+  { fullName: "Inder Mohan Kahlon", companyName: "", jobTitle: "", phone: "+91 95606 76669", email: "indermohan.kahlon@gmail.com", username: "indermohankahlon", address: "SUA122, DLF THE SUMMIT, Park Drive, Sector 54, Gurgaon" },
+  { fullName: "Simar Preet Kahlon", companyName: "Nestlé India Limited", jobTitle: "Market SHE Manager", phone: "+91-124-3321448", email: "simarpreet.kahlon@in.nestle.com", username: "simarpreetkahlon", address: "Nestlé House, Jacaranda Marg, 'M' Block, DLF City, Phase - II, Gurugram - 122002, Haryana" },
 ];
 
 const NFC_ITEM_ID = "nfc-card-default";

@@ -9,6 +9,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import PublicNFCProfile from "./pages/PublicNFCProfile";
 import NFCLanding from "./pages/NFCLanding";
 import NfcPrivacyPolicy from "./pages/NfcPrivacyPolicy";
+import SmoothScroll from "@/components/SmoothScroll";
 import "./index.css";
 
 const queryClient = new QueryClient();
@@ -21,6 +22,7 @@ function NfcApp() {
           <TooltipProvider>
             <Toaster />
             <BrowserRouter>
+              <SmoothScroll />
               <Routes>
                 {/* Root → NFC landing page */}
                 <Route path="/" element={<NFCLanding />} />

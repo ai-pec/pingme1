@@ -35,9 +35,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 // Auth Pages
 const Login = lazy(() => import("./pages/auth/Login"));
 const Signup = lazy(() => import("./pages/auth/Signup"));
-const ForgotPassword = lazy(() => import("./pages/auth/ForgotPassword"));
-const VerifyEmail = lazy(() => import("./pages/auth/VerifyEmail"));
-const CompletePhone = lazy(() => import("./pages/auth/CompletePhone"));
+const CompleteProfile = lazy(() => import("./pages/auth/CompleteProfile"));
 const Profile = lazy(() => import("./pages/Profile"));
 const NfcVisitsDashboard = lazy(() => import("./pages/NfcVisitsDashboard"));
 const NfcLeadsDashboard = lazy(() => import("./pages/NfcLeadsDashboard"));
@@ -147,12 +145,14 @@ const App = () => (
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/report" element={<Navigate to="/contact" replace />} />
 
-                {/* Auth Routes */}
+                {/* Auth Routes (phone + OTP only) */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/verify-email" element={<VerifyEmail />} />
-                <Route path="/complete-phone" element={<CompletePhone />} />
+                <Route path="/complete-profile" element={<CompleteProfile />} />
+                {/* Legacy auth paths now resolve to the phone login */}
+                <Route path="/forgot-password" element={<Navigate to="/login" replace />} />
+                <Route path="/verify-email" element={<Navigate to="/login" replace />} />
+                <Route path="/complete-phone" element={<Navigate to="/complete-profile" replace />} />
 
                 {/* Protected Routes */}
                 <Route

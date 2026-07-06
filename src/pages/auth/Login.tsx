@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import AuthLayout from "@/components/auth/AuthLayout";
-import LoginForm from "@/components/auth/LoginForm";
+import PhoneAuthForm from "@/components/auth/PhoneAuthForm";
 import { Loader2 } from "lucide-react";
 
 export default function Login() {
@@ -14,10 +14,9 @@ export default function Login() {
 
   useEffect(() => {
     if (!loading && user) {
-      if (profile?.authProvider === "google" && !profile.mobile) {
-        navigate("/complete-phone", { replace: true, state: { from } });
-      } else if (!user.emailVerified) {
-        navigate("/verify-email");
+      // Phone is verified at sign-in; email is the remaining required info.
+      if (profile && !profile.email) {
+        navigate("/complete-profile", { replace: true, state: { from } });
       } else {
         navigate(from, { replace: true });
       }
@@ -38,10 +37,10 @@ export default function Login() {
 
   return (
     <AuthLayout
-      title="Welcome back"
-      subtitle="Sign in to your account to continue"
+      title="Sign in or sign up"
+      subtitle="Continue with your phone number"
     >
-      <LoginForm onSuccess={() => navigate(from, { replace: true })} />
+      <PhoneAuthForm onSuccess={() => navigate(from, { replace: true })} />
     </AuthLayout>
   );
 }

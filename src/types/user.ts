@@ -27,7 +27,7 @@ export interface UserProfile {
   displayName: string;
   mobile: string;
   photoURL: string | null;
-  authProvider: "email" | "google";
+  authProvider: "email" | "google" | "phone";
   createdAt: Timestamp;
   updatedAt: Timestamp;
   addresses?: DeliveryAddress[];

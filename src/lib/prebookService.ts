@@ -12,7 +12,7 @@ import {
 import DOMPurify from 'dompurify';
 import { db, auth } from '@/lib/firebase';
 import { resolveProductImageUrl } from '@/lib/productCatalog';
-import { expandNfcCartUnits } from '@/lib/nfcCheckout';
+import { expandNfcCartUnits, isNfcCartItem } from '@/lib/nfcCheckout';
 
 export interface CartItem {
   id: string;
@@ -82,7 +82,7 @@ export interface PrebookingData {
   city: string;
   state: string;
   pincode: string;
-  status: 'pending' | 'confirmed' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   nfcProfile?: NFCProfile;
   nfcLineProfiles?: NfcLineProfile[];
   payment?: {
@@ -111,18 +111,21 @@ export interface SyncNfcOrderData {
   payment?: PrebookingData["payment"];
 }
 
-type SanitizedCartItem = {
-  id: string;
-  title: string;
-  price: string;
-  quantity: number;
-  originalPrice?: string;
-  image?: string;
-  emoji?: string;
-};
 
-const BOOKING_COLLECTION = 'booking';
-const LEGACY_PREBOOKINGS_COLLECTION = 'prebookings';
+// Unified, cross-product orders collection (shared with the app project).
+const ORDERS_COLLECTION = 'orders';
+// Marks which front-end created the order so each app can filter to its own.
+const ORDER_SOURCE = 'website';
+
+// Parse a possibly-formatted price string (e.g. "₹1,999") into a number.
+const parsePrice = (value: unknown): number => {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+  if (typeof value === 'string') {
+    const parsed = Number(value.replace(/[^0-9.]/g, ''));
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
+};
 
 const getPaymentApiBaseUrl = () => {
   const base = import.meta.env.VITE_PAYMENT_API_BASE_URL;
@@ -218,54 +221,68 @@ export const createPrebooking = async (data: PrebookingData): Promise<string> =>
     throw new Error('Cart is empty');
   }
 
-  // Sanitize all text inputs and format items
-  const sanitizedData = {
-    items: data.items.map(item => {
-      const cleanItem: SanitizedCartItem = {
-        id: item.id,
-        title: sanitizeText(item.title),
-        price: item.price,
-        quantity: Math.min(Math.max(1, item.quantity), 10),
-      };
-      if (item.originalPrice) cleanItem.originalPrice = item.originalPrice;
-      if (item.image) cleanItem.image = resolveProductImageUrl(item.image) || item.image;
-      if (item.emoji) cleanItem.emoji = item.emoji;
-      return cleanItem;
-    }),
-    totalAmount: data.totalAmount,
-    fullName: sanitizeText(data.fullName),
-    email: sanitizeText(data.email),
-    phone: sanitizeText(data.phone),
-    address: sanitizeText(data.address),
-    city: sanitizeText(data.city),
-    state: sanitizeText(data.state),
-    pincode: sanitizeText(data.pincode),
+  // Sanitize + map items into the canonical (cross-product) shape
+  const items = data.items.map(item => {
+    const cleanItem: Record<string, unknown> = {
+      id: item.id,
+      title: sanitizeText(item.title),
+      productType: isNfcCartItem(item) ? 'nfc_card' : 'accessory',
+      price: parsePrice(item.price),
+      quantity: Math.min(Math.max(1, item.quantity), 10),
+    };
+    if (item.originalPrice) cleanItem.originalPrice = item.originalPrice;
+    if (item.image) cleanItem.image = resolveProductImageUrl(item.image) || item.image;
+    if (item.emoji) cleanItem.emoji = item.emoji;
+    return cleanItem;
+  });
+
+  // NFC personalization lives under a namespaced object so non-NFC products are unaffected.
+  const nfc: Record<string, unknown> = {};
+  if (data.nfcLineProfiles && data.nfcLineProfiles.length > 0) {
+    nfc.lineProfiles = sanitizeNfcLineProfiles(data.nfcLineProfiles);
+  }
+  if (data.nfcProfile) {
+    nfc.profile = sanitizeNFCProfile(data.nfcProfile);
+  }
+
+  const canonicalOrder: Record<string, unknown> = {
+    source: ORDER_SOURCE,
     status: data.status,
-    ...(data.nfcLineProfiles && data.nfcLineProfiles.length > 0
+    customer: {
+      uid: data.userId || null,
+      name: sanitizeText(data.fullName),
+      email: sanitizeText(data.email),
+      phone: sanitizeText(data.phone),
+    },
+    delivery: {
+      address: sanitizeText(data.address),
+      city: sanitizeText(data.city),
+      state: sanitizeText(data.state),
+      pincode: sanitizeText(data.pincode),
+    },
+    items,
+    amount: {
+      subtotal: data.totalAmount,
+      discount: 0,
+      shipping: 0,
+      total: data.totalAmount,
+      currency: 'INR',
+    },
+    payment: data.payment
       ? {
-          nfcLineProfiles: sanitizeNfcLineProfiles(data.nfcLineProfiles),
+          status: 'paid',
+          gateway: data.payment.gateway,
+          orderId: sanitizeText(data.payment.orderId),
+          paymentId: sanitizeText(data.payment.paymentId),
+          signature: sanitizeText(data.payment.signature),
+          amount: data.payment.amount,
+          currency: sanitizeText(data.payment.currency),
+          ...(data.payment.paidAt ? { paidAt: sanitizeText(data.payment.paidAt) } : {}),
         }
-      : {}),
-    ...(data.nfcProfile
-      ? {
-          nfcProfile: sanitizeNFCProfile(data.nfcProfile),
-        }
-      : {}),
-    ...(data.payment
-      ? {
-          payment: {
-            gateway: data.payment.gateway,
-            orderId: sanitizeText(data.payment.orderId),
-            paymentId: sanitizeText(data.payment.paymentId),
-            signature: sanitizeText(data.payment.signature),
-            amount: data.payment.amount,
-            currency: sanitizeText(data.payment.currency),
-            ...(data.payment.paidAt ? { paidAt: sanitizeText(data.payment.paidAt) } : {}),
-          },
-        }
-      : {}),
-    ...(data.userId ? { userId: data.userId } : {}),
+      : { status: 'pending', gateway: null },
+    ...(Object.keys(nfc).length > 0 ? { nfc } : {}),
     createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
   };
 
   const timeoutPromise = new Promise<never>((_, reject) =>
@@ -273,7 +290,7 @@ export const createPrebooking = async (data: PrebookingData): Promise<string> =>
   );
 
   const docRef = await Promise.race([
-    addDoc(collection(db, BOOKING_COLLECTION), sanitizedData),
+    addDoc(collection(db, ORDERS_COLLECTION), canonicalOrder),
     timeoutPromise,
   ]);
 
@@ -303,23 +320,6 @@ const toMillis = (createdAt: unknown): number => {
   return 0;
 };
 
-const ensureAtLeastOneWriteSucceeded = async (
-  writes: Promise<unknown>[],
-  operation: string,
-): Promise<void> => {
-  const results = await Promise.allSettled(writes);
-
-  if (results.some((result) => result.status === 'fulfilled')) {
-    return;
-  }
-
-  const firstFailure = results.find((result) => result.status === 'rejected') as PromiseRejectedResult | undefined;
-  if (firstFailure?.reason instanceof Error) {
-    throw firstFailure.reason;
-  }
-
-  throw new Error(`Failed to ${operation}.`);
-};
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null;
@@ -386,6 +386,40 @@ const normalizeRecord = (id: string, data: unknown): PrebookingRecord => {
   } as PrebookingRecord;
 };
 
+// Map a canonical (nested) `orders` document back into the website's flat
+// PrebookingRecord shape so existing UI/invoice/admin code works unchanged.
+// Tolerates already-flat (legacy) docs via the `?? data.X` fallbacks.
+export const flattenOrder = (id: string, data: unknown): PrebookingRecord => {
+  const d = isRecord(data) ? data : {};
+  const customer = isRecord(d.customer) ? d.customer : {};
+  const delivery = isRecord(d.delivery) ? d.delivery : {};
+  const amount = isRecord(d.amount) ? d.amount : {};
+  const nfc = isRecord(d.nfc) ? d.nfc : {};
+
+  const flat: Record<string, unknown> = {
+    ...d,
+    userId: getString(customer.uid) ?? getString(d.userId),
+    fullName: getString(customer.name) ?? getString(d.fullName) ?? '',
+    email: getString(customer.email) ?? getString(d.email) ?? '',
+    phone: getString(customer.phone) ?? getString(d.phone) ?? '',
+    address: getString(delivery.address) ?? getString(d.address) ?? '',
+    city: getString(delivery.city) ?? getString(d.city) ?? '',
+    state: getString(delivery.state) ?? getString(d.state) ?? '',
+    pincode: getString(delivery.pincode) ?? getString(d.pincode) ?? '',
+    totalAmount: getNumber(amount.total) ?? getNumber(d.totalAmount) ?? 0,
+    nfcProfile: isRecord(nfc.profile) ? nfc.profile : d.nfcProfile,
+    nfcLineProfiles: Array.isArray(nfc.lineProfiles) ? nfc.lineProfiles : d.nfcLineProfiles,
+  };
+
+  return normalizeRecord(id, flat);
+};
+
+// Treat docs created by the website (or legacy docs with no `source`) as ours.
+const isWebsiteOrder = (data: unknown): boolean => {
+  const source = isRecord(data) ? data.source : undefined;
+  return source === undefined || source === ORDER_SOURCE;
+};
+
 export const getUserPrebookings = async ({ userId, email }: GetUserPrebookingsParams): Promise<PrebookingRecord[]> => {
   try {
     if (!userId && !email) return [];
@@ -399,17 +433,14 @@ export const getUserPrebookings = async ({ userId, email }: GetUserPrebookingsPa
       return Array.from(deduped.values()).sort((a, b) => toMillis(b.createdAt) - toMillis(a.createdAt));
     };
 
-    // Prefer userId query because email can change later in account settings.
+    // Prefer the uid query because email can change later in account settings.
     if (userId) {
-      const [bookingSnapshot, legacySnapshot] = await Promise.all([
-        getDocs(query(collection(db, BOOKING_COLLECTION), where('userId', '==', userId))),
-        getDocs(query(collection(db, LEGACY_PREBOOKINGS_COLLECTION), where('userId', '==', userId))),
-      ]);
-
-      const records = [
-        ...bookingSnapshot.docs.map(doc => normalizeRecord(doc.id, doc.data())),
-        ...legacySnapshot.docs.map(doc => normalizeRecord(doc.id, doc.data())),
-      ];
+      const snapshot = await getDocs(
+        query(collection(db, ORDERS_COLLECTION), where('customer.uid', '==', userId))
+      );
+      const records = snapshot.docs
+        .filter(doc => isWebsiteOrder(doc.data()))
+        .map(doc => flattenOrder(doc.id, doc.data()));
 
       if (records.length > 0) {
         return mergeAndSort(records);
@@ -417,22 +448,19 @@ export const getUserPrebookings = async ({ userId, email }: GetUserPrebookingsPa
     }
 
     if (email) {
-      const [bookingSnapshot, legacySnapshot] = await Promise.all([
-        getDocs(query(collection(db, BOOKING_COLLECTION), where('email', '==', email))),
-        getDocs(query(collection(db, LEGACY_PREBOOKINGS_COLLECTION), where('email', '==', email))),
-      ]);
-
-      const records = [
-        ...bookingSnapshot.docs.map(doc => normalizeRecord(doc.id, doc.data())),
-        ...legacySnapshot.docs.map(doc => normalizeRecord(doc.id, doc.data())),
-      ];
+      const snapshot = await getDocs(
+        query(collection(db, ORDERS_COLLECTION), where('customer.email', '==', email))
+      );
+      const records = snapshot.docs
+        .filter(doc => isWebsiteOrder(doc.data()))
+        .map(doc => flattenOrder(doc.id, doc.data()));
 
       return mergeAndSort(records);
     }
 
     return [];
   } catch (error) {
-    console.error('Failed to fetch prebookings:', error);
+    console.error('Failed to fetch orders:', error);
     return [];
   }
 };
@@ -448,28 +476,27 @@ export const updatePrebookingNFCProfile = async (
   }
 
   const sanitizedProfile = sanitizeNFCProfile(nfcProfile);
+  const orderRef = doc(db, ORDERS_COLLECTION, orderId);
 
   if (lineKey) {
-    const bookingRef = doc(db, BOOKING_COLLECTION, orderId);
-    const legacyRef = doc(db, LEGACY_PREBOOKINGS_COLLECTION, orderId);
-    const [bookingDoc, legacyDoc] = await Promise.all([
-      getDoc(bookingRef),
-      getDoc(legacyRef),
-    ]);
+    const orderDoc = await getDoc(orderRef);
+    const existingData = orderDoc.exists() ? orderDoc.data() : null;
+    const existingNfc = isRecord(existingData?.nfc) ? (existingData!.nfc as Record<string, unknown>) : {};
 
-    const existingData = bookingDoc.exists()
-      ? bookingDoc.data()
-      : legacyDoc.exists()
-        ? legacyDoc.data()
+    const existingLines = Array.isArray(existingNfc.lineProfiles)
+      ? (existingNfc.lineProfiles as NfcLineProfile[])
+      : Array.isArray(existingData?.nfcLineProfiles)
+        ? (existingData!.nfcLineProfiles as NfcLineProfile[])
+        : [];
+    const existingProfileSource = isRecord(existingNfc.profile)
+      ? existingNfc.profile
+      : isRecord(existingData?.nfcProfile)
+        ? existingData!.nfcProfile
         : null;
-
-    const existingLines = Array.isArray(existingData?.nfcLineProfiles)
-      ? (existingData.nfcLineProfiles as NfcLineProfile[])
-      : [];
-    const existingProfile = isRecord(existingData?.nfcProfile)
-      ? sanitizeNFCProfile(existingData.nfcProfile as NFCProfile)
+    const existingProfile = existingProfileSource
+      ? sanitizeNFCProfile(existingProfileSource as unknown as NFCProfile)
       : sanitizedProfile;
-    const units = expandNfcCartUnits(Array.isArray(existingData?.items) ? (existingData.items as CartItem[]) : []);
+    const units = expandNfcCartUnits(Array.isArray(existingData?.items) ? (existingData!.items as CartItem[]) : []);
     const seededLines = units.length > 0
       ? units.map((unit) => ({
           lineKey: unit.lineKey,
@@ -507,29 +534,20 @@ export const updatePrebookingNFCProfile = async (
     );
 
     const updatePayload: Record<string, unknown> = {
-      nfcLineProfiles: sanitizeNfcLineProfiles(updatedLines),
+      'nfc.lineProfiles': sanitizeNfcLineProfiles(updatedLines),
       updatedAt: serverTimestamp(),
     };
 
     if (updatedLines.length === 1) {
-      updatePayload.nfcProfile = sanitizedProfile;
+      updatePayload['nfc.profile'] = sanitizedProfile;
     }
 
-    await ensureAtLeastOneWriteSucceeded([
-      updateDoc(bookingRef, updatePayload),
-      updateDoc(legacyRef, updatePayload),
-    ], 'update prebooking NFC profile');
+    await updateDoc(orderRef, updatePayload);
   } else {
-    await ensureAtLeastOneWriteSucceeded([
-      updateDoc(doc(db, BOOKING_COLLECTION, orderId), {
-        nfcProfile: sanitizedProfile,
-        updatedAt: serverTimestamp(),
-      }),
-      updateDoc(doc(db, LEGACY_PREBOOKINGS_COLLECTION, orderId), {
-        nfcProfile: sanitizedProfile,
-        updatedAt: serverTimestamp(),
-      }),
-    ], 'update prebooking NFC profile');
+    await updateDoc(orderRef, {
+      'nfc.profile': sanitizedProfile,
+      updatedAt: serverTimestamp(),
+    });
   }
 
   await syncNfcProfileToPublicDomain(profileId || orderId, sanitizedProfile);

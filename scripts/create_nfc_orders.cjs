@@ -1,6 +1,8 @@
-const admin = require("firebase-admin");
 const fs = require("fs");
 const path = require("path");
+const { initializeApp, cert } = require("firebase-admin/app");
+const { getFirestore, FieldValue } = require("firebase-admin/firestore");
+const { getAuth } = require("firebase-admin/auth");
 
 const serviceAccountPath = path.join(__dirname, "serviceAccountKey.json");
 if (!fs.existsSync(serviceAccountPath)) {
@@ -10,8 +12,9 @@ if (!fs.existsSync(serviceAccountPath)) {
 }
 
 const serviceAccount = require(serviceAccountPath);
-admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-const db = admin.firestore();
+initializeApp({ credential: cert(serviceAccount) });
+const db = getFirestore();
+const auth = getAuth();
 
 const buyers = [
   { fullName: "Tanu Sethi", companyName: "Suragraj Builders", jobTitle: "", phone: "7988080907", email: "sethitanu111@gmail.com", username: "tanusethi" },
@@ -58,6 +61,9 @@ const buyers = [
   { fullName: "Vikas Mittal", companyName: "ERC MAX Ventures Pvt Ltd", jobTitle: "Director", phone: "9216003333", email: "ercmaxworld@gmail.com", username: "vikasmittal", address: "SCO 69, level 2, Sector 17D Chandigarh 160017", instagram: "https://www.instagram.com/zoogolindia" },
   { fullName: "Appul Jot Virdi", companyName: "Kontent Kai", jobTitle: "Founder", phone: "9814700270", email: "appul.virdi@gmail.com", username: "appuljotvirdi" },
   { fullName: "Lovepreet Singh", companyName: "Erosius", jobTitle: "Founder & CEO", phone: "8168510617", email: "erophilous@gmail.com", username: "lovepreetsingh", instagram: "https://www.instagram.com/erosius_" },
+  { fullName: "Neeta Basile", companyName: "", jobTitle: "", phone: "+1 (301) 514-0198", email: "", username: "neetabasile" },
+  { fullName: "Inder Mohan Kahlon", companyName: "", jobTitle: "", phone: "+91 95606 76669", email: "indermohan.kahlon@gmail.com", username: "indermohankahlon", address: "SUA122, DLF THE SUMMIT, Park Drive, Sector 54, Gurgaon" },
+  { fullName: "Simar Preet Kahlon", companyName: "Nestlé India Limited", jobTitle: "Market SHE Manager", phone: "+91-124-3321448", email: "simarpreet.kahlon@in.nestle.com", username: "simarpreetkahlon", address: "Nestlé House, Jacaranda Marg, 'M' Block, DLF City, Phase - II, Gurugram - 122002, Haryana" },
 ];
 
 const NFC_ITEM_ID = "nfc-card-default";
@@ -77,11 +83,11 @@ const generateTempPassword = () => {
 async function ensureAuthUser(email, fullName) {
   if (!email) return { uid: null, created: false, password: null };
   try {
-    const user = await admin.auth().getUserByEmail(email);
+    const user = await auth.getUserByEmail(email);
     return { uid: user.uid, created: false, password: null };
   } catch (err) {
     const tempPassword = generateTempPassword();
-    const userRecord = await admin.auth().createUser({
+    const userRecord = await auth.createUser({
       email,
       emailVerified: false,
       password: tempPassword,
@@ -95,16 +101,18 @@ async function createFor(buyer) {
   const email = normalizeEmail(buyer.email || '');
   const username = normalizeUsername(buyer.username || buyer.fullName || 'user');
 
-  const existingBookingByEmail = await db.collection('booking').where('email', '==', email).limit(1).get();
-  if (!existingBookingByEmail.empty) {
-    const existingDoc = existingBookingByEmail.docs[0];
-    const existingData = existingDoc.data() || {};
-    return {
-      skipped: true,
-      orderId: existingDoc.id,
-      username: normalizeUsername(existingData?.nfcProfile?.username || username),
-      auth: { uid: existingData.userId || null, created: false, password: null },
-    };
+  if (email) {
+    const existingBookingByEmail = await db.collection('booking').where('email', '==', email).limit(1).get();
+    if (!existingBookingByEmail.empty) {
+      const existingDoc = existingBookingByEmail.docs[0];
+      const existingData = existingDoc.data() || {};
+      return {
+        skipped: true,
+        orderId: existingDoc.id,
+        username: normalizeUsername(existingData?.nfcProfile?.username || username),
+        auth: { uid: existingData.userId || null, created: false, password: null },
+      };
+    }
   }
 
   const existingBookingByUsername = await db.collection('booking').where('nfcProfile.username', '==', username).limit(1).get();
@@ -155,8 +163,8 @@ async function createFor(buyer) {
       ...(buyer.instagram ? { instagram: buyer.instagram } : {}),
       ...(buyer.address ? { address: buyer.address } : {}),
     },
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    createdAt: FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
     updatedSource: 'adminImport',
   };
 
@@ -174,8 +182,8 @@ async function createFor(buyer) {
     ...(bookingData.nfcProfile.instagram ? { instagram: bookingData.nfcProfile.instagram } : {}),
     ...(bookingData.nfcProfile.address ? { address: bookingData.nfcProfile.address } : {}),
     status: 'confirmed',
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    createdAt: FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
     updatedSource: 'adminImport',
   };
 
@@ -184,25 +192,38 @@ async function createFor(buyer) {
   return { orderId: bookingRef.id, username: bookingData.nfcProfile.username, auth: authResult };
 }
 
-function appendImportResult(row) {
-  const header = 'Name,Email,Username,Public link,UID,Temp password\n';
+function appendImportResult(buyer, result) {
   const line = [
-    row.name,
-    row.email,
-    row.username,
-    row.publicUrl,
-    row.uid,
-    row.tempPassword,
-  ].join(',') + '\n';
+    buyer.fullName || '',
+    normalizeEmail(buyer.email || ''),
+    buyer.phone || '',
+    result.username || '',
+    buyer.companyName || '',
+    buyer.jobTitle || '',
+    buyer.address || '',
+    buyer.linkedin || '',
+    buyer.instagram || '',
+    `http://nfc.plzpingme.com/${result.username}`,
+    result.auth && result.auth.uid ? result.auth.uid : '',
+    result.auth && result.auth.created ? result.auth.password : '',
+  ].map(val => {
+    const s = String(val);
+    if (s.includes(',') || s.includes('\n') || s.includes('"')) {
+      return `"${s.replace(/"/g, '""')}"`;
+    }
+    return s;
+  }).join(',') + '\n';
 
   if (!fs.existsSync(importResultsPath)) {
+    const header = 'Name,Email,Phone,Username,Company,Job Title,Address,LinkedIn,Instagram,Public link,UID,Temp password\n';
     fs.writeFileSync(importResultsPath, header + line, 'utf8');
     return;
   }
 
   const current = fs.readFileSync(importResultsPath, 'utf8');
   if (!current.includes(line.trim())) {
-    fs.appendFileSync(importResultsPath, line, 'utf8');
+    const contentToAppend = current.endsWith('\n') ? line : ('\n' + line);
+    fs.appendFileSync(importResultsPath, contentToAppend, 'utf8');
   }
 }
 
@@ -224,14 +245,7 @@ function appendImportResult(row) {
         console.log(`Existing auth user — UID: ${result.auth.uid}`);
       }
       if (!result.skipped) {
-        appendImportResult({
-          name: buyer.fullName,
-          email: normalizeEmail(buyer.email || ''),
-          username: result.username,
-          publicUrl,
-          uid: result.auth && result.auth.uid ? result.auth.uid : '',
-          tempPassword: result.auth && result.auth.created ? result.auth.password : '',
-        });
+        appendImportResult(buyer, result);
       }
     }
     console.log('All done.');

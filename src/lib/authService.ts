@@ -1,111 +1,91 @@
 import {
   auth,
-  googleProvider,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signInWithPopup,
-  signInWithRedirect,
   signOut,
-  sendPasswordResetEmail,
-  sendEmailVerification,
-  updateProfile,
-  updateEmail,
-  reauthenticateWithCredential,
-  EmailAuthProvider,
-  fetchSignInMethodsForEmail,
-  linkWithCredential,
-  signInWithCredential,
-  type User,
-  type AuthCredential,
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+  type ConfirmationResult,
 } from "./firebase";
 
 type AuthServiceError = Error & {
   code?: string;
 };
 
-// Sign up with email and password
-export async function signUpWithEmail(
-  email: string,
-  password: string,
-  displayName: string
-) {
-  const userCredential = await createUserWithEmailAndPassword(
-    auth,
-    email,
-    password
-  );
+// Default country code for phone numbers (India). Stored numbers are bare
+// 10-digit values; Firebase Phone Auth needs full E.164 format.
+const DEFAULT_COUNTRY_CODE = "+91";
 
-  // Update display name
-  await updateProfile(userCredential.user, { displayName });
-
-  // Send verification email
-  await sendEmailVerification(userCredential.user);
-
-  return userCredential;
+/**
+ * Convert a bare 10-digit Indian mobile number to E.164 (+91XXXXXXXXXX).
+ * If the value already starts with "+", it is returned unchanged.
+ */
+export function toE164(mobile: string): string {
+  const trimmed = mobile.trim();
+  if (trimmed.startsWith("+")) {
+    return trimmed;
+  }
+  return `${DEFAULT_COUNTRY_CODE}${trimmed.replace(/\D/g, "")}`;
 }
 
-// Sign in with email and password
-export async function signInWithEmail(email: string, password: string) {
-  return signInWithEmailAndPassword(auth, email, password);
+/**
+ * Strip the country code from an E.164 phone number, returning the bare
+ * 10-digit value we store in Firestore (keeps existing data format consistent).
+ */
+export function fromE164(phoneNumber: string | null | undefined): string {
+  if (!phoneNumber) {
+    return "";
+  }
+  const digits = phoneNumber.replace(/\D/g, "");
+  // Indian numbers: drop the leading 91 if present, keep the last 10 digits.
+  return digits.slice(-10);
 }
 
-// Sign in with Google.
-// If the Google email already has an email/password account (e.g. imported users),
-// we link the Google credential to that existing account so the UID stays the same
-// and the user's NFC orders remain visible regardless of which method they use.
-export async function signInWithGoogle() {
-  try {
-    return await signInWithPopup(auth, googleProvider);
-  } catch (error: unknown) {
-    const code = (error as AuthServiceError)?.code;
+// A single invisible reCAPTCHA verifier is reused for the lifetime of the page.
+let recaptchaVerifier: RecaptchaVerifier | null = null;
 
-    // Account already exists with email/password — link Google to it
-    if (code === "auth/account-exists-with-different-credential") {
-      const credential = (error as AuthServiceError & { credential?: AuthCredential })?.credential;
-      const email = (error as AuthServiceError & { customData?: { email?: string } })?.customData?.email;
+/**
+ * Create (or reuse) an invisible reCAPTCHA verifier bound to a DOM container.
+ * Firebase requires this before it will send an OTP SMS.
+ */
+export function getRecaptchaVerifier(containerId: string): RecaptchaVerifier {
+  if (!recaptchaVerifier) {
+    recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
+      size: "invisible",
+    });
+  }
+  return recaptchaVerifier;
+}
 
-      if (credential && email) {
-        // Find which sign-in methods exist for this email
-        const methods = await fetchSignInMethodsForEmail(auth, email);
-
-        if (methods.includes("password")) {
-          // Return a special error that the UI can catch to prompt for password,
-          // then call linkGoogleToEmailAccount to complete the linking.
-          const linkError = new Error(
-            "This email is registered with a password. Enter your password to link your Google account."
-          ) as Error & { code: string; credential: AuthCredential; email: string };
-          linkError.code = "auth/needs-password-for-linking";
-          linkError.credential = credential;
-          linkError.email = email;
-          throw linkError;
-        }
-      }
+/**
+ * Tear down the reCAPTCHA verifier. Call this on failures so a fresh widget is
+ * created for the next attempt (a used/expired verifier cannot be reused).
+ */
+export function clearRecaptcha(): void {
+  if (recaptchaVerifier) {
+    try {
+      recaptchaVerifier.clear();
+    } catch {
+      // ignore — widget may already be detached
     }
-
-    if (
-      code === "auth/popup-blocked" ||
-      code === "auth/operation-not-supported-in-this-environment"
-    ) {
-      await signInWithRedirect(auth, googleProvider);
-      return null;
-    }
-    throw error;
+    recaptchaVerifier = null;
   }
 }
 
-// Call this after collecting the user's password when Google sign-in hits
-// auth/needs-password-for-linking. Signs in with email+password then links
-// the Google credential, so both methods work under the same UID going forward.
-export async function linkGoogleToEmailAccount(
-  email: string,
-  password: string,
-  googleCredential: AuthCredential
-) {
-  // Sign in with the existing email/password account to get its UID
-  const userCredential = await signInWithEmailAndPassword(auth, email, password);
-  // Link the Google provider so future Google sign-ins resolve to this same UID
-  await linkWithCredential(userCredential.user, googleCredential);
-  return userCredential;
+/**
+ * Send an OTP SMS to the given mobile number.
+ * Returns a ConfirmationResult whose .confirm(code) completes the sign-in.
+ */
+export async function sendOtp(
+  mobile: string,
+  containerId: string
+): Promise<ConfirmationResult> {
+  const verifier = getRecaptchaVerifier(containerId);
+  try {
+    return await signInWithPhoneNumber(auth, toE164(mobile), verifier);
+  } catch (error) {
+    // A failed send invalidates the verifier — reset so the user can retry.
+    clearRecaptcha();
+    throw error;
+  }
 }
 
 // Sign out
@@ -113,69 +93,36 @@ export async function logOut() {
   return signOut(auth);
 }
 
-// Send password reset email
-export async function sendPasswordReset(email: string) {
-  return sendPasswordResetEmail(auth, email);
-}
-
-// Resend verification email
-export async function resendVerificationEmail(user: User) {
-  return sendEmailVerification(user);
-}
-
-// Change user email (requires re-authentication)
-export async function changeEmail(
-  user: User,
-  currentPassword: string,
-  newEmail: string
-) {
-  // Re-authenticate user first
-  const credential = EmailAuthProvider.credential(user.email!, currentPassword);
-  await reauthenticateWithCredential(user, credential);
-
-  // Update email
-  await updateEmail(user, newEmail);
-
-  // Send verification to new email
-  await sendEmailVerification(user);
-}
-
 // Get user-friendly error message
 export function getAuthErrorMessage(errorCode: string): string {
   switch (errorCode) {
-    case "auth/email-already-in-use":
-      return "This email is already registered. Please login or use a different email.";
-    case "auth/invalid-email":
-      return "Invalid email address.";
-    case "auth/operation-not-allowed":
-      return "This sign-in method is not enabled.";
-    case "auth/weak-password":
-      return "Password is too weak. Please use a stronger password.";
+    case "auth/invalid-phone-number":
+      return "Invalid phone number. Please enter a valid 10-digit mobile number.";
+    case "auth/missing-phone-number":
+      return "Please enter your phone number.";
+    case "auth/invalid-verification-code":
+      return "Incorrect code. Please check the OTP and try again.";
+    case "auth/code-expired":
+      return "This code has expired. Please request a new one.";
+    case "auth/missing-verification-code":
+      return "Please enter the 6-digit code sent to your phone.";
+    case "auth/quota-exceeded":
+      return "SMS quota exceeded. Please try again later.";
+    case "auth/too-many-requests":
+      return "Too many attempts. Please try again later.";
     case "auth/user-disabled":
       return "This account has been disabled.";
-    case "auth/user-not-found":
-      return "No account found with this email.";
-    case "auth/wrong-password":
-      return "Incorrect password.";
-    case "auth/invalid-credential":
-      return "Invalid email or password.";
-    case "auth/too-many-requests":
-      return "Too many failed attempts. Please try again later.";
-    case "auth/popup-closed-by-user":
-      return "Sign-in popup was closed before completing.";
-    case "auth/popup-blocked":
-      return "Popup was blocked by the browser. Please allow popups and try again.";
+    case "auth/captcha-check-failed":
+      return "reCAPTCHA verification failed. Please refresh and try again.";
+    case "auth/operation-not-allowed":
+      return "Phone sign-in is not enabled. Please contact support.";
     case "auth/unauthorized-domain":
       return "This domain is not authorized in Firebase Auth. Add this host in Firebase Authentication > Settings > Authorized domains.";
-    case "auth/operation-not-supported-in-this-environment":
-      return "Google sign-in popup is not supported in this browser context. Open the site in Chrome/Safari and try again.";
-    case "auth/google-account-not-registered":
-      return "You have not signed up with this Google account yet. Please complete signup first.";
-    case "auth/needs-password-for-linking":
-      return "This email is registered with a password. Enter your password to link your Google account.";
     case "auth/network-request-failed":
       return "Network error. Please check your connection.";
     default:
       return "An error occurred. Please try again.";
   }
 }
+
+export type { AuthServiceError };

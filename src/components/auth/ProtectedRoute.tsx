@@ -4,14 +4,15 @@ import { Loader2 } from "lucide-react";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requireEmailVerified?: boolean;
+  // When true, the user must have completed their profile (email on file).
+  requireCompleteProfile?: boolean;
 }
 
 export default function ProtectedRoute({
   children,
-  requireEmailVerified = false,
+  requireCompleteProfile = true,
 }: ProtectedRouteProps) {
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -27,8 +28,11 @@ export default function ProtectedRoute({
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (requireEmailVerified && !user.emailVerified) {
-    return <Navigate to="/verify-email" replace />;
+  // Phone is verified at sign-in; email is the remaining mandatory detail.
+  if (requireCompleteProfile && profile && !profile.email) {
+    return (
+      <Navigate to="/complete-profile" state={{ from: location }} replace />
+    );
   }
 
   return <>{children}</>;

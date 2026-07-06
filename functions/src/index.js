@@ -605,30 +605,82 @@ exports.createOrder = onRequest({
     }
 
     try {
-      const { amount, currency = "INR", receipt, notes = {} } = req.body || {};
+      const { amount, currency = "INR", receipt, notes = {}, prebooking } = req.body || {};
 
       if (!amount || Number.isNaN(Number(amount))) {
         res.status(400).send("Valid amount is required.");
         return;
       }
 
+      // Generate a Firebase booking document ID first
+      let bookingId = null;
+      if (prebooking) {
+        const bookingRef = db.collection("booking").doc();
+        bookingId = bookingRef.id;
+
+        const prebookingData = {
+          ...prebooking,
+          status: "pending",
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        };
+
+        const legacyPrebookingRef = db.collection("prebookings").doc(bookingId);
+
+        await Promise.all([
+          bookingRef.set(prebookingData),
+          legacyPrebookingRef.set(prebookingData, { merge: true }),
+        ]);
+      }
+
       const razorpay = getRazorpayClient();
       const order = await razorpay.orders.create({
         amount: Number(amount),
         currency,
-        receipt: receipt || `pingme_${Date.now()}`,
+        receipt: bookingId || receipt || `pingme_${Date.now()}`,
         notes: {
           ...notes,
           userId: decodedToken ? decodedToken.uid : "guest",
           userEmail: decodedToken ? (decodedToken.email || "") : "",
+          bookingId: bookingId || "",
         },
       });
+
+      // Sync NFC profiles as drafts under Razorpay Order ID if present
+      if (bookingId && prebooking) {
+        if (Array.isArray(prebooking.nfcLineProfiles) && prebooking.nfcLineProfiles.length > 0) {
+          for (const line of prebooking.nfcLineProfiles) {
+            if (!line?.lineKey || !line?.nfcProfile) continue;
+            try {
+              await syncProfileToNfcProfilesCollection({
+                profileId: `${order.id}_${line.lineKey}`,
+                profile: line.nfcProfile,
+                source: "createOrderDraft",
+                status: "draft",
+              });
+            } catch (syncErr) {
+              console.error("createOrder draft nfc line sync error", line.lineKey, syncErr);
+            }
+          }
+        } else if (prebooking.nfcProfile) {
+          try {
+            await syncProfileToNfcProfilesCollection({
+              profileId: order.id,
+              profile: prebooking.nfcProfile,
+              source: "createOrderDraft",
+              status: "draft",
+            });
+          } catch (syncErr) {
+            console.error("createOrder draft nfc sync error", syncErr);
+          }
+        }
+      }
 
       res.status(200).json({
         orderId: order.id,
         amount: order.amount,
         currency: order.currency,
         receipt: order.receipt,
+        bookingId: bookingId || "",
         keyId: (RAZORPAY_KEY_ID.value() || process.env.RAZORPAY_KEY_ID || "").trim(),
       });
     } catch (error) {
@@ -726,9 +778,9 @@ exports.verifyPayment = onRequest({
     }
 
     try {
-      const { orderId, paymentId, signature, prebooking } = req.body || {};
+      const { orderId, paymentId, signature, prebooking, bookingId } = req.body || {};
 
-      if (!orderId || !paymentId || !signature || !prebooking) {
+      if (!orderId || !paymentId || !signature || (!prebooking && !bookingId)) {
         res.status(400).send("Missing required payment verification fields.");
         return;
       }
@@ -749,15 +801,32 @@ exports.verifyPayment = onRequest({
         return;
       }
 
+      let finalPrebooking = prebooking;
+      let finalBookingId = bookingId;
+
+      if (bookingId) {
+        const bookingDoc = await db.collection("booking").doc(bookingId).get();
+        if (bookingDoc.exists) {
+          finalPrebooking = bookingDoc.data();
+        } else {
+          console.warn(`Booking draft ${bookingId} not found in Firestore. Falling back to prebooking payload.`);
+        }
+      }
+
+      if (!finalPrebooking) {
+        res.status(400).send("Booking details not found.");
+        return;
+      }
+
       const paymentData = {
         orderId,
         paymentId,
         signature,
         gateway: "razorpay",
-        amount: prebooking?.payment?.amount || null,
-        currency: prebooking?.payment?.currency || "INR",
-        userId: prebooking?.userId || null,
-        email: prebooking?.email || null,
+        amount: finalPrebooking.payment?.amount || finalPrebooking.totalAmount || null,
+        currency: finalPrebooking.payment?.currency || "INR",
+        userId: finalPrebooking.userId || null,
+        email: finalPrebooking.email || null,
         status: "captured",
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       };
@@ -765,39 +834,51 @@ exports.verifyPayment = onRequest({
       await db.collection("payments").add(paymentData);
 
       const prebookingData = {
-        ...prebooking,
+        ...finalPrebooking,
         status: "confirmed",
         confirmedAt: admin.firestore.FieldValue.serverTimestamp(),
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        payment: {
+          gateway: "razorpay",
+          orderId,
+          paymentId,
+          signature,
+          amount: finalPrebooking.totalAmount ? Math.round(finalPrebooking.totalAmount * 100) : (paymentData.amount || 0),
+          currency: paymentData.currency,
+          paidAt: new Date().toISOString(),
+          method: finalPrebooking.paymentMethod || "Online / UPI",
+        }
       };
 
-      const bookingRef = db.collection("booking").doc();
-      const legacyPrebookingRef = db.collection("prebookings").doc(bookingRef.id);
+      const bookingRef = finalBookingId ? db.collection("booking").doc(finalBookingId) : db.collection("booking").doc();
+      finalBookingId = bookingRef.id;
+      const legacyPrebookingRef = db.collection("prebookings").doc(finalBookingId);
 
       await Promise.all([
-        bookingRef.set(prebookingData),
+        bookingRef.set(prebookingData, { merge: true }),
         legacyPrebookingRef.set(prebookingData, { merge: true }),
       ]);
 
-      if (Array.isArray(prebooking?.nfcLineProfiles) && prebooking.nfcLineProfiles.length > 0) {
-        for (const line of prebooking.nfcLineProfiles) {
+      if (Array.isArray(prebookingData?.nfcLineProfiles) && prebookingData.nfcLineProfiles.length > 0) {
+        for (const line of prebookingData.nfcLineProfiles) {
           if (!line?.lineKey || !line?.nfcProfile) continue;
           try {
             await syncProfileToNfcProfilesCollection({
               profileId: `${orderId}_${line.lineKey}`,
               profile: line.nfcProfile,
               source: "verifyPayment",
+              status: "confirmed",
             });
           } catch (syncErr) {
             console.error("verifyPayment nfc line sync error", line.lineKey, syncErr);
           }
         }
-      } else if (prebooking?.nfcProfile) {
+      } else if (prebookingData?.nfcProfile) {
         try {
           await syncProfileToNfcProfilesCollection({
             profileId: orderId,
-            profile: prebooking.nfcProfile,
+            profile: prebookingData.nfcProfile,
             source: "verifyPayment",
+            status: "confirmed",
           });
         } catch (syncErr) {
           console.error("verifyPayment nfc sync error", syncErr);
@@ -806,13 +887,13 @@ exports.verifyPayment = onRequest({
 
       try {
         await sendBookingConfirmationEmail({
-          email: prebooking?.email,
-          fullName: prebooking?.fullName,
-          bookingId: bookingRef.id,
-          items: prebooking?.items,
-          totalAmount: prebooking?.totalAmount,
+          email: prebookingData?.email,
+          fullName: prebookingData?.fullName,
+          bookingId: finalBookingId,
+          items: prebookingData?.items,
+          totalAmount: prebookingData?.totalAmount,
           payment: paymentData,
-          billingAddress: `${prebooking?.address || ""}, ${prebooking?.city || ""}, ${prebooking?.state || ""} - ${prebooking?.pincode || ""}`,
+          billingAddress: `${prebookingData?.address || ""}, ${prebookingData?.city || ""}, ${prebookingData?.state || ""} - ${prebookingData?.pincode || ""}`,
         });
       } catch (mailErr) {
         console.error("booking confirmation email error", mailErr);
@@ -820,7 +901,7 @@ exports.verifyPayment = onRequest({
 
       res.status(200).json({
         success: true,
-        prebookingId: bookingRef.id,
+        prebookingId: finalBookingId,
       });
     } catch (error) {
       console.error("verifyPayment error", error);

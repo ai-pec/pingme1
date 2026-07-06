@@ -2,31 +2,29 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
-import { auth, onAuthStateChanged, type User } from "@/lib/firebase";
 import {
-  signUpWithEmail,
-  signInWithEmail,
-  signInWithGoogle,
-  linkGoogleToEmailAccount,
+  auth,
+  onAuthStateChanged,
+  type User,
+  type ConfirmationResult,
+} from "@/lib/firebase";
+import {
+  sendOtp as sendOtpService,
+  clearRecaptcha,
   logOut,
-  sendPasswordReset,
-  resendVerificationEmail,
-  changeEmail,
   getAuthErrorMessage,
+  fromE164,
 } from "@/lib/authService";
 import {
   createUserProfile,
   getUserProfile,
   updateUserProfile,
   updateUserAddresses,
-  updateUserEmail,
-  userProfileExists,
-  syncEmailVerification,
 } from "@/lib/userService";
-import type { AuthCredential } from "@/lib/firebase";
 import type { UserProfile, DeliveryAddress } from "@/types/user";
 
 const extractErrorCode = (error: unknown): string => {
@@ -43,27 +41,20 @@ interface AuthContextType {
   profile: UserProfile | null;
   loading: boolean;
   error: string | null;
-  // When Google sign-in hits an existing email/password account, this holds
-  // the pending Google credential + email so the UI can prompt for the password.
-  pendingGoogleLink: { credential: AuthCredential; email: string } | null;
-  signUp: (
-    email: string,
-    password: string,
-    displayName: string,
-    mobile?: string
-  ) => Promise<void>;
-  signIn: (email: string, password: string) => Promise<void>;
-  signInGoogle: (requireExistingProfile?: boolean) => Promise<void>;
-  // Complete Google account linking after the user supplies their password
-  completeLinkWithPassword: (password: string) => Promise<void>;
+  // True once an OTP has been sent and we're awaiting the 6-digit code.
+  otpSent: boolean;
+  // Send an OTP SMS to the given 10-digit mobile number. The recaptcha
+  // container id must point at a <div> rendered in the calling component.
+  sendOtp: (mobile: string, recaptchaContainerId: string) => Promise<void>;
+  // Verify the 6-digit code; on success onAuthStateChanged signs the user in.
+  verifyOtp: (code: string) => Promise<void>;
+  // Abandon the current OTP attempt (e.g. "change number").
+  resetOtp: () => void;
   logout: () => Promise<void>;
-  resetPassword: (email: string) => Promise<void>;
-  resendVerification: () => Promise<void>;
   updateProfile: (
-    data: Partial<Pick<UserProfile, "displayName" | "mobile">>
+    data: Partial<Pick<UserProfile, "displayName" | "mobile" | "email">>
   ) => Promise<void>;
   updateAddresses: (addresses: DeliveryAddress[]) => Promise<void>;
-  changeUserEmail: (currentPassword: string, newEmail: string) => Promise<void>;
   refreshProfile: () => Promise<void>;
   clearError: () => void;
 }
@@ -75,10 +66,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [pendingGoogleLink, setPendingGoogleLink] = useState<{
-    credential: AuthCredential;
-    email: string;
-  } | null>(null);
+  const [otpSent, setOtpSent] = useState(false);
+
+  // The pending confirmation from signInWithPhoneNumber lives across renders
+  // but never needs to trigger one, so a ref is the right home for it.
+  const confirmationRef = useRef<ConfirmationResult | null>(null);
 
   // Listen for auth state changes
   useEffect(() => {
@@ -87,23 +79,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (firebaseUser) {
         try {
-          // Get or sync profile
           let userProfile = await getUserProfile(firebaseUser.uid);
 
           if (!userProfile) {
-            // Lazy create profile if it doesn't exist (e.g. for imported/new users)
-            const providerId = firebaseUser.providerData[0]?.providerId;
+            // First sign-in for this phone number — create a minimal profile.
+            // Email is collected afterwards via the complete-profile gate.
             await createUserProfile(firebaseUser.uid, {
               email: firebaseUser.email || "",
-              displayName: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "User",
+              displayName:
+                firebaseUser.displayName ||
+                fromE164(firebaseUser.phoneNumber) ||
+                "User",
+              mobile: fromE164(firebaseUser.phoneNumber),
               photoURL: firebaseUser.photoURL || null,
-              authProvider: providerId === "google.com" ? "google" : "email",
+              authProvider: "phone",
             });
             userProfile = await getUserProfile(firebaseUser.uid);
-          } else if (userProfile.emailVerified !== firebaseUser.emailVerified) {
-            // Sync email verification status if needed
-            await syncEmailVerification(firebaseUser.uid, firebaseUser.emailVerified);
-            userProfile = { ...userProfile, emailVerified: firebaseUser.emailVerified };
           }
 
           setProfile(userProfile);
@@ -120,23 +111,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const signUp = async (
-    email: string,
-    password: string,
-    displayName: string,
-    mobile?: string
-  ) => {
+  const sendOtp = async (mobile: string, recaptchaContainerId: string) => {
     try {
       setError(null);
-      const userCredential = await signUpWithEmail(email, password, displayName);
-
-      // Create Firestore profile
-      await createUserProfile(userCredential.user.uid, {
-        email,
-        displayName,
-        mobile,
-        authProvider: "email",
-      });
+      const confirmation = await sendOtpService(mobile, recaptchaContainerId);
+      confirmationRef.current = confirmation;
+      setOtpSent(true);
     } catch (err: unknown) {
       const message = getAuthErrorMessage(extractErrorCode(err));
       setError(message);
@@ -144,10 +124,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signIn = async (email: string, password: string) => {
+  const verifyOtp = async (code: string) => {
+    if (!confirmationRef.current) {
+      const message = "Your code expired. Please request a new OTP.";
+      setError(message);
+      throw new Error(message);
+    }
     try {
       setError(null);
-      await signInWithEmail(email, password);
+      await confirmationRef.current.confirm(code);
+      // onAuthStateChanged will fire and load/create the profile.
+      confirmationRef.current = null;
+      setOtpSent(false);
+      clearRecaptcha();
     } catch (err: unknown) {
       const message = getAuthErrorMessage(extractErrorCode(err));
       setError(message);
@@ -155,75 +144,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signInGoogle = async (_requireExistingProfile = false) => {
-    try {
-      setError(null);
-      const userCredential = await signInWithGoogle();
-      if (!userCredential?.user) {
-        return;
-      }
-      const firebaseUser = userCredential.user;
-
-      // Check if profile exists
-      const exists = await userProfileExists(firebaseUser.uid);
-
-      // Ensure a Firestore profile exists for every Google-authenticated user.
-      if (!exists) {
-        await createUserProfile(firebaseUser.uid, {
-          email: firebaseUser.email || "",
-          displayName: firebaseUser.displayName || "User",
-          photoURL: firebaseUser.photoURL,
-          authProvider: "google",
-        });
-      }
-    } catch (err: unknown) {
-      const code = extractErrorCode(err);
-
-      // The email already has an email/password account (imported users).
-      // Store the pending credential and surface the linking prompt to the UI.
-      if (code === "auth/needs-password-for-linking") {
-        const linkErr = err as Error & {
-          credential: AuthCredential;
-          email: string;
-        };
-        setPendingGoogleLink({
-          credential: linkErr.credential,
-          email: linkErr.email,
-        });
-        const message = getAuthErrorMessage(code);
-        setError(message);
-        const authError = new Error(message) as Error & { code?: string };
-        authError.code = code;
-        throw authError;
-      }
-
-      const message = getAuthErrorMessage(code);
-      setError(message);
-      const authError = new Error(message) as Error & { code?: string };
-      authError.code = code;
-      throw authError;
-    }
-  };
-
-  // Called from the UI when the user enters their password to complete Google linking.
-  const completeLinkWithPassword = async (password: string) => {
-    if (!pendingGoogleLink) {
-      throw new Error("No pending Google link. Please try signing in with Google again.");
-    }
-    try {
-      setError(null);
-      await linkGoogleToEmailAccount(
-        pendingGoogleLink.email,
-        password,
-        pendingGoogleLink.credential
-      );
-      setPendingGoogleLink(null);
-      // onAuthStateChanged will fire and update user/profile automatically.
-    } catch (err: unknown) {
-      const message = getAuthErrorMessage(extractErrorCode(err));
-      setError(message);
-      throw new Error(message);
-    }
+  const resetOtp = () => {
+    confirmationRef.current = null;
+    setOtpSent(false);
+    setError(null);
+    clearRecaptcha();
   };
 
   const logout = async () => {
@@ -237,32 +162,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const resetPassword = async (email: string) => {
-    try {
-      setError(null);
-      await sendPasswordReset(email);
-    } catch (err: unknown) {
-      const message = getAuthErrorMessage(extractErrorCode(err));
-      setError(message);
-      throw new Error(message);
-    }
-  };
-
-  const resendVerification = async () => {
-    try {
-      setError(null);
-      if (user) {
-        await resendVerificationEmail(user);
-      }
-    } catch (err: unknown) {
-      const message = getAuthErrorMessage(extractErrorCode(err));
-      setError(message);
-      throw new Error(message);
-    }
-  };
-
   const updateProfileData = async (
-    data: Partial<Pick<UserProfile, "displayName" | "mobile">>
+    data: Partial<Pick<UserProfile, "displayName" | "mobile" | "email">>
   ) => {
     try {
       setError(null);
@@ -291,34 +192,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const changeUserEmailFn = async (currentPassword: string, newEmail: string) => {
-    try {
-      setError(null);
-      if (user) {
-        // Change email in Firebase Auth (this also sends verification)
-        await changeEmail(user, currentPassword, newEmail);
-        // Update email in Firestore
-        await updateUserEmail(user.uid, newEmail);
-        // Update local state
-        setProfile((prev) => (prev ? { ...prev, email: newEmail, emailVerified: false } : null));
-      }
-    } catch (err: unknown) {
-      const message = getAuthErrorMessage(extractErrorCode(err));
-      setError(message);
-      throw new Error(message);
-    }
-  };
-
   const refreshProfile = async () => {
     try {
       if (user) {
-        // Reload the user to get latest emailVerified status
-        await user.reload();
         const userProfile = await getUserProfile(user.uid);
-        if (userProfile && userProfile.emailVerified !== user.emailVerified) {
-          await syncEmailVerification(user.uid, user.emailVerified);
-        }
-        setProfile(userProfile ? { ...userProfile, emailVerified: user.emailVerified } : null);
+        setProfile(userProfile);
       }
     } catch (err) {
       console.error("Error refreshing profile:", err);
@@ -334,17 +212,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         profile,
         loading,
         error,
-        pendingGoogleLink,
-        signUp,
-        signIn,
-        signInGoogle,
-        completeLinkWithPassword,
+        otpSent,
+        sendOtp,
+        verifyOtp,
+        resetOtp,
         logout,
-        resetPassword,
-        resendVerification,
         updateProfile: updateProfileData,
         updateAddresses: updateAddressesData,
-        changeUserEmail: changeUserEmailFn,
         refreshProfile,
         clearError,
       }}

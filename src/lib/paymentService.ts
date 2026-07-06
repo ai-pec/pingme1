@@ -1,6 +1,7 @@
 // invoiceUtils.ts
 // ─────────────────────────────────────────────────────────────────────────────
 import { auth } from "@/lib/firebase";
+import type { PrebookingData as PrebookPayloadData } from "@/lib/prebookService";
 
 // Changes in this version:
 //  1. Tax Invoice number and type label removed from header — QR only.
@@ -100,8 +101,8 @@ export const formatCurrency = (
 
 export const dynamicCurrencyFormatter =
   (currency: string, locale = "en-IN") =>
-  (value: number) =>
-    formatCurrency(value, currency, locale);
+    (value: number) =>
+      formatCurrency(value, currency, locale);
 
 export const formatDate = (value: string, locale = "en-IN") => {
   const date = new Date(value);
@@ -151,46 +152,46 @@ export const computeTotals = (items: InvoiceItem[]): InvoiceTotals => {
 
 const PRODUCT_NAME_MAP: Record<string, string> = {
   "pingme card card - standard": "PingME Card - Standard",
-  "pingme card - standard":      "PingME Card - Standard",
-  "pingme card card standard":   "PingME Card - Standard",
-  "pingme card card pack":       "PingME Card Pack",
-  "pingme card pack":            "PingME Card Pack",
+  "pingme card - standard": "PingME Card - Standard",
+  "pingme card card standard": "PingME Card - Standard",
+  "pingme card card pack": "PingME Card Pack",
+  "pingme card pack": "PingME Card Pack",
   "backpack sticker - standard b": "Backpack Sticker - Standard",
-  "backpack sticker standard":     "Backpack Sticker - Standard",
-  "backpack sticker":              "Backpack Sticker - Standard",
-  "bag tag - square black":  "Bag Tag - Square Black",
-  "bag tag -square black":   "Bag Tag - Square Black",
-  "bag tag square black":    "Bag Tag - Square Black",
+  "backpack sticker standard": "Backpack Sticker - Standard",
+  "backpack sticker": "Backpack Sticker - Standard",
+  "bag tag - square black": "Bag Tag - Square Black",
+  "bag tag -square black": "Bag Tag - Square Black",
+  "bag tag square black": "Bag Tag - Square Black",
   "bag tag - square yellow": "Bag Tag - Square Yellow",
-  "bag tag -square yellow":  "Bag Tag - Square Yellow",
-  "bag tag square yellow":   "Bag Tag - Square Yellow",
+  "bag tag -square yellow": "Bag Tag - Square Yellow",
+  "bag tag square yellow": "Bag Tag - Square Yellow",
   "keychain tag - black": "Keychain Tag - Black",
-  "keychain tag black":   "Keychain Tag - Black",
-  "keychain tag - navy":  "Keychain Tag - Navy",
-  "keychain tag navy":    "Keychain Tag - Navy",
-  "keychain tag - red":   "Keychain Tag - Red",
-  "keychain tag red":     "Keychain Tag - Red",
-  "keychain tag - teal":  "Keychain Tag - Teal",
-  "keychain tag teal":    "Keychain Tag - Teal",
-  "lost and found tag":      "Lost and Found Tag",
+  "keychain tag black": "Keychain Tag - Black",
+  "keychain tag - navy": "Keychain Tag - Navy",
+  "keychain tag navy": "Keychain Tag - Navy",
+  "keychain tag - red": "Keychain Tag - Red",
+  "keychain tag red": "Keychain Tag - Red",
+  "keychain tag - teal": "Keychain Tag - Teal",
+  "keychain tag teal": "Keychain Tag - Teal",
+  "lost and found tag": "Lost and Found Tag",
   "lost and found tag pack": "Lost and Found Tag Pack",
-  "nfc card - shin chan":    "NFC Card - Shin Chan",
-  "nfc card shin chan":      "NFC Card - Shin Chan",
-  "nfc card - mindset":      "NFC Card - Mindset",
-  "nfc card mindset":        "NFC Card - Mindset",
-  "nfc card - one piece":    "NFC Card - One Piece",
-  "nfc card one piece":      "NFC Card - One Piece",
+  "nfc card - shin chan": "NFC Card - Shin Chan",
+  "nfc card shin chan": "NFC Card - Shin Chan",
+  "nfc card - mindset": "NFC Card - Mindset",
+  "nfc card mindset": "NFC Card - Mindset",
+  "nfc card - one piece": "NFC Card - One Piece",
+  "nfc card one piece": "NFC Card - One Piece",
   "nfc card - phoenix dark": "NFC Card - Phoenix Dark",
-  "nfc card phoenix dark":   "NFC Card - Phoenix Dark",
-  "nfc card - you can":      "NFC Card - You Can",
-  "nfc card you can":        "NFC Card - You Can",
-  "pet tag oval":     "Pet Tag - Oval",
-  "pet tag - oval":   "Pet Tag - Oval",
-  "pet tag cicle":    "Pet Tag - Circle",
-  "pet tag circle":   "Pet Tag - Circle",
+  "nfc card phoenix dark": "NFC Card - Phoenix Dark",
+  "nfc card - you can": "NFC Card - You Can",
+  "nfc card you can": "NFC Card - You Can",
+  "pet tag oval": "Pet Tag - Oval",
+  "pet tag - oval": "Pet Tag - Oval",
+  "pet tag cicle": "Pet Tag - Circle",
+  "pet tag circle": "Pet Tag - Circle",
   "pet tag - circle": "Pet Tag - Circle",
-  "smart pet tag blue":    "Smart Pet Tag - Blue",
-  "smart pet tag - blue":  "Smart Pet Tag - Blue",
+  "smart pet tag blue": "Smart Pet Tag - Blue",
+  "smart pet tag - blue": "Smart Pet Tag - Blue",
 };
 
 export const normalizeProductName = (rawTitle: string): string => {
@@ -371,8 +372,8 @@ const buildPdfPageContent = (
   ops.push(rect(L, 30, R - L, 800, 0.8));
 
   // ── [1] HEADER ──────────────────────────────────────────────────────────────
-  const QR_X  = R - 95;
-  const QR_Y  = 720;
+  const QR_X = R - 95;
+  const QR_Y = 720;
   const QR_TOP = QR_Y + qrSize; // 800
 
   // QR code only — no invoice number or type label below it
@@ -388,20 +389,20 @@ const buildPdfPageContent = (
   }
   y -= 3;
   ops.push(txt(`GSTIN: ${inv.company.gstin}`, L + 6, y, 8)); y -= 10;
-  ops.push(txt(`PAN:   ${inv.company.pan}`,   L + 6, y, 8)); y -= 10;
-  ops.push(txt(`CIN:   ${inv.company.cin}`,   L + 6, y, 8));
+  ops.push(txt(`PAN:   ${inv.company.pan}`, L + 6, y, 8)); y -= 10;
+  ops.push(txt(`CIN:   ${inv.company.cin}`, L + 6, y, 8));
 
   const headerBot = QR_Y - 10; // separator sits just below QR
   ops.push(hLine(L, headerBot, R, 0.8));
 
   // ── [2] ORDER INFO ROW ──────────────────────────────────────────────────────
   // 5 columns: ORDER ID | ORDER DATE | INVOICE DATE | PAN | PAYMENT MODE
-  const infoY   = headerBot - 18;
-  const cols5   = [L, L + 105, L + 190, L + 275, L + 365, R];
+  const infoY = headerBot - 18;
+  const cols5 = [L, L + 105, L + 190, L + 275, L + 365, R];
   const iLabels = ["ORDER ID", "ORDER DATE", "INVOICE DATE", "PAN", "PAYMENT MODE"];
 
   const oidLines = wrapText(inv.orderId, 16);
-  const pmLines  = wrapText(inv.paymentMode, 18);
+  const pmLines = wrapText(inv.paymentMode, 18);
 
   const iValues = [
     oidLines[0],
@@ -413,15 +414,15 @@ const buildPdfPageContent = (
 
   const infoRowH = 30;
   ops.push(fillRect(L, infoY - infoRowH + 12, R - L, infoRowH, 0.93));
-  ops.push(rect(L,     infoY - infoRowH + 12, R - L, infoRowH, 0.5));
+  ops.push(rect(L, infoY - infoRowH + 12, R - L, infoRowH, 0.5));
 
   for (let i = 0; i < 5; i++) {
-    const cx   = cols5[i] + 4;
+    const cx = cols5[i] + 4;
     const colW = cols5[i + 1] - cols5[i] - 4;
     ops.push(txt(iLabels[i], cx, infoY + 5, 6.5));
     ops.push(bold(iValues[i], cx, infoY - 7, 7.5));
     if (i === 0 && oidLines[1]) ops.push(bold(oidLines[1], cx, infoY - 16, 7.5));
-    if (i === 4 && pmLines[1])  ops.push(bold(pmLines[1],  cx, infoY - 16, 7.5));
+    if (i === 4 && pmLines[1]) ops.push(bold(pmLines[1], cx, infoY - 16, 7.5));
     if (i > 0) ops.push(vLine(cols5[i], infoY - infoRowH + 12, infoY + 13, 0.4));
   }
 
@@ -448,9 +449,9 @@ const buildPdfPageContent = (
   //  TITLE=220  QTY=35  GROSS=90  DISC=90  TOTAL=90
   const tblTop = bsTop - 60;
   const COL_TITLE = 220;
-  const COL_QTY   = 35;
+  const COL_QTY = 35;
   const COL_GROSS = 90;
-  const COL_DISC  = 90;
+  const COL_DISC = 90;
   const COL_TOTAL = R - L - COL_TITLE - COL_QTY - COL_GROSS - COL_DISC; // 90
 
   const colW5 = [COL_TITLE, COL_QTY, COL_GROSS, COL_DISC, COL_TOTAL];
@@ -464,8 +465,8 @@ const buildPdfPageContent = (
   ops.push(fillRect(L, tblTop - rowH + 2, R - L, rowH, 0.93));
   ops.push(rect(L, tblTop - rowH + 2, R - L, rowH, 0.5));
   for (let i = 0; i < tblHdrs.length; i++) {
-    const cx   = colX5[i];
-    const cw   = colW5[i];
+    const cx = colX5[i];
+    const cw = colW5[i];
     const isNum = i >= 1;
     if (isNum) {
       ops.push(boldRC(tblHdrs[i], cx + cw - 3, tblTop - 9, 6.5, cx + 2, cw - 4));
@@ -483,13 +484,13 @@ const buildPdfPageContent = (
   // Row height grows by LINE_H (10 pts) for every extra line — no clipping,
   // so every character of every product name is always fully visible.
   const TITLE_WRAP = 26;   // chars per line in the TITLE column
-  const LINE_H     = 10;   // pts between successive text lines
-  const ROW_PAD    = 6;    // pts of vertical padding inside each row (top+bottom)
+  const LINE_H = 10;   // pts between successive text lines
+  const ROW_PAD = 6;    // pts of vertical padding inside each row (top+bottom)
 
   let rowY = tblTop - rowH - 2;
   for (const item of inv.items) {
     const displayName = normalizeProductName(item.name);
-    const nameLines   = wrapText(displayName, TITLE_WRAP); // unlimited lines
+    const nameLines = wrapText(displayName, TITLE_WRAP); // unlimited lines
     // Row height = padding + lines * line-height, minimum = base rowH
     const thisRowH = Math.max(rowH, ROW_PAD + nameLines.length * LINE_H);
 
@@ -543,7 +544,7 @@ const buildPdfPageContent = (
   let ty = secTop - 11;
   const totRows: [string, string][] = [
     ["TOTAL QUANTITY", String(inv.totals.totalQuantity)],
-    ["TOTAL AMOUNT",   fmtMoney(inv.totals.totalAmount, inv.currency)],
+    ["TOTAL AMOUNT", fmtMoney(inv.totals.totalAmount, inv.currency)],
   ];
   for (const [label, val] of totRows) {
     ops.push(txt(label, tx, ty, 7.5));
@@ -595,10 +596,10 @@ export const buildInvoicePdfBlob = async (invoice: InvoiceData): Promise<Blob> =
   const content = buildPdfPageContent(invoice, qrStream, qrSize).join("\n");
 
   const encoder = new TextEncoder();
-  const encode  = (s: string) => encoder.encode(s);
+  const encode = (s: string) => encoder.encode(s);
 
   const qrStreamEncoded = encode(qrStream);
-  const contentEncoded  = encode(content);
+  const contentEncoded = encode(content);
 
   const obj7 =
     `7 0 obj\n` +
@@ -613,14 +614,14 @@ export const buildInvoicePdfBlob = async (invoice: InvoiceData): Promise<Blob> =
     "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n",
     "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n",
     "3 0 obj\n" +
-      "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842]\n" +
-      "   /Resources << /Font << /F1 4 0 R /F2 5 0 R >>\n" +
-      "                  /XObject << /QR 7 0 R >> >>\n" +
-      "   /Contents 6 0 R >>\nendobj\n",
+    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842]\n" +
+    "   /Resources << /Font << /F1 4 0 R /F2 5 0 R >>\n" +
+    "                  /XObject << /QR 7 0 R >> >>\n" +
+    "   /Contents 6 0 R >>\nendobj\n",
     "4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica\n" +
-      "   /Encoding /WinAnsiEncoding >>\nendobj\n",
+    "   /Encoding /WinAnsiEncoding >>\nendobj\n",
     "5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold\n" +
-      "   /Encoding /WinAnsiEncoding >>\nendobj\n",
+    "   /Encoding /WinAnsiEncoding >>\nendobj\n",
     `6 0 obj\n<< /Length ${contentEncoded.length} >>\nstream\n${content}\nendstream\nendobj\n`,
     obj7,
   ];
@@ -685,11 +686,11 @@ export const buildInvoiceDataFromPrebooking = (
   const orderId = realOrderId || `ORD-${Date.now()}`;
 
   const items: InvoiceItem[] = prebooking.items.map((item) => {
-    const paidAmount     = parseNumericValue(item.price);
+    const paidAmount = parseNumericValue(item.price);
     const originalAmount = item.originalPrice ? parseNumericValue(item.originalPrice) : paidAmount;
-    const discount       = Number((originalAmount - paidAmount).toFixed(2));
-    const grossAmount    = originalAmount;
-    const quantity       = Number.isFinite(Number(item.quantity)) ? Number(item.quantity) : 1;
+    const discount = Number((originalAmount - paidAmount).toFixed(2));
+    const grossAmount = originalAmount;
+    const quantity = Number.isFinite(Number(item.quantity)) ? Number(item.quantity) : 1;
     const normalizedName = normalizeProductName(item.title);
     return computeLineItem({ sku: undefined, name: normalizedName, description: item.emoji || undefined, quantity, grossAmount, discount });
   });
@@ -855,7 +856,8 @@ export const createRazorpayOrder = async (input: {
   currency: string;
   receipt: string;
   notes?: Record<string, string>;
-}): Promise<CreateOrderResponse> => {
+  prebooking?: PrebookPayloadData;
+}): Promise<CreateOrderResponse & { bookingId?: string }> => {
   const baseUrl = getPaymentApiBaseUrl();
   if (!baseUrl) throw new Error("Payment API is not configured. Add VITE_PAYMENT_API_BASE_URL to your env.");
 
@@ -870,14 +872,15 @@ export const createRazorpayOrder = async (input: {
   });
 
   if (!res.ok) { const text = await res.text(); throw new Error(text || "Failed to create payment order."); }
-  return (await res.json()) as CreateOrderResponse;
+  return (await res.json()) as CreateOrderResponse & { bookingId?: string };
 };
 
 export const verifyRazorpayPaymentAndCreatePrebooking = async (input: {
   orderId: string;
   paymentId: string;
   signature: string;
-  prebooking: PrebookingData;
+  prebooking?: PrebookPayloadData;
+  bookingId?: string;
 }): Promise<VerifyPaymentResponse> => {
   const baseUrl = getPaymentApiBaseUrl();
   if (!baseUrl) throw new Error("Payment API is not configured. Add VITE_PAYMENT_API_BASE_URL to your env.");

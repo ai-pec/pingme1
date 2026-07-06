@@ -1,24 +1,12 @@
 import { initializeApp } from "firebase/app";
 import {
   getAuth,
-  GoogleAuthProvider,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signInWithPopup,
-  signInWithRedirect,
   signOut,
-  sendPasswordResetEmail,
-  sendEmailVerification,
   onAuthStateChanged,
-  updateProfile,
-  updateEmail,
-  reauthenticateWithCredential,
-  EmailAuthProvider,
-  fetchSignInMethodsForEmail,
-  linkWithCredential,
-  signInWithCredential,
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
   type User,
-  type AuthCredential,
+  type ConfirmationResult,
 } from "firebase/auth";
 import { initializeFirestore, persistentLocalCache } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
@@ -113,27 +101,15 @@ export const db = initializeFirestore(app, {
   localCache: persistentLocalCache(),
 });
 export const storage = getStorage(app);
-export const googleProvider = new GoogleAuthProvider();
 
-// Export auth functions
+// Export auth functions (phone + OTP only)
 export {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signInWithPopup,
-  signInWithRedirect,
   signOut,
-  sendPasswordResetEmail,
-  sendEmailVerification,
   onAuthStateChanged,
-  updateProfile,
-  updateEmail,
-  reauthenticateWithCredential,
-  EmailAuthProvider,
-  fetchSignInMethodsForEmail,
-  linkWithCredential,
-  signInWithCredential,
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
   type User,
-  type AuthCredential,
+  type ConfirmationResult,
 };
 
 export default app;

@@ -12,13 +12,21 @@ import {
   type QueryDocumentSnapshot,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import type { PrebookingRecord } from "@/lib/prebookService";
+import { flattenOrder, type PrebookingRecord } from "@/lib/prebookService";
 import type { UserProfile } from "@/types/user";
 
-const BOOKING_COLLECTION = "booking";
-const LEGACY_PREBOOKINGS_COLLECTION = "prebookings";
+// Unified, cross-product orders collection (shared with the app project).
+const ORDERS_COLLECTION = "orders";
+const ORDER_SOURCE = "website";
 const USERS_COLLECTION = "users";
 const CONTACTS_COLLECTION = "contacts";
+
+// Only surface website-created orders in the website admin (legacy docs with no
+// `source` are treated as website orders too).
+const isWebsiteOrder = (data: DocumentData): boolean => {
+  const source = (data as { source?: unknown }).source;
+  return source === undefined || source === ORDER_SOURCE;
+};
 
 export interface ContactMessage {
   id: string;
@@ -50,10 +58,7 @@ const toMillis = (createdAt: unknown): number => {
 };
 
 const mapPrebooking = (snap: QueryDocumentSnapshot<DocumentData>): PrebookingRecord => {
-  return {
-    id: snap.id,
-    ...(snap.data() as Omit<PrebookingRecord, "id">),
-  };
+  return flattenOrder(snap.id, snap.data());
 };
 
 const mapUser = (snap: QueryDocumentSnapshot<DocumentData>): UserProfile => {
@@ -72,81 +77,35 @@ const mergeAndSortOrders = (orders: PrebookingRecord[]): PrebookingRecord[] => {
   return Array.from(merged.values()).sort((left, right) => toMillis(right.createdAt) - toMillis(left.createdAt));
 };
 
-const ensureAtLeastOneWriteSucceeded = async (writes: Promise<unknown>[], operation: string): Promise<void> => {
-  const results = await Promise.allSettled(writes);
-  if (results.some((result) => result.status === "fulfilled")) {
-    return;
-  }
-
-  const firstFailure = results.find((result) => result.status === "rejected") as PromiseRejectedResult | undefined;
-  if (firstFailure?.reason instanceof Error) {
-    throw firstFailure.reason;
-  }
-
-  throw new Error(`Failed to ${operation}.`);
-};
 
 export async function getAllOrders(): Promise<PrebookingRecord[]> {
-  const [bookingSnapshot, legacySnapshot] = await Promise.all([
-    getDocs(collection(db, BOOKING_COLLECTION)),
-    getDocs(collection(db, LEGACY_PREBOOKINGS_COLLECTION)),
-  ]);
+  const snapshot = await getDocs(collection(db, ORDERS_COLLECTION));
 
-  return mergeAndSortOrders([
-    ...bookingSnapshot.docs.map(mapPrebooking),
-    ...legacySnapshot.docs.map(mapPrebooking),
-  ]);
+  return mergeAndSortOrders(
+    snapshot.docs.filter((snap) => isWebsiteOrder(snap.data())).map(mapPrebooking),
+  );
 }
 
 export function subscribeToOrders(
   onUpdate: (orders: PrebookingRecord[]) => void,
   onError: (error: Error) => void,
 ): () => void {
-  let bookingOrders: PrebookingRecord[] = [];
-  let legacyOrders: PrebookingRecord[] = [];
-  let bookingReady = false;
-  let legacyReady = false;
-
-  const emitMergedOrders = () => {
-    if (!bookingReady || !legacyReady) return;
-    onUpdate(mergeAndSortOrders([...bookingOrders, ...legacyOrders]));
-  };
-
-  const bookingUnsubscribe = onSnapshot(
-    collection(db, BOOKING_COLLECTION),
+  return onSnapshot(
+    collection(db, ORDERS_COLLECTION),
     (snapshot) => {
-      bookingOrders = snapshot.docs.map(mapPrebooking);
-      bookingReady = true;
-      emitMergedOrders();
+      const orders = snapshot.docs
+        .filter((snap) => isWebsiteOrder(snap.data()))
+        .map(mapPrebooking);
+      onUpdate(mergeAndSortOrders(orders));
     },
     (error) => {
       onError(error);
     },
   );
-
-  const legacyUnsubscribe = onSnapshot(
-    collection(db, LEGACY_PREBOOKINGS_COLLECTION),
-    (snapshot) => {
-      legacyOrders = snapshot.docs.map(mapPrebooking);
-      legacyReady = true;
-      emitMergedOrders();
-    },
-    (error) => {
-      onError(error);
-    },
-  );
-
-  return () => {
-    bookingUnsubscribe();
-    legacyUnsubscribe();
-  };
 }
 
 export async function deleteOrder(orderId: string): Promise<void> {
-  await ensureAtLeastOneWriteSucceeded([
-    deleteDoc(doc(db, BOOKING_COLLECTION, orderId)),
-    deleteDoc(doc(db, LEGACY_PREBOOKINGS_COLLECTION, orderId)),
-  ], "delete order");
+  await deleteDoc(doc(db, ORDERS_COLLECTION, orderId));
 }
 
 export async function getAllUsers(): Promise<UserProfile[]> {
@@ -156,16 +115,10 @@ export async function getAllUsers(): Promise<UserProfile[]> {
 }
 
 export async function updateOrderStatus(orderId: string, status: PrebookingRecord["status"]): Promise<void> {
-  await ensureAtLeastOneWriteSucceeded([
-    updateDoc(doc(db, BOOKING_COLLECTION, orderId), {
-      status,
-      updatedAt: serverTimestamp(),
-    }),
-    updateDoc(doc(db, LEGACY_PREBOOKINGS_COLLECTION, orderId), {
-      status,
-      updatedAt: serverTimestamp(),
-    }),
-  ], "update order status");
+  await updateDoc(doc(db, ORDERS_COLLECTION, orderId), {
+    status,
+    updatedAt: serverTimestamp(),
+  });
 }
 
 export function subscribeToContactMessages(

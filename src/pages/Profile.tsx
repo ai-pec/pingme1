@@ -1,10 +1,9 @@
 import { Suspense, lazy, useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { Loader2, MapPin, ChevronDown } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import MainLayout from "@/layouts/MainLayout";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import type { NFCProfileData } from "@/components/NFCProfileBuilder";
 import { getUserPrebookings, type PrebookingRecord } from "@/lib/prebookService";
@@ -13,9 +12,7 @@ import type { NFCProfile } from "@/lib/prebookService";
 import { getUserProfile } from "@/lib/userService";
 import type { UserProfile } from "@/types/user";
 
-import { EmailVerificationBanner } from "@/components/profile/EmailVerificationBanner";
 import { PersonalInfoForm } from "@/components/profile/PersonalInfoForm";
-import { EmailSettings } from "@/components/profile/EmailSettings";
 import { OrderHistory } from "@/components/profile/OrderHistory";
 import { SavedPayments } from "@/components/profile/SavedPayments";
 
@@ -24,7 +21,7 @@ const AddressManagement = lazy(() => import("@/components/profile/AddressManagem
 
 export default function Profile() {
   const { userId } = useParams<{ userId?: string }>();
-  const { user, profile: currentUserProfile, loading, resendVerification, refreshProfile } = useAuth();
+  const { user, profile: currentUserProfile, loading } = useAuth();
   const [fetchedProfile, setFetchedProfile] = useState<UserProfile | null>(null);
 
   // Determine if viewing another user's profile
@@ -90,30 +87,6 @@ export default function Profile() {
     staleTime: 60 * 1000,        // 60 seconds — orders don't update that often
     gcTime: 5 * 60 * 1000,      // keep in cache for 5 minutes
     refetchOnWindowFocus: false, // don't refetch on tab switch
-  });
-
-  const resendMutation = useMutation({
-    mutationFn: resendVerification,
-    onSuccess: () => {
-      toast.success("Verification email sent! Please check your inbox.");
-    },
-    onError: (error: unknown) => {
-      toast.error(error instanceof Error ? error.message : "Failed to send verification email.");
-    },
-  });
-
-  const refreshMutation = useMutation({
-    mutationFn: refreshProfile,
-    onSuccess: () => {
-      if (user?.emailVerified) {
-        toast.success("Email verified successfully!");
-      } else {
-        toast.info("Email not yet verified. Please check your inbox.");
-      }
-    },
-    onError: () => {
-      toast.error("Failed to check verification status.");
-    },
   });
 
   const buildNfcDraft = (order: PrebookingRecord, nfcProfile?: NFCProfile): NFCProfileData => ({
@@ -264,16 +237,7 @@ export default function Profile() {
               <p className="text-muted-foreground">Manage your account information and delivery preferences</p>
             </div>
 
-            <EmailVerificationBanner
-              user={user}
-              resending={resendMutation.isPending}
-              refreshing={refreshMutation.isPending}
-              onResend={() => resendMutation.mutate()}
-              onRefresh={() => refreshMutation.mutate()}
-            />
-
             <PersonalInfoForm />
-            <EmailSettings />
               <div className="rounded-xl border bg-card p-4 sm:p-5">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-start gap-3">

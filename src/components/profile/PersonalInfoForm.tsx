@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
-import { Loader2, User, Phone } from "lucide-react";
+import { Loader2, User, Phone, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,16 +15,19 @@ import {
 } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { profileSchema, type ProfileFormData } from "@/lib/validations/auth";
+import {
+  completeProfileSchema,
+  type CompleteProfileFormData,
+} from "@/lib/validations/auth";
 
 export function PersonalInfoForm() {
-  const { user, profile, updateProfile } = useAuth();
+  const { profile, updateProfile } = useAuth();
 
-  const form = useForm<ProfileFormData>({
-    resolver: zodResolver(profileSchema),
+  const form = useForm<CompleteProfileFormData>({
+    resolver: zodResolver(completeProfileSchema),
     defaultValues: {
-      displayName: profile?.displayName || user?.displayName || "",
-      mobile: profile?.mobile || "",
+      displayName: profile?.displayName || "",
+      email: profile?.email || "",
     },
   });
 
@@ -32,13 +35,13 @@ export function PersonalInfoForm() {
     if (profile) {
       form.reset({
         displayName: profile.displayName || "",
-        mobile: profile.mobile || "",
+        email: profile.email || "",
       });
     }
   }, [profile, form]);
 
   const updateMutation = useMutation({
-    mutationFn: (data: ProfileFormData) => updateProfile(data),
+    mutationFn: (data: CompleteProfileFormData) => updateProfile(data),
     onSuccess: () => {
       toast.success("Profile updated successfully!");
     },
@@ -47,7 +50,7 @@ export function PersonalInfoForm() {
     },
   });
 
-  const onSubmit = (data: ProfileFormData) => {
+  const onSubmit = (data: CompleteProfileFormData) => {
     updateMutation.mutate(data);
   };
 
@@ -59,7 +62,8 @@ export function PersonalInfoForm() {
           Personal Information
         </CardTitle>
         <CardDescription>
-          Update your name and contact details
+          Update your name and email. Your phone number is your login and can't
+          be changed here.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -84,22 +88,37 @@ export function PersonalInfoForm() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="mobile">Mobile Number</Label>
+              <Label htmlFor="email">Email</Label>
               <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  id="mobile"
-                  type="tel"
-                  placeholder="9876543210"
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
                   className="pl-10"
-                  {...form.register("mobile")}
+                  {...form.register("email")}
                 />
               </div>
-              {form.formState.errors.mobile && (
+              {form.formState.errors.email && (
                 <p className="text-sm text-destructive">
-                  {form.formState.errors.mobile.message}
+                  {form.formState.errors.email.message}
                 </p>
               )}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="mobile">Mobile Number (login)</Label>
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="mobile"
+                type="tel"
+                value={profile?.mobile ? `+91 ${profile.mobile}` : ""}
+                className="pl-10"
+                disabled
+                readOnly
+              />
             </div>
           </div>
 
