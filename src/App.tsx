@@ -40,9 +40,7 @@ const Profile = lazy(() => import("./pages/Profile"));
 const NfcVisitsDashboard = lazy(() => import("./pages/NfcVisitsDashboard"));
 const NfcLeadsDashboard = lazy(() => import("./pages/NfcLeadsDashboard"));
 const Admin = lazy(() => import("./pages/Admin"));
-const PublicNFCProfile = lazy(() => import("./pages/PublicNFCProfile"));
-const NFCLanding = lazy(() => import("./pages/NFCLanding"));
-const NfcPrivacyPolicy = lazy(() => import("./pages/NfcPrivacyPolicy"));
+
 
 const PageLoader = () => (
   <div className="flex h-[100dvh] w-full flex-col items-center justify-center bg-background gap-6">
@@ -199,12 +197,6 @@ const App = () => (
                 <Route path="/faq" element={<FAQ />} />
                 <Route path="/docs" element={<DocsPage />} />
                 
-                {/* 
-                   Render the profile directly on the main domain as well.
-                   This satisfies the requirement that plzpingme.com/<username> also works.
-                */}
-                <Route path="/:username/NFC-Privacy-Policy" element={<NfcPrivacyPolicy />} />
-                <Route path="/:username" element={<PublicNFCProfile />} />
                 <Route path="*" element={<NotFound />} />
                   </>
                 )}

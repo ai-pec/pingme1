@@ -1191,7 +1191,7 @@ const LandingHero = () => {
   const offerings = getOfferings(products, hasProductSnapshot);
 
   return (
-    <main className="relative overflow-hidden bg-background">
+    <main className="relative overflow-hidden" style={{ background: "linear-gradient(180deg, hsl(var(--secondary)) 0%, hsl(var(--background)) 60%, hsl(var(--secondary)) 100%)" }}>
 
       {/* -- Global ambient background -- */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
