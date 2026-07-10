@@ -214,7 +214,9 @@ const App = () => (
                 <Route path="/faq" element={<FAQ />} />
                 <Route path="/docs" element={<DocsPage />} />
                 
-                <Route path="/:username" element={<PublicNFCProfile />} />
+                {!isAppSubdomain && (
+                  <Route path="/:username" element={<PublicNFCProfile />} />
+                )}
                 
                 <Route path="*" element={<NotFound />} />
                   </>
