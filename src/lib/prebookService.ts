@@ -305,6 +305,7 @@ export interface PrebookingRecord extends PrebookingData {
 interface GetUserPrebookingsParams {
   userId?: string;
   email?: string;
+  phone?: string;
 }
 
 const toMillis = (createdAt: unknown): number => {
@@ -420,9 +421,9 @@ const isWebsiteOrder = (data: unknown): boolean => {
   return source === undefined || source === ORDER_SOURCE;
 };
 
-export const getUserPrebookings = async ({ userId, email }: GetUserPrebookingsParams): Promise<PrebookingRecord[]> => {
+export const getUserPrebookings = async ({ userId, email, phone }: GetUserPrebookingsParams): Promise<PrebookingRecord[]> => {
   try {
-    if (!userId && !email) return [];
+    if (!userId && !email && !phone) return [];
 
     const mergeAndSort = (records: PrebookingRecord[]) => {
       const deduped = new Map<string, PrebookingRecord>();
@@ -450,6 +451,23 @@ export const getUserPrebookings = async ({ userId, email }: GetUserPrebookingsPa
     if (email) {
       const snapshot = await getDocs(
         query(collection(db, ORDERS_COLLECTION), where('customer.email', '==', email))
+      );
+      const records = snapshot.docs
+        .filter(doc => isWebsiteOrder(doc.data()))
+        .map(doc => flattenOrder(doc.id, doc.data()));
+
+      if (records.length > 0) {
+        return mergeAndSort(records);
+      }
+    }
+
+    if (phone) {
+      let cleanPhone = phone.replace(/^\+91/, '').replace(/^\+/, '');
+      if (cleanPhone.length > 10) {
+        cleanPhone = cleanPhone.slice(-10);
+      }
+      const snapshot = await getDocs(
+        query(collection(db, ORDERS_COLLECTION), where('customer.phone', '==', cleanPhone))
       );
       const records = snapshot.docs
         .filter(doc => isWebsiteOrder(doc.data()))

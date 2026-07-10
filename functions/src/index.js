@@ -910,6 +910,21 @@ exports.verifyPayment = onRequest({
   });
 });
 
+const parseProfileId = (profileId) => {
+  const str = String(profileId || "");
+  if (str.startsWith("order_")) {
+    const match = str.match(/^(order_[^_]+)(?:_(.+))?$/);
+    if (match) {
+      return { id: match[1], lineKey: match[2] || null };
+    }
+  }
+  const match = str.match(/^([^_]+)(?:_(.+))?$/);
+  if (match) {
+    return { id: match[1], lineKey: match[2] || null };
+  }
+  return { id: str, lineKey: null };
+};
+
 exports.syncNfcProfileDraft = onRequest({
   region: "asia-south1",
 }, (req, res) => {
@@ -933,10 +948,35 @@ exports.syncNfcProfileDraft = onRequest({
         return;
       }
 
-      const bookingId = String(profileId).split("_")[0];
-      const bookingDoc = await db.collection("booking").doc(bookingId).get();
-      const legacyDoc = await db.collection("prebookings").doc(bookingId).get();
-      const bookingData = bookingDoc.exists ? bookingDoc.data() : (legacyDoc.exists ? legacyDoc.data() : null);
+      const { id: resolvedId, lineKey } = parseProfileId(profileId);
+
+      // 1. Try finding doc directly by resolved ID
+      let bookingDoc = await db.collection("booking").doc(resolvedId).get();
+      let legacyDoc = await db.collection("prebookings").doc(resolvedId).get();
+      let bookingRef = bookingDoc.exists ? bookingDoc.ref : null;
+      let legacyRef = legacyDoc.exists ? legacyDoc.ref : null;
+      let bookingData = bookingDoc.exists ? bookingDoc.data() : (legacyDoc.exists ? legacyDoc.data() : null);
+
+      // 2. Fallback to searching by payment.orderId if direct lookup failed
+      if (!bookingData) {
+        const [bookingQuery, legacyQuery] = await Promise.all([
+          db.collection("booking").where("payment.orderId", "==", resolvedId).get(),
+          db.collection("prebookings").where("payment.orderId", "==", resolvedId).get()
+        ]);
+
+        if (!bookingQuery.empty) {
+          bookingDoc = bookingQuery.docs[0];
+          bookingRef = bookingDoc.ref;
+          bookingData = bookingDoc.data();
+        }
+        if (!legacyQuery.empty) {
+          legacyDoc = legacyQuery.docs[0];
+          legacyRef = legacyDoc.ref;
+          if (!bookingData) {
+            bookingData = legacyDoc.data();
+          }
+        }
+      }
 
       const isConfirmed = bookingData && (bookingData.status === "confirmed" || (bookingData.updatedSource && bookingData.updatedSource !== "prePaymentDraft"));
       const status = isConfirmed ? "confirmed" : "draft";
@@ -952,6 +992,58 @@ exports.syncNfcProfileDraft = onRequest({
       if (!result.synced) {
         res.status(400).send(result.reason || "Unable to sync profile.");
         return;
+      }
+
+      // Sync back to booking & prebookings collections so ownership checks and stats update correctly
+      try {
+        const updateDocWithProfile = async (docRef, docData) => {
+          if (!docRef || !docData) return;
+          const updatePayload = {};
+
+          if (lineKey) {
+            let updated = false;
+            let nfcLineProfiles = docData.nfcLineProfiles || [];
+            if (Array.isArray(nfcLineProfiles)) {
+              nfcLineProfiles = nfcLineProfiles.map(item => {
+                if (item?.lineKey === lineKey) {
+                  updated = true;
+                  return {
+                    ...item,
+                    nfcProfile: {
+                      ...(item.nfcProfile || {}),
+                      ...nfcProfile
+                    }
+                  };
+                }
+                return item;
+              });
+            }
+            if (!updated) {
+              nfcLineProfiles.push({
+                lineKey,
+                itemId: lineKey.split("__")[0] || "nfc-legacy",
+                title: "NFC Card",
+                nfcProfile: nfcProfile
+              });
+            }
+            updatePayload.nfcLineProfiles = nfcLineProfiles;
+          } else {
+            updatePayload.nfcProfile = {
+              ...(docData.nfcProfile || {}),
+              ...nfcProfile
+            };
+          }
+
+          updatePayload.updatedAt = admin.firestore.FieldValue.serverTimestamp();
+          await docRef.set(updatePayload, { merge: true });
+        };
+
+        await Promise.all([
+          updateDocWithProfile(bookingRef, bookingData),
+          updateDocWithProfile(legacyRef, legacyRef ? (legacyDoc.exists ? legacyDoc.data() : bookingData) : null)
+        ]);
+      } catch (syncBackErr) {
+        console.error("Error syncing NFC profile back to bookings:", syncBackErr);
       }
 
       res.status(200).json({ success: true, username: result.username });
@@ -1378,7 +1470,33 @@ exports.getNfcVisitAnalytics = onRequest({
     }
 
     const userId = decodedToken.uid;
-    const userEmail = decodedToken.email || null;
+    let userEmail = decodedToken.email || null;
+    let userPhone = decodedToken.phone_number || null;
+    console.log(`[DEBUG getNfcVisitAnalytics] Authenticated UID: "${userId}", Email in token: "${userEmail}", Phone in token: "${userPhone}"`);
+    if (userPhone) {
+      userPhone = userPhone.replace(/^\+91/, "").replace(/^\+/, "");
+      if (userPhone.length > 10) {
+        userPhone = userPhone.slice(-10);
+      }
+      console.log(`[DEBUG getNfcVisitAnalytics] Parsed userPhone for lookup: "${userPhone}"`);
+    }
+
+    if (!userEmail) {
+      try {
+        const userDoc = await db.collection("users").doc(userId).get();
+        if (userDoc.exists) {
+          const userData = userDoc.data();
+          if (userData?.email) {
+            userEmail = userData.email;
+            console.log(`[DEBUG getNfcVisitAnalytics] Found email in Firestore user doc: "${userEmail}"`);
+          }
+        } else {
+          console.log(`[DEBUG getNfcVisitAnalytics] No Firestore user document found for UID: "${userId}"`);
+        }
+      } catch (err) {
+        console.error("Error fetching user email from Firestore:", err);
+      }
+    }
 
     try {
       const ownedUsernames = new Set();
@@ -1404,6 +1522,7 @@ exports.getNfcVisitAnalytics = onRequest({
         db.collection("booking").where("userId", "==", userId).get(),
         db.collection("prebookings").where("userId", "==", userId).get(),
       ]);
+      console.log(`[DEBUG getNfcVisitAnalytics] Query by userId: bookings count: ${bookingsByUid.size}, prebookings count: ${legacyByUid.size}`);
       bookingsByUid.docs.forEach(processBookingDoc);
       legacyByUid.docs.forEach(processBookingDoc);
 
@@ -1413,8 +1532,20 @@ exports.getNfcVisitAnalytics = onRequest({
           db.collection("booking").where("email", "==", userEmail).get(),
           db.collection("prebookings").where("email", "==", userEmail).get(),
         ]);
+        console.log(`[DEBUG getNfcVisitAnalytics] Query by email: bookings count: ${bookingsByEmail.size}, prebookings count: ${legacyByEmail.size}`);
         bookingsByEmail.docs.forEach(processBookingDoc);
         legacyByEmail.docs.forEach(processBookingDoc);
+      }
+
+      // Query bookings by phone if available
+      if (userPhone) {
+        const [bookingsByPhone, legacyByPhone] = await Promise.all([
+          db.collection("booking").where("phone", "==", userPhone).get(),
+          db.collection("prebookings").where("phone", "==", userPhone).get(),
+        ]);
+        console.log(`[DEBUG getNfcVisitAnalytics] Query by phone: bookings count: ${bookingsByPhone.size}, prebookings count: ${legacyByPhone.size}`);
+        bookingsByPhone.docs.forEach(processBookingDoc);
+        legacyByPhone.docs.forEach(processBookingDoc);
       }
 
       const usernamesArr = Array.from(ownedUsernames);
@@ -1551,7 +1682,33 @@ exports.getNfcLeads = onRequest({
     }
 
     const userId = decodedToken.uid;
-    const userEmail = decodedToken.email || null;
+    let userEmail = decodedToken.email || null;
+    let userPhone = decodedToken.phone_number || null;
+    console.log(`[DEBUG getNfcLeads] Authenticated UID: "${userId}", Email in token: "${userEmail}", Phone in token: "${userPhone}"`);
+    if (userPhone) {
+      userPhone = userPhone.replace(/^\+91/, "").replace(/^\+/, "");
+      if (userPhone.length > 10) {
+        userPhone = userPhone.slice(-10);
+      }
+      console.log(`[DEBUG getNfcLeads] Parsed userPhone for lookup: "${userPhone}"`);
+    }
+
+    if (!userEmail) {
+      try {
+        const userDoc = await db.collection("users").doc(userId).get();
+        if (userDoc.exists) {
+          const userData = userDoc.data();
+          if (userData?.email) {
+            userEmail = userData.email;
+            console.log(`[DEBUG getNfcLeads] Found email in Firestore user doc: "${userEmail}"`);
+          }
+        } else {
+          console.log(`[DEBUG getNfcLeads] No Firestore user document found for UID: "${userId}"`);
+        }
+      } catch (err) {
+        console.error("Error fetching user email from Firestore:", err);
+      }
+    }
 
     try {
       const ownedUsernames = new Set();
@@ -1577,6 +1734,7 @@ exports.getNfcLeads = onRequest({
         db.collection("booking").where("userId", "==", userId).get(),
         db.collection("prebookings").where("userId", "==", userId).get(),
       ]);
+      console.log(`[DEBUG getNfcLeads] Query by userId: bookings count: ${bookingsByUid.size}, prebookings count: ${legacyByUid.size}`);
       bookingsByUid.docs.forEach(processBookingDoc);
       legacyByUid.docs.forEach(processBookingDoc);
 
@@ -1586,8 +1744,20 @@ exports.getNfcLeads = onRequest({
           db.collection("booking").where("email", "==", userEmail).get(),
           db.collection("prebookings").where("email", "==", userEmail).get(),
         ]);
+        console.log(`[DEBUG getNfcLeads] Query by email: bookings count: ${bookingsByEmail.size}, prebookings count: ${legacyByEmail.size}`);
         bookingsByEmail.docs.forEach(processBookingDoc);
         legacyByEmail.docs.forEach(processBookingDoc);
+      }
+
+      // Query bookings by phone if available
+      if (userPhone) {
+        const [bookingsByPhone, legacyByPhone] = await Promise.all([
+          db.collection("booking").where("phone", "==", userPhone).get(),
+          db.collection("prebookings").where("phone", "==", userPhone).get(),
+        ]);
+        console.log(`[DEBUG getNfcLeads] Query by phone: bookings count: ${bookingsByPhone.size}, prebookings count: ${legacyByPhone.size}`);
+        bookingsByPhone.docs.forEach(processBookingDoc);
+        legacyByPhone.docs.forEach(processBookingDoc);
       }
 
       const usernamesArr = Array.from(ownedUsernames);

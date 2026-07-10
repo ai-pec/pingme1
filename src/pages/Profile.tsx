@@ -82,7 +82,11 @@ export default function Profile() {
 
   const { data: orders = [], isLoading: ordersLoading } = useQuery({
     queryKey: ["userPrebookings", isViewingOtherUser ? userId : user?.uid],
-    queryFn: () => getUserPrebookings({ userId: isViewingOtherUser ? userId! : user!.uid, email: isViewingOtherUser ? undefined : user!.email || undefined }),
+    queryFn: () => getUserPrebookings({ 
+      userId: isViewingOtherUser ? userId! : user!.uid, 
+      email: isViewingOtherUser ? undefined : user!.email || undefined,
+      phone: isViewingOtherUser ? undefined : user!.phoneNumber || undefined
+    }),
     enabled: isViewingOtherUser ? !!userId : !!user?.uid,
     staleTime: 60 * 1000,        // 60 seconds — orders don't update that often
     gcTime: 5 * 60 * 1000,      // keep in cache for 5 minutes
