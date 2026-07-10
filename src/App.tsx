@@ -132,8 +132,16 @@ const App = () => (
                   </>
                 ) : (
                   <>
-                {/* Public Routes */}
-                <Route path="/" element={<Landing />} />
+                <Route
+                  path="/"
+                  element={
+                    isAppSubdomain ? (
+                      <Navigate to="/login" replace />
+                    ) : (
+                      <Landing />
+                    )
+                  }
+                />
                 <Route path="/products" element={<Products />} />
                 <Route path="/products/:categorySlug" element={<Products />} />
                 <Route path="/products/:categorySlug/:productId" element={<ProductDetail />} />
@@ -206,9 +214,7 @@ const App = () => (
                 <Route path="/faq" element={<FAQ />} />
                 <Route path="/docs" element={<DocsPage />} />
                 
-                {!isAppSubdomain && (
-                  <Route path="/:username" element={<PublicNFCProfile />} />
-                )}
+                <Route path="/:username" element={<PublicNFCProfile />} />
                 
                 <Route path="*" element={<NotFound />} />
                   </>
