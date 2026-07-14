@@ -30,6 +30,13 @@ const mapToDbProduct = (id: string, value: Record<string, unknown>): DbProduct =
     return "";
   };
 
+  const images = Array.isArray(value.images)
+    ? value.images
+        .filter((img): img is string => typeof img === "string")
+        .map((img) => resolveProductImageUrl(img))
+        .filter(Boolean)
+    : [];
+
   return {
     id,
     categorySlug,
@@ -40,8 +47,10 @@ const mapToDbProduct = (id: string, value: Record<string, unknown>): DbProduct =
       return op ? op : undefined;
     })(),
     image: image || undefined,
+    images: images.length > 0 ? images : undefined,
     emoji: typeof value.emoji === "string" && value.emoji.trim() ? value.emoji : undefined,
     popular: Boolean(value.popular),
+    disabled: Boolean(value.disabled),
     features: normalizeFeatures(value.features),
     createdAt: value.createdAt,
     updatedAt: value.updatedAt,
@@ -94,6 +103,7 @@ export const saveProduct = async (product: Omit<DbProduct, "updatedAt">) => {
     title: product.title,
     price: product.price,
     popular: Boolean(product.popular),
+    disabled: Boolean(product.disabled),
     features: normalizeFeatures(product.features),
     updatedAt: serverTimestamp(),
     ...(normalizedImage ? { image: normalizedImage } : {}),
@@ -101,6 +111,9 @@ export const saveProduct = async (product: Omit<DbProduct, "updatedAt">) => {
     ...(typeof product.originalPrice === "string" && product.originalPrice.trim()
       ? { originalPrice: product.originalPrice.trim() }
       : {}),
+    ...(Array.isArray(product.images) && product.images.length > 0
+      ? { images: product.images.map((img) => resolveProductImageUrl(img)).filter(Boolean) }
+      : { images: [] }),
     ...(product.createdAt ? { createdAt: product.createdAt } : {}),
   };
 
@@ -110,6 +123,11 @@ export const saveProduct = async (product: Omit<DbProduct, "updatedAt">) => {
 
 export const deleteProductDoc = async (id: string) => {
   await deleteDoc(doc(db, "products", id));
+};
+
+export const toggleProductDisabled = async (id: string, disabled: boolean) => {
+  const productRef = doc(db, "products", id);
+  await setDoc(productRef, { disabled }, { merge: true });
 };
 
 export const uploadProductImage = async (file: File, rawCategorySlug?: string): Promise<string> => {
@@ -247,4 +265,68 @@ export const deleteCategory = async (slugRaw: string) => {
   batch.delete(catRef);
 
   await batch.commit();
+};
+
+export interface ProductReview {
+  id: string;
+  productId: string;
+  categorySlug: string;
+  authorName: string;
+  title: string;
+  comment: string;
+  rating: number;
+  images?: string[];
+  createdAt?: unknown;
+}
+
+export const saveProductReview = async (review: Omit<ProductReview, "id" | "createdAt">) => {
+  const reviewCollection = collection(db, "reviews");
+  const reviewRef = doc(reviewCollection);
+  const data: Record<string, unknown> = {
+    id: reviewRef.id,
+    ...review,
+    createdAt: serverTimestamp(),
+  };
+  await setDoc(reviewRef, data);
+};
+
+export const subscribeToReviews = (
+  productId: string,
+  onUpdate: (reviews: ProductReview[]) => void,
+  onError: (error: Error) => void
+) => {
+  const reviewsRef = collection(db, "reviews");
+  const q = query(reviewsRef, where("productId", "==", productId));
+  
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const reviews: ProductReview[] = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        reviews.push({
+          id: doc.id,
+          productId: data.productId || "",
+          categorySlug: data.categorySlug || "",
+          authorName: data.authorName || "",
+          title: data.title || "",
+          comment: data.comment || "",
+          rating: Number(data.rating) || 5,
+          images: Array.isArray(data.images) ? data.images.map(String) : [],
+          createdAt: data.createdAt,
+        });
+      });
+      // Sort reviews by createdAt descending
+      reviews.sort((a, b) => {
+        const timeA = a.createdAt ? (a.createdAt as any).seconds || 0 : 0;
+        const timeB = b.createdAt ? (b.createdAt as any).seconds || 0 : 0;
+        return timeB - timeA;
+      });
+      onUpdate(reviews);
+    },
+    (error) => {
+      console.error("Error subscribing to reviews:", error);
+      onError(error);
+    }
+  );
 };

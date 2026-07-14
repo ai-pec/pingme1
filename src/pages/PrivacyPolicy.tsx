@@ -25,7 +25,7 @@ const PrivacyPolicy = () => {
               on the services you use, this may include:
             </p>
             <ul className="text-muted-foreground mb-4 list-disc pl-6 space-y-1">
-              <li><strong>Identity &amp; contact details</strong> — name, email address, phone number</li>
+              <li><strong>Identity &amp; contact details</strong> — name, phone number,email address(optional)</li>
               <li><strong>Professional information</strong> — job title, company name</li>
               <li><strong>Profile media</strong> — profile photo</li>
               <li><strong>Online presence</strong> — social media links (LinkedIn, Instagram, Twitter, YouTube, Facebook), website URL</li>
@@ -97,7 +97,7 @@ const PrivacyPolicy = () => {
               <strong className="text-foreground">Ping IFF LLP</strong><br />
               745, First Floor, Rani Boutique<br />
               Kesho Ram Complex<br />
-              Ram Electricals, Sector 45<br />
+              Near By Ram Electricals, Sector 45<br />
               Burail, Chandigarh<br />
               Chandigarh &ndash; 160047<br />
               India<br />

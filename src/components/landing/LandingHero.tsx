@@ -1444,12 +1444,12 @@ const LandingHero = () => {
             </motion.div>
           </div>
 
-          {/* RIGHT: ScanStory */}
+          {/* RIGHT: ScanStory — hidden on mobile */}
           <motion.div
             initial={{ opacity: 0, x: 44 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.95, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-            className="relative flex items-center justify-center"
+            className="relative hidden md:flex items-center justify-center"
             style={{ minHeight: 480 }}
           >
             <ScanStory offerings={offerings} />
@@ -1597,14 +1597,14 @@ const LandingHero = () => {
                     </p>
                     <h3 className="font-extrabold text-xl text-foreground mb-2">Our Office</h3>
                     <a
-                      href="https://www.google.com/maps/search/?api=1&query=745+First+Floor+Rani+Boutique+Kesho+Ram+Complex+Ram+Electricals+Sector+45+Burail+Chandigarh+Chandigarh+160047+India"
+                      href="https://www.google.com/maps/search/?api=1&query=745+First+Floor+Rani+Boutique+Kesho+Ram+Complex+Near+By+Ram+Electricals+Sector+45+Burail+Chandigarh+Chandigarh+160047+India"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-sm text-muted-foreground hover:text-primary transition-colors block leading-7"
                     >
                       Ping IFF LLP · 745, First Floor,<br /> Rani Boutique<br />
                       Kesho Ram Complex<br />
-                      Ram Electricals, Sector 45<br />
+                      Near By Ram Electricals, Sector 45<br />
                       Burail, Chandigarh<br />
                       Chandigarh – 160047<br />
                       India

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import {
   ArrowLeft,
   ShieldCheck,
@@ -9,6 +9,7 @@ import {
   Minus,
   Plus,
   Star,
+  Loader2,
   Zap,
   Lock,
   Package,
@@ -19,6 +20,7 @@ import {
 } from "lucide-react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import MainLayout from "@/layouts/MainLayout";
+import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
@@ -26,6 +28,8 @@ import {
   subscribeToProducts,
   type DbProduct,
   subscribeToProductCategories,
+  subscribeToReviews,
+  type ProductReview,
 } from "../lib/productService";
 import {
   normalizeCategorySlug,
@@ -46,6 +50,8 @@ const TEXT_SEC   = "var(--pm-text-sec)";
 const TEXT_MUTED = "var(--pm-text-muted)";
 const SUCCESS    = "var(--pm-success)";
 const WHITE      = "var(--pm-white)";
+const REVIEW_CARD_BG = "var(--pm-review-card-bg)";
+const REVIEW_SUMMARY_BG = "var(--pm-review-summary-bg)";
 
 /* ─── Static Trust Items ──────────────────────────────────────── */
 const TRUST_PERKS = [
@@ -150,15 +156,24 @@ const ImageGallery = ({
   const [imageFailed, setImageFailed] = useState<boolean[]>(
     new Array(images.length).fill(false)
   );
-  const [zoomed, setZoomed] = useState(false);
+  const [hoverState, setHoverState] = useState({ isHovered: false, x: 0, y: 0 });
 
   const validImages = images.filter((img, i) => img && !imageFailed[i]);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - left) / width) * 100;
+    const y = ((e.clientY - top) / height) * 100;
+    setHoverState({ isHovered: true, x, y });
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14, position: "sticky", top: 88 }}>
       {/* Main image */}
       <div
-        onClick={() => setZoomed(!zoomed)}
+        onMouseEnter={() => setHoverState((prev) => ({ ...prev, isHovered: true }))}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={() => setHoverState({ isHovered: false, x: 0, y: 0 })}
         style={{
           background: SMOKE,
           borderRadius: 20,
@@ -171,7 +186,7 @@ const ImageGallery = ({
           cursor: "zoom-in",
           position: "relative",
           transition: "box-shadow 0.3s",
-          boxShadow: zoomed
+          boxShadow: hoverState.isHovered
             ? `0 32px 80px rgba(26,20,16,0.18)`
             : `0 8px 40px rgba(26,20,16,0.08)`,
         }}
@@ -189,8 +204,9 @@ const ImageGallery = ({
               width: "80%",
               height: "80%",
               objectFit: "contain",
-              transform: zoomed ? "scale(1.12)" : "scale(1)",
-              transition: "transform 0.45s cubic-bezier(0.4,0,0.2,1)",
+              transform: hoverState.isHovered ? "scale(1.5)" : "scale(1)",
+              transformOrigin: hoverState.isHovered ? `${hoverState.x}% ${hoverState.y}%` : "center center",
+              transition: hoverState.isHovered ? "none" : "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
             }}
           />
         ) : (
@@ -215,11 +231,11 @@ const ImageGallery = ({
             color: TEXT_MUTED,
             border: `1px solid ${MIST}`,
             pointerEvents: "none",
-            opacity: zoomed ? 0 : 1,
+            opacity: hoverState.isHovered ? 0 : 1,
             transition: "opacity 0.3s",
           }}
         >
-          Click to zoom
+          Hover to zoom
         </span>
       </div>
 
@@ -630,9 +646,14 @@ const ProductDetail = () => {
   const [qty, setQty] = useState(1);
   const [addedAnim, setAddedAnim] = useState(false);
   const [wishlist, setWishlist] = useState(false);
-  const [openTab, setOpenTab] = useState<"features" | "how" | "specs">("features");
+  const [openTab, setOpenTab] = useState<"features" | "specs">("features");
   const [copied, setCopied] = useState(false);
   const addBtnRef = useRef<HTMLButtonElement>(null);
+
+  const [reviews, setReviews] = useState<ProductReview[]>([]);
+  const [loadingReviews, setLoadingReviews] = useState(true);
+  const [activeReviewImage, setActiveReviewImage] = useState<string | null>(null);
+  const [visibleReviewsCount, setVisibleReviewsCount] = useState(3);
 
   /* ── Data Subscriptions ── */
   useEffect(() => {
@@ -651,21 +672,83 @@ const ProductDetail = () => {
     return unsub;
   }, []);
 
+  useEffect(() => {
+    if (!productId) return;
+    setLoadingReviews(true);
+    const unsub = subscribeToReviews(
+      productId,
+      (latest) => {
+        setReviews(latest);
+        setLoadingReviews(false);
+      },
+      (err) => {
+        console.error("Failed to load reviews:", err);
+        setLoadingReviews(false);
+      }
+    );
+    return unsub;
+  }, [productId]);
+
+  const averageRating = useMemo(() => {
+    if (reviews.length === 0) return 0;
+    const sum = reviews.reduce((acc, r) => acc + r.rating, 0);
+    return Math.round((sum / reviews.length) * 10) / 10;
+  }, [reviews]);
+
+  const starDistribution = useMemo(() => {
+    const counts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    reviews.forEach((r) => {
+      const rating = Math.min(5, Math.max(1, Math.round(r.rating))) as 1 | 2 | 3 | 4 | 5;
+      counts[rating]++;
+    });
+    const total = reviews.length || 1;
+    return {
+      5: Math.round((counts[5] / total) * 100),
+      4: Math.round((counts[4] / total) * 100),
+      3: Math.round((counts[3] / total) * 100),
+      2: Math.round((counts[2] / total) * 100),
+      1: Math.round((counts[1] / total) * 100),
+    };
+  }, [reviews]);
+
+  const getInitials = (name: string) => {
+    if (!name) return "";
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return parts[0].substring(0, 2).toUpperCase();
+  };
+
+  const allReviewImages = useMemo(() => {
+    return reviews.flatMap((r) => r.images || []);
+  }, [reviews]);
+
   /* ── Resolve product ── */
   const normalizedSlug = categorySlug ? normalizeCategorySlug(categorySlug) : null;
 
   const categoryProducts = dbProducts.filter(
-    (p) => normalizeCategorySlug(p.categorySlug) === normalizedSlug
+    (p) => !p.disabled && normalizeCategorySlug(p.categorySlug) === normalizedSlug
   ) as unknown as ProductVariant[];
 
-  const product = categoryProducts.find((p) => p.id === productId);
+  const product = categoryProducts.find((p) => !p.disabled && p.id === productId);
 
   const categoryMeta = normalizedSlug ? categoryMetadata[normalizedSlug] : null;
   const categoryName =
     categoryMeta?.name || (normalizedSlug ? categoryNameFromSlug(normalizedSlug) : "Products");
 
   /* ── Derived fields ── */
-  const images: string[] = product?.image ? [product.image] : [];
+  const images: string[] = [];
+  if (product?.image) {
+    images.push(product.image);
+  }
+  if (product?.images && Array.isArray(product.images)) {
+    product.images.forEach((img) => {
+      if (img && img !== product.image && !images.includes(img)) {
+        images.push(img);
+      }
+    });
+  }
   const numericPrice = product
     ? parseFloat(product.price.replace(/[^\d.]/g, ""))
     : 0;
@@ -799,6 +882,8 @@ const ProductDetail = () => {
             --pm-text-muted: #a89880;
             --pm-success: #4a7c59;
             --pm-white: #ffffff;
+            --pm-review-card-bg: rgba(255, 255, 255, 0.45);
+            --pm-review-summary-bg: rgba(26, 20, 16, 0.015);
           }
 
           .dark {
@@ -814,6 +899,8 @@ const ProductDetail = () => {
             --pm-text-muted: #8c8473;
             --pm-success: #4fa87a;
             --pm-white: #171613;
+            --pm-review-card-bg: rgba(255, 255, 255, 0.03);
+            --pm-review-summary-bg: rgba(255, 255, 255, 0.02);
           }
 
           .pm-detail-page { background: ${SMOKE}; min-height: 100vh; }
@@ -935,44 +1022,62 @@ const ProductDetail = () => {
         }
         .pm-btn-cart:hover { border-color: ${GOLD_DEEP}; background: ${GOLD_LIGHT}; transform: translateY(-2px); }
         .pm-btn-cart-added { background: ${SUCCESS} !important; color: #fff !important; border-color: ${SUCCESS} !important; }
-      `}</style>   {/* ── Announcement Bar ── */}
-        <div
-          style={{
-            background: INK,
-            overflow: "hidden",
-            padding: "9px 0",
-            borderBottom: `1px solid ${INK_SOFT}`,
-          }}
-        >
-          <div className="pm-announce">
-            {[
-              "🔒 Privacy-First — Your number is never shared",
-              "📦 Pan-India Shipping",
-              "✅ Easy Replacements",
-              "⚡ No App Needed for Scanner",
-              "💬 WhatsApp Support Available",
-              "🔒 Privacy-First — Your number is never shared",
-              "📦 Pan-India Shipping",
-              "✅ Easy Replacements",
-              "⚡ No App Needed for Scanner",
-              "💬 WhatsApp Support Available",
-            ].map((item, i) => (
-              <span
-                key={i}
-                style={{
-                  fontFamily: "'DM Sans', system-ui, sans-serif",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: GOLD_LIGHT,
-                  whiteSpace: "nowrap",
-                  letterSpacing: "0.02em",
-                }}
-              >
-                {item}
-              </span>
-            ))}
-          </div>
-        </div>
+
+        .pm-reviews-container {
+          display: grid;
+          grid-template-columns: 280px 1fr;
+          gap: 48px;
+          align-items: start;
+        }
+        @media (max-width: 768px) {
+          .pm-reviews-container {
+            grid-template-columns: 1fr;
+            gap: 32px;
+          }
+        }
+
+        .pm-btn-write-review {
+          background: ${GOLD_DEEP};
+          color: #fff !important;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 14px;
+          font-weight: 700;
+          text-decoration: none;
+          padding: 14px 24px;
+          border-radius: 12px;
+          box-shadow: 0 4px 12px rgba(201, 146, 42, 0.2);
+          text-align: center;
+          transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+          position: relative;
+          overflow: hidden;
+          z-index: 1;
+          display: inline-block;
+        }
+        .pm-btn-write-review::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(135deg, ${GOLD} 0%, ${GOLD_DEEP} 100%);
+          z-index: -1;
+          transition: opacity 0.3s ease;
+          opacity: 0;
+        }
+        .pm-btn-write-review:hover {
+          transform: translateY(-3px) scale(1.02);
+          box-shadow: 0 8px 24px rgba(201, 146, 42, 0.35);
+          color: #fff !important;
+        }
+        .pm-btn-write-review:hover::before {
+          opacity: 1;
+        }
+        .pm-btn-write-review:active {
+          transform: translateY(-1px) scale(0.99);
+          box-shadow: 0 4px 12px rgba(201, 146, 42, 0.2);
+        }
+      `}</style>
 
         {/* ── Main Layout ── */}
         <div className="pm-detail-layout">
@@ -1103,6 +1208,39 @@ const ProductDetail = () => {
                 />
               )}
             </h1>
+
+            {/* Rating Summary */}
+            {product && (
+              <div 
+                className="pm-anim flex items-center gap-2 mb-4 cursor-pointer hover:opacity-85 transition-opacity"
+                onClick={() => {
+                  const el = document.getElementById("customer-reviews");
+                  if (el) el.scrollIntoView({ behavior: "smooth" });
+                }}
+              >
+                {reviews.length > 0 ? (
+                  <>
+                    <div className="flex items-center gap-0.5">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          size={15}
+                          fill={star <= averageRating ? GOLD : "none"}
+                          stroke={star <= averageRating ? GOLD : "#d6d3d1"}
+                          strokeWidth={2}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-sm font-bold" style={{ color: INK }}>{averageRating}</span>
+                    <span className="text-xs text-muted-foreground">({reviews.length} {reviews.length === 1 ? 'review' : 'reviews'})</span>
+                  </>
+                ) : (
+                  <span className="text-xs text-muted-foreground flex items-center gap-1 hover:text-primary">
+                    ⭐ Be the first to review
+                  </span>
+                )}
+              </div>
+            )}
 
             {/* Price row */}
             <div
@@ -1293,18 +1431,14 @@ const ProductDetail = () => {
 
             {/* Info Tab Bar */}
             <div className="pm-anim pm-anim-3">
-              <div className="pm-tab-bar">
-                {(["features", "how", "specs"] as const).map((tab) => (
+              <div id="info-tabs" className="pm-tab-bar">
+                {(["features", "specs"] as const).map((tab) => (
                   <button
                     key={tab}
                     className={`pm-tab${openTab === tab ? " pm-tab-active" : ""}`}
                     onClick={() => setOpenTab(tab)}
                   >
-                    {tab === "features"
-                      ? "Key Features"
-                      : tab === "how"
-                      ? "How It Works"
-                      : "Specifications"}
+                    {tab === "features" ? "Key Features" : "Specifications"}
                   </button>
                 ))}
               </div>
@@ -1337,83 +1471,6 @@ const ProductDetail = () => {
                 </div>
               )}
 
-              {/* How It Works Tab */}
-              {openTab === "how" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  {[
-                    {
-                      step: "01",
-                      title: "Attach or carry",
-                      desc: "Place your PingME tag on your vehicle, bag, collar, or card.",
-                    },
-                    {
-                      step: "02",
-                      title: "Register it",
-                      desc: "Link the tag to your account at app.plzpingme.com — takes under 2 minutes.",
-                    },
-                    {
-                      step: "03",
-                      title: "Get contacted privately",
-                      desc: "Anyone who scans your tag can send you a message — without ever seeing your real number.",
-                    },
-                  ].map((item) => (
-                    <div
-                      key={item.step}
-                      style={{
-                        display: "flex",
-                        gap: 14,
-                        alignItems: "flex-start",
-                        padding: "14px 0",
-                        borderBottom: `1px solid ${MIST}`,
-                      }}
-                    >
-                      <span
-                        style={{
-                          width: 36,
-                          height: 36,
-                          borderRadius: "50%",
-                          background: GOLD_LIGHT,
-                          color: GOLD_DEEP,
-                          fontFamily: "'DM Mono', monospace",
-                          fontSize: 12,
-                          fontWeight: 700,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          flexShrink: 0,
-                        }}
-                      >
-                        {item.step}
-                      </span>
-                      <div>
-                        <p
-                          style={{
-                            fontFamily: "'DM Sans', system-ui, sans-serif",
-                            fontSize: 14,
-                            fontWeight: 700,
-                            color: INK,
-                            margin: "0 0 4px",
-                          }}
-                        >
-                          {item.title}
-                        </p>
-                        <p
-                          style={{
-                            fontFamily: "'DM Sans', system-ui, sans-serif",
-                            fontSize: 13,
-                            fontWeight: 400,
-                            color: TEXT_SEC,
-                            margin: 0,
-                            lineHeight: 1.5,
-                          }}
-                        >
-                          {item.desc}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
 
               {/* Specs Tab */}
               {openTab === "specs" && (
@@ -1505,6 +1562,336 @@ const ProductDetail = () => {
           </div>
         </div>
 
+        {/* ── Customer Reviews Section ── */}
+        <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 clamp(16px, 4vw, 32px)", boxSizing: "border-box", width: "100%" }}>
+          <div id="customer-reviews" className="pm-anim" style={{ marginTop: 64, borderTop: `1px solid ${MIST}`, paddingTop: 48, marginBottom: 64 }}>
+            <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 28, fontWeight: 700, color: INK, marginBottom: 32 }}>
+              Customer Reviews ({reviews.length})
+            </h2>
+
+            <div className="pm-reviews-container">
+              {/* Left Column: Rating Summary Card */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                <div 
+                  style={{ 
+                    display: "flex", 
+                    flexDirection: "column", 
+                    gap: 20, 
+                    padding: 28, 
+                    borderRadius: 24, 
+                    border: `1px solid ${MIST}`, 
+                    background: REVIEW_SUMMARY_BG,
+                    boxShadow: "0 4px 20px rgba(0, 0, 0, 0.01)" 
+                  }}
+                >
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <h4 style={{ margin: 0, fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                      Average Rating
+                    </h4>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                      <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 44, fontWeight: 800, color: INK }}>
+                        {averageRating || "0.0"}
+                      </span>
+                      <span style={{ fontSize: 14, color: TEXT_MUTED }}>/ 5.0</span>
+                    </div>
+                    <div style={{ display: "flex", gap: 3, margin: "4px 0" }}>
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          size={18}
+                          fill={star <= averageRating ? GOLD : "none"}
+                          stroke={star <= averageRating ? GOLD : "#d6d3d1"}
+                          strokeWidth={2}
+                        />
+                      ))}
+                    </div>
+                    <p style={{ margin: 0, fontSize: 13, color: TEXT_MUTED, fontWeight: 500 }}>
+                      Based on {reviews.length} {reviews.length === 1 ? "review" : "reviews"}
+                    </p>
+                  </div>
+
+                  {/* Divider */}
+                  <div style={{ height: 1, background: MIST }} />
+
+                  {/* Star Distribution Bars */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {([5, 4, 3, 2, 1] as const).map((stars) => (
+                      <div key={stars} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: TEXT_SEC, width: 44 }}>
+                          {stars} star
+                        </span>
+                        <div style={{ flex: 1, height: 6, borderRadius: 3, background: MIST, overflow: "hidden" }}>
+                          <div 
+                            style={{ 
+                              height: "100%", 
+                              width: `${starDistribution[stars]}%`, 
+                              background: GOLD_DEEP, 
+                              borderRadius: 3,
+                              transition: "width 0.6s ease"
+                            }} 
+                          />
+                        </div>
+                        <span style={{ fontSize: 12, fontWeight: 500, color: TEXT_MUTED, width: 32, textAlign: "right" }}>
+                          {starDistribution[stars]}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <Link
+                  to={`/products/${categorySlug}/${productId}/add-review`}
+                  className="pm-btn-write-review"
+                >
+                  Write a Review
+                </Link>
+              </div>
+
+              {/* Right Column: Reviews List */}
+              <div style={{ flex: 1 }}>
+                {loadingReviews ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center", padding: "40px 0" }}>
+                    <Loader2 size={20} className="animate-spin" style={{ color: GOLD }} />
+                    <span style={{ fontSize: 14, color: TEXT_MUTED }}>Loading reviews...</span>
+                  </div>
+                ) : reviews.length > 0 ? (
+                  <>
+                    {/* Customer Photos Row */}
+                    {allReviewImages.length > 0 && (
+                      <div style={{ marginBottom: 32 }}>
+                        <h3 style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700, color: INK, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 16 }}>
+                          Photos from Customers
+                        </h3>
+                        <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+                          {allReviewImages.map((imgUrl, idx) => (
+                            <div 
+                              key={idx} 
+                              style={{ 
+                                width: 88, 
+                                height: 88, 
+                                borderRadius: 16, 
+                                overflow: "hidden", 
+                                border: `1px solid ${MIST}`,
+                                background: SMOKE,
+                                cursor: "zoom-in",
+                                transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+                                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.02)"
+                              }}
+                              onClick={() => setActiveReviewImage(imgUrl)}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = "scale(1.05) translateY(-2px)";
+                                e.currentTarget.style.boxShadow = "0 8px 20px rgba(0, 0, 0, 0.1)";
+                                e.currentTarget.style.borderColor = GOLD;
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = "scale(1) translateY(0)";
+                                e.currentTarget.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.02)";
+                                e.currentTarget.style.borderColor = MIST;
+                              }}
+                            >
+                              <img src={imgUrl} alt={`Customer photo ${idx + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                      {reviews.slice(0, visibleReviewsCount).map((r, i) => (
+                        <div 
+                          key={r.id || i} 
+                          style={{ 
+                            padding: "24px", 
+                            borderRadius: 20,
+                            border: `1px solid ${MIST}`,
+                            background: REVIEW_CARD_BG,
+                            display: "flex",
+                            gap: 16,
+                            transition: "all 0.2s ease",
+                            boxShadow: "0 2px 12px rgba(0, 0, 0, 0.005)"
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = "translateY(-2px)";
+                            e.currentTarget.style.boxShadow = "0 8px 24px rgba(26, 20, 16, 0.02)";
+                            e.currentTarget.style.borderColor = GOLD_DEEP;
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = "translateY(0)";
+                            e.currentTarget.style.boxShadow = "0 2px 12px rgba(0, 0, 0, 0.005)";
+                            e.currentTarget.style.borderColor = MIST;
+                          }}
+                        >
+                          {/* Avatar Column */}
+                          <div 
+                            style={{ 
+                              width: 44, 
+                              height: 44, 
+                              borderRadius: "50%", 
+                              background: `linear-gradient(135deg, ${GOLD} 0%, ${GOLD_DEEP} 100%)`, 
+                              color: "#fff",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: 14,
+                              fontWeight: 700,
+                              flexShrink: 0,
+                              letterSpacing: "0.05em",
+                              boxShadow: "0 2px 8px rgba(201, 146, 42, 0.15)"
+                            }}
+                          >
+                            {getInitials(r.authorName)}
+                          </div>
+
+                          {/* Content Column */}
+                          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
+                            {/* Header row */}
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 6 }}>
+                              <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                                <span style={{ fontSize: 14, fontWeight: 700, color: INK }}>
+                                  {r.authorName}
+                                </span>
+                                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                  <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, fontWeight: 700, color: SUCCESS, textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                                    ✓ Verified Purchase
+                                  </span>
+                                </div>
+                              </div>
+                              
+                              <span style={{ fontSize: 12, color: TEXT_MUTED }}>
+                                {r.createdAt ? (
+                                  new Date((r.createdAt as any).seconds * 1000).toLocaleDateString(undefined, {
+                                    year: "numeric",
+                                    month: "short",
+                                    day: "numeric",
+                                  })
+                                ) : (
+                                  "Just now"
+                                )}
+                              </span>
+                            </div>
+
+                            {/* Rating row */}
+                            <div style={{ display: "flex", gap: 2 }}>
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <Star
+                                  key={star}
+                                  size={13}
+                                  fill={star <= r.rating ? GOLD : "none"}
+                                  stroke={star <= r.rating ? GOLD : "#d6d3d1"}
+                                  strokeWidth={2}
+                                />
+                              ))}
+                            </div>
+
+                            {/* Review Comment */}
+                            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                              <h5 style={{ margin: 0, fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 700, color: INK }}>
+                                {r.title}
+                              </h5>
+                              <p style={{ margin: 0, fontSize: 14, color: INK_SOFT, lineHeight: 1.6, whiteSpace: "pre-line" }}>
+                                {r.comment}
+                              </p>
+                            </div>
+
+                            {/* Review Images */}
+                            {r.images && r.images.length > 0 && (
+                              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 8 }}>
+                                {r.images.map((imgUrl, idx) => (
+                                  <div 
+                                    key={idx} 
+                                    style={{ 
+                                      width: 96, 
+                                      height: 96, 
+                                      borderRadius: 14, 
+                                      overflow: "hidden", 
+                                      border: `1px solid ${MIST}`,
+                                      background: SMOKE,
+                                      cursor: "zoom-in",
+                                      transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+                                      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.02)"
+                                    }}
+                                    onClick={() => setActiveReviewImage(imgUrl)}
+                                    onMouseEnter={(e) => {
+                                      e.currentTarget.style.transform = "scale(1.04)";
+                                      e.currentTarget.style.boxShadow = "0 8px 20px rgba(0, 0, 0, 0.12)";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.currentTarget.style.transform = "scale(1)";
+                                      e.currentTarget.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.02)";
+                                    }}
+                                  >
+                                    <img src={imgUrl} alt={`Review photo ${idx + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* See More / Show Less Button */}
+                    {reviews.length > 3 && (
+                      <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 24 }}>
+                        {visibleReviewsCount < reviews.length ? (
+                          <button
+                            onClick={() => setVisibleReviewsCount((prev) => prev + 3)}
+                            style={{
+                              background: "transparent",
+                              color: GOLD_DEEP,
+                              border: `1.5px solid ${GOLD_DEEP}`,
+                              borderRadius: 12,
+                              padding: "10px 24px",
+                              fontFamily: "'DM Sans', system-ui, sans-serif",
+                              fontSize: 14,
+                              fontWeight: 700,
+                              cursor: "pointer",
+                              transition: "all 0.2s",
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.background = GOLD_LIGHT)}
+                            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                          >
+                            See More Reviews
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => setVisibleReviewsCount(3)}
+                            style={{
+                              background: "transparent",
+                              color: TEXT_MUTED,
+                              border: `1px solid ${MIST}`,
+                              borderRadius: 12,
+                              padding: "10px 24px",
+                              fontFamily: "'DM Sans', system-ui, sans-serif",
+                              fontSize: 14,
+                              fontWeight: 700,
+                              cursor: "pointer",
+                              transition: "all 0.2s",
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(26,20,16,0.02)")}
+                            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                          >
+                            Show Less
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div style={{ padding: "40px 0", textAlign: "center" }}>
+                    <p style={{ fontSize: 14, color: TEXT_MUTED, margin: "0 0 8px" }}>
+                      No reviews yet for this product.
+                    </p>
+                    <p style={{ fontSize: 12, color: TEXT_MUTED, margin: 0 }}>
+                      Be the first to share your thoughts!
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* ── Trust Perks Strip ── */}
         <div
           style={{
@@ -1562,6 +1949,78 @@ const ProductDetail = () => {
             currentId={product.id}
             categorySlug={normalizedSlug}
           />
+        )}
+
+        {/* Review Image Lightbox Modal */}
+        {activeReviewImage && (
+          <div 
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100vw",
+              height: "100vh",
+              background: "rgba(26, 20, 16, 0.85)",
+              backdropFilter: "blur(8px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 9999,
+              cursor: "zoom-out"
+            }}
+            onClick={() => setActiveReviewImage(null)}
+          >
+            <div 
+              style={{
+                position: "relative",
+                maxWidth: "90%",
+                maxHeight: "90%",
+                borderRadius: 24,
+                overflow: "hidden",
+                border: "1px solid rgba(255, 255, 255, 0.15)",
+                boxShadow: "0 24px 60px rgba(0, 0, 0, 0.5)",
+                cursor: "default"
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img 
+                src={activeReviewImage} 
+                alt="Zoomed review photo" 
+                style={{
+                  display: "block",
+                  maxWidth: "100%",
+                  maxHeight: "85vh",
+                  objectFit: "contain"
+                }} 
+              />
+              <button 
+                onClick={() => setActiveReviewImage(null)}
+                style={{
+                  position: "absolute",
+                  top: 16,
+                  right: 16,
+                  width: 40,
+                  height: 40,
+                  borderRadius: "50%",
+                  background: "rgba(0, 0, 0, 0.5)",
+                  color: "#fff",
+                  border: "none",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  fontSize: 20,
+                  fontWeight: 300,
+                  lineHeight: 1,
+                  transition: "background 0.2s"
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(0, 0, 0, 0.8)"}
+                onMouseLeave={(e) => e.currentTarget.style.background = "rgba(0, 0, 0, 0.5)"}
+              >
+                ✕
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </MainLayout>

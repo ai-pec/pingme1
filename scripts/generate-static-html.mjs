@@ -34,7 +34,7 @@ const siteFooter = `
         Ping IFF LLP<br />
         745, First Floor,<br/> Rani Boutique<br />
         Kesho Ram Complex<br />
-        Ram Electricals, Sector 45<br />
+        Near By Ram Electricals, Sector 45<br />
         Burail, Chandigarh<br />
         Chandigarh – 160047<br />
         India
@@ -212,13 +212,13 @@ const contactContent = `
           Ping IFF LLP<br />
           745, First Floor, Rani Boutique<br />
           Kesho Ram Complex<br />
-          Ram Electricals, Sector 45<br />
+          Near By Ram Electricals, Sector 45<br />
           Burail, Chandigarh<br />
           Chandigarh – 160047<br />
           India
         </address></div>
         <div><strong>Phone</strong><p>+91 91151 12345</p></div>
-        <div><strong>Email</strong><p>hello@pingme.in</p></div>
+        <div><strong>Email</strong><p>contact@pingiff.ai</p></div>
       </div>
       <form class="mt-10 space-y-4">
         <label class="block"><span>Name</span><input class="mt-1 w-full border rounded-md p-3" type="text" placeholder="Your name" /></label>

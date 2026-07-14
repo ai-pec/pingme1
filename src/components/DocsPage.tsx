@@ -864,7 +864,7 @@ const buildSections = (
             <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: "13px", color: "hsl(var(--ping-ash))", lineHeight: "1.8" }}>
               745, First Floor,<br /> Rani Boutique<br />
               Kesho Ram Complex<br />
-              Ram Electricals, Sector 45<br />
+              Near By Ram Electricals, Sector 45<br />
               Burail, Chandigarh<br />
               Chandigarh &ndash; 160047<br />
               India

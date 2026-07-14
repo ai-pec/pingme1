@@ -208,13 +208,13 @@ const Navbar = () => {
 
         /* ── Dark mode overrides ── */
         :root.dark .header-wrapper.scrolled {
-          background: rgba(10, 10, 10, 0.95) !important;
+          background: rgba(0, 0, 0, 0.95) !important;
           border-bottom: 1px solid rgba(244, 180, 0, 0.08);
           box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
         }
 
         :root.dark .header-wrapper:not(.scrolled) {
-          background: rgba(10, 10, 10, 0.98);
+          background: rgba(0, 0, 0, 0.98);
           border-bottom: 1px solid rgba(244, 180, 0, 0.04);
         }
 

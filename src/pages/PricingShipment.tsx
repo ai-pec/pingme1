@@ -26,11 +26,7 @@ const PricingShipment = () => {
                 <tbody>
                   <tr className="border-b border-border">
                     <td className="py-3">Standard Car Card</td>
-                    <td className="text-right font-bold">₹249</td>
-                  </tr>
-                  <tr className="border-b border-border">
-                    <td className="py-3">Backpack Sticker</td>
-                    <td className="text-right font-bold">₹199</td>
+                    <td className="text-right font-bold">₹499</td>
                   </tr>
                   <tr className="border-b border-border">
                     <td className="py-3">Pet Tag</td>
@@ -38,11 +34,15 @@ const PricingShipment = () => {
                   </tr>
                   <tr className="border-b border-border">
                     <td className="py-3">NFC Card</td>
-                    <td className="text-right font-bold">₹399</td>
+                    <td className="text-right font-bold">₹599</td>
+                  </tr>
+                  <tr className="border-b border-border">
+                    <td className="py-3">Lost and Found Sticker</td>
+                    <td className="text-right font-bold">₹249</td>
                   </tr>
                   <tr>
                     <td className="py-3">Keychain Tag</td>
-                    <td className="text-right font-bold">₹179</td>
+                    <td className="text-right font-bold">₹349</td>
                   </tr>
                 </tbody>
               </table>
@@ -62,7 +62,7 @@ const PricingShipment = () => {
 
             <h2 className="text-2xl font-bold mt-8 mb-4">Bulk Orders</h2>
             <p className="text-muted-foreground">
-              For bulk orders (10+ items), please contact us at hello@pingme.in for special pricing
+              For bulk orders (10+ items), please contact us at contact@pingiff.ai for special pricing
               and custom branding options.
             </p>
           </div>
@@ -73,7 +73,7 @@ const PricingShipment = () => {
               <strong className="text-foreground">Ping IFF LLP</strong><br />
               745, First Floor,<br /> Rani Boutique<br />
               Kesho Ram Complex<br />
-              Ram Electricals, Sector 45<br />
+              Near By Ram Electricals, Sector 45<br />
               Burail, Chandigarh<br />
               Chandigarh – 160047<br />
               India

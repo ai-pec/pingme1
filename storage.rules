@@ -5,16 +5,9 @@ service firebase.storage {
       return request.auth != null;
     }
 
-    function isAdmin() {
-      return isSignedIn() && (
-        request.auth.token.admin == true ||
-        firestore.exists(/databases/(default)/documents/admins/$(request.auth.uid))
-      );
-    }
-
     match /products/{allPaths=**} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isSignedIn();
     }
   }
 }

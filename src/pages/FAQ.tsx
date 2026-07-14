@@ -91,7 +91,7 @@ const FAQ = () => {
                   <strong className="text-foreground">Ping IFF LLP</strong><br />
                   745, First Floor,<br /> Rani Boutique<br />
                   Kesho Ram Complex<br />
-                  Ram Electricals, Sector 45<br />
+                  Near By Ram Electricals, Sector 45<br />
                   Burail, Chandigarh<br />
                   Chandigarh – 160047<br />
                   India

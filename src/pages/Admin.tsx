@@ -17,7 +17,7 @@ import {
 } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  CheckCircle2, Copy, Eye, Loader2, MessageSquare, Save,
+  CheckCircle2, Copy, Eye, EyeOff, Loader2, MessageSquare, Save,
   Search, Shield, SlidersHorizontal, XCircle, Plus, Edit,
   Trash2, HelpCircle, ChevronDown, ChevronRight, Filter,
   ReceiptText, Package, ArrowLeft, MoreVertical, X,
@@ -59,6 +59,7 @@ import {
   subscribeToProducts, saveProduct, deleteProductDoc, uploadProductImage,
   DbProduct, renameCategory, moveProductsToCategory,
   subscribeToProductCategories, saveProductCategory, deleteCategory,
+  toggleProductDisabled,
 } from "@/lib/productService";
 import type { PrebookingRecord } from "@/lib/prebookService";
 import {
@@ -226,6 +227,9 @@ const ProductMedia = ({ product }: { product: DbProduct }) => {
       {product.popular && (
         <Badge className="absolute top-2 right-2 text-[10px] z-10">Popular</Badge>
       )}
+      {product.disabled && (
+        <Badge variant="destructive" className="absolute top-2 left-2 text-[10px] z-10 bg-destructive/90 text-destructive-foreground">Disabled</Badge>
+      )}
       {product.image && !failed ? (
         <img
           src={product.image} alt={product.title}
@@ -284,6 +288,8 @@ export default function Admin() {
   const [copySlug,          setCopySlug]          = useState("");
   const [savingProductId,   setSavingProductId]   = useState<string | null>(null);
   const [isUploadingImage,  setIsUploadingImage]  = useState(false);
+  const [isUploadingAdditional, setIsUploadingAdditional] = useState(false);
+  const [newAdditionalUrl, setNewAdditionalUrl] = useState("");
 
   /* ── messages ── */
   const [messages,        setMessages]        = useState<ContactMessage[]>([]);
@@ -398,8 +404,8 @@ export default function Admin() {
   const openProduct = (product: DbProduct | null, categorySlug?: string) => {
     const slug = normalizeCategorySlug(categorySlug ?? "") || defaultSlug;
     setEditingProduct(product
-      ? { ...product, categorySlug: normalizeCategorySlug(product.categorySlug) || defaultSlug }
-      : { id: "", categorySlug: slug, title: "", price: "", originalPrice: "", image: "", emoji: "", features: [""], popular: false },
+      ? { ...product, categorySlug: normalizeCategorySlug(product.categorySlug) || defaultSlug, images: product.images || [] }
+      : { id: "", categorySlug: slug, title: "", price: "", originalPrice: "", image: "", images: [], emoji: "", features: [""], popular: false, disabled: false },
     );
     setIsProductOpen(true);
   };
@@ -448,10 +454,61 @@ export default function Admin() {
     finally { setIsUploadingImage(false); }
   };
 
+  const handleAdditionalImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !editingProduct) return;
+    try {
+      setIsUploadingAdditional(true);
+      const url = await uploadProductImage(file, editingProduct.categorySlug);
+      const currentImages = editingProduct.images || [];
+      setEditingProduct({
+        ...editingProduct,
+        images: [...currentImages, url]
+      });
+      toast.success("Additional image uploaded");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to upload additional image");
+    } finally {
+      setIsUploadingAdditional(false);
+    }
+  };
+
+  const removeAdditionalImage = (indexToRemove: number) => {
+    if (!editingProduct) return;
+    const currentImages = editingProduct.images || [];
+    setEditingProduct({
+      ...editingProduct,
+      images: currentImages.filter((_, idx) => idx !== indexToRemove)
+    });
+  };
+
+  const handleAddAdditionalUrl = () => {
+    if (!newAdditionalUrl.trim() || !editingProduct) return;
+    const resolved = resolveProductImageUrl(newAdditionalUrl.trim());
+    const currentImages = editingProduct.images || [];
+    setEditingProduct({
+      ...editingProduct,
+      images: [...currentImages, resolved]
+    });
+    setNewAdditionalUrl("");
+    toast.success("Additional image url added");
+  };
+
   const deleteProduct = async (id: string) => {
     if (!confirm("Delete this product?")) return;
     try { await deleteProductDoc(id); toast.success("Product deleted"); }
     catch (err) { console.error(err); toast.error("Failed to delete"); }
+  };
+
+  const toggleDisableProduct = async (id: string, disabled: boolean) => {
+    try {
+      await toggleProductDisabled(id, disabled);
+      toast.success(disabled ? "Product disabled" : "Product enabled");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to update status");
+    }
   };
 
   const deleteCat = async (slug: string) => {
@@ -892,7 +949,7 @@ export default function Admin() {
                         ) : (
                           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                             {cat.products.map((product) => (
-                              <div key={product.id} className="border rounded-xl overflow-hidden flex flex-col bg-card">
+                              <div key={product.id} className={`border rounded-xl overflow-hidden flex flex-col bg-card transition-all ${product.disabled ? "opacity-70 border-dashed border-muted-foreground/35" : ""}`}>
                                 <ProductMedia product={product} />
                                 <div className="p-3 flex-1 flex flex-col gap-2">
                                   <p className="font-semibold text-xs sm:text-sm leading-snug line-clamp-2" title={product.title}>
@@ -904,8 +961,13 @@ export default function Admin() {
                                       <span className="text-[10px] text-muted-foreground line-through">{product.originalPrice}</span>
                                     )}
                                   </div>
-                                  {/* 4-action row — equal sized touch targets */}
-                                  <div className="grid grid-cols-4 gap-0.5 -mx-1">
+                                  {/* 5-action row — equal sized touch targets */}
+                                  <div className="grid grid-cols-5 gap-0.5 -mx-1">
+                                    <IconBtn
+                                      icon={product.disabled ? EyeOff : Eye}
+                                      label={product.disabled ? "Enable product" : "Disable product"}
+                                      onClick={() => toggleDisableProduct(product.id, !product.disabled)}
+                                    />
                                     <IconBtn icon={Edit}             label="Edit product"       onClick={() => openProduct(product)} />
                                     <IconBtn icon={Copy}             label="Copy product"       onClick={() => { setCopyProductId(product.id); setCopySlug(normalizeCategorySlug(product.categorySlug) || defaultSlug); setIsCopyOpen(true); }} />
                                     <IconBtn icon={SlidersHorizontal} label="Move product"      onClick={() => { setMoveProductId(product.id); setIsMoveOpen(true); }} />
@@ -1348,7 +1410,7 @@ export default function Admin() {
 
             {/* image upload */}
             <div className="space-y-2">
-              <Label className="text-xs font-semibold">Product Image</Label>
+              <Label className="text-xs font-semibold">Product Image (Primary Cover)</Label>
               <Input type="file" accept="image/*" onChange={handleImageUpload} disabled={isUploadingImage}
                 className="h-11 text-sm rounded-xl file:mr-3 file:rounded-lg file:border-0 file:bg-primary/10 file:text-primary file:text-xs file:font-medium file:h-7 file:px-3" />
               <Input value={editingProduct.image} onChange={(e) => setEditingProduct({ ...editingProduct, image: e.target.value })}
@@ -1361,6 +1423,64 @@ export default function Admin() {
               {editingProduct.image && (
                 <div className="w-20 h-20 rounded-xl border overflow-hidden bg-muted">
                   <img src={editingProduct.image} alt="Preview" className="w-full h-full object-cover" />
+                </div>
+              )}
+            </div>
+
+            {/* additional images upload */}
+            <div className="space-y-3 pt-3 border-t">
+              <Label className="text-xs font-semibold">Additional Product Images (Gallery)</Label>
+              
+              {/* Thumbnail list with delete buttons */}
+              {editingProduct.images && editingProduct.images.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {editingProduct.images.map((img, idx) => (
+                    <div key={idx} className="relative w-20 h-20 rounded-xl border overflow-hidden bg-muted group">
+                      <img src={img} alt={`Additional preview ${idx}`} className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removeAdditionalImage(idx)}
+                        className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity duration-200"
+                        title="Remove Image"
+                      >
+                        <Trash2 className="w-4 h-4 text-white" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              <div className="flex gap-2">
+                <Input type="file" accept="image/*" onChange={handleAdditionalImageUpload} disabled={isUploadingAdditional}
+                  className="h-11 text-sm rounded-xl file:mr-3 file:rounded-lg file:border-0 file:bg-primary/10 file:text-primary file:text-xs file:font-medium file:h-7 file:px-3 flex-1" />
+              </div>
+              
+              <div className="flex gap-2">
+                <Input
+                  value={newAdditionalUrl}
+                  onChange={(e) => setNewAdditionalUrl(e.target.value)}
+                  placeholder="Or paste additional image URL and press Enter"
+                  className="h-11 text-sm rounded-xl flex-1"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddAdditionalUrl();
+                    }
+                  }}
+                />
+                <Button 
+                  type="button"
+                  onClick={handleAddAdditionalUrl}
+                  variant="outline"
+                  className="h-11 rounded-xl px-4"
+                >
+                  Add
+                </Button>
+              </div>
+              
+              {isUploadingAdditional && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Loader2 className="w-3 h-3 animate-spin" /> Uploading additional…
                 </div>
               )}
             </div>
@@ -1388,6 +1508,14 @@ export default function Admin() {
               <div>
                 <p className="text-sm font-medium">Mark as Popular</p>
                 <p className="text-xs text-muted-foreground">Shows a "Popular" badge on this product</p>
+              </div>
+            </label>
+
+            <label className="flex items-center gap-3 p-3 rounded-xl border cursor-pointer hover:bg-muted/40 transition-colors">
+              <Checkbox checked={editingProduct.disabled} onCheckedChange={(c) => setEditingProduct({ ...editingProduct, disabled: !!c })} />
+              <div>
+                <p className="text-sm font-medium text-destructive">Disable Product</p>
+                <p className="text-xs text-muted-foreground">Hides this product from the user catalog view</p>
               </div>
             </label>
 

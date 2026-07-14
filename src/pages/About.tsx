@@ -402,7 +402,7 @@ const About = () => {
     return () => { alive = false; };
   }, [cached]);
 
-  const mapsUrl = "https://www.google.com/maps/search/?api=1&query=745+First+Floor+Rani+Boutique+Kesho+Ram+Complex+Ram+Electricals+Sector+45+Burail+Chandigarh+Chandigarh+160047+India";
+  const mapsUrl = "https://www.google.com/maps/search/?api=1&query=745+First+Floor+Rani+Boutique+Kesho+Ram+Complex+Near+By+Ram+Electricals+Sector+45+Burail+Chandigarh+Chandigarh+160047+India";
 
   return (
     <MainLayout>
@@ -729,7 +729,7 @@ const About = () => {
                       <p style={{ fontSize: 14, color: "hsl(var(--muted-foreground))", lineHeight: 1.6 }}>
                         745, First Floor,<br /> Rani Boutique<br />
                         Kesho Ram Complex<br />
-                        Ram Electricals, Sector 45<br />
+                        Near By Ram Electricals, Sector 45<br />
                         Burail, Chandigarh<br />
                         Chandigarh – 160047<br />
                         India

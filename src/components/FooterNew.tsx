@@ -157,7 +157,7 @@ const FooterNew = () => {
                 <span>
                   745, First Floor,<br /> Rani Boutique<br />
                   Kesho Ram Complex<br />
-                  Ram Electricals,<br />Sector 45<br />
+                  Near By Ram Electricals,<br />Sector 45<br />
                   Burail, Chandigarh<br />
                   Chandigarh – 160047<br />
                   India

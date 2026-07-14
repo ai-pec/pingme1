@@ -87,7 +87,7 @@ const contactDetails = [
   },
   {
     label: "Address",
-    value: "745, First Floor, Rani Boutique, Kesho Ram Complex, Ram Electricals, Sector 45, Burail, Chandigarh, Chandigarh, 160047, India",
+    value: "745, First Floor, Rani Boutique, Kesho Ram Complex, Near By Ram Electricals, Sector 45, Burail, Chandigarh, Chandigarh, 160047, India",
     icon: MapPin,
     copyable: true,
   },

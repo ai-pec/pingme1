@@ -20,6 +20,7 @@ import SmoothScroll from "@/components/SmoothScroll";
 const Landing = lazy(() => import("./pages/Landing"));
 const Products = lazy(() => import("./pages/Products"));
 const ProductDetail = lazy(() => import("./pages/ProductDetail"));
+const AddReview = lazy(() => import("./pages/AddReview"));
 const Blog = lazy(() => import("./pages/Blog"));
 const Prebook = lazy(() => import("./pages/Prebook"));
 const About = lazy(() => import("./pages/About"));
@@ -30,7 +31,6 @@ const RefundPolicy = lazy(() => import("./pages/RefundPolicy"));
 const PricingShipment = lazy(() => import("./pages/PricingShipment"));
 const TermsConditions = lazy(() => import("./pages/TermsConditions"));
 const FAQ = lazy(() => import("./pages/FAQ"));
-const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Auth Pages
 const Login = lazy(() => import("./pages/auth/Login"));
@@ -105,11 +105,6 @@ const isNfcSubdomain = typeof window !== "undefined" && (
   (import.meta.env.DEV && new URLSearchParams(window.location.search).get("nfc") === "1")
 );
 
-const isAppSubdomain = typeof window !== "undefined" && (
-  window.location.hostname.startsWith("app.") ||
-  window.location.hostname.includes(".app.")
-);
-
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -132,19 +127,19 @@ const App = () => (
                   </>
                 ) : (
                   <>
-                <Route
-                  path="/"
-                  element={
-                    isAppSubdomain ? (
-                      <Navigate to="/login" replace />
-                    ) : (
-                      <Landing />
-                    )
-                  }
-                />
+                {/* Public Routes */}
+                <Route path="/" element={<Landing />} />
                 <Route path="/products" element={<Products />} />
                 <Route path="/products/:categorySlug" element={<Products />} />
                 <Route path="/products/:categorySlug/:productId" element={<ProductDetail />} />
+                <Route
+                  path="/products/:categorySlug/:productId/add-review"
+                  element={
+                    <ProtectedRoute>
+                      <AddReview />
+                    </ProtectedRoute>
+                  }
+                />
                 <Route path="/blog" element={<Blog />} />
                 <Route
                   path="/booking"
@@ -213,12 +208,9 @@ const App = () => (
                 <Route path="/terms-conditions" element={<TermsConditions />} />
                 <Route path="/faq" element={<FAQ />} />
                 <Route path="/docs" element={<DocsPage />} />
+                <Route path="/:username" element={<PublicNFCProfile />} />
                 
-                {!isAppSubdomain && (
-                  <Route path="/:username" element={<PublicNFCProfile />} />
-                )}
-                
-                <Route path="*" element={<NotFound />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
                   </>
                 )}
               </Routes>

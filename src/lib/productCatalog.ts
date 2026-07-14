@@ -4,9 +4,11 @@ export interface ProductVariant {
   price: string;
   originalPrice?: string;
   image?: string;
+  images?: string[];
   emoji?: string;
   popular?: boolean;
   features: string[];
+  disabled?: boolean;
 }
 
 export interface ProductCategory {
@@ -168,6 +170,7 @@ export const categoryDescriptionFromName = (categorySlugOrName: string, category
     "pet-tags": "Clip onto your pet's collar. If they wander off, whoever finds them can call or message you immediately — safely and anonymously.",
     "nfc-cards": "Tap your card to share contact details instantly. No app needed for the other person — seamless, private, and effortless.",
     "keychain-tags": "Attach to your keys or wallet. A quick scan lets anyone who finds them reach you safely, without knowing who you are.",
+    "smart-keychain-tags": "Attach to your keys, bag, or wallet. A quick scan lets anyone who finds them reach you safely and privately.",
     "backpack-stickers": "Stick it on your bag or laptop. If it ever gets lost, the finder can contact you instantly and privately — no personal details exposed.",
   };
 

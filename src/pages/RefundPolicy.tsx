@@ -21,7 +21,7 @@ const RefundPolicy = () => {
 
             <h2 className="text-2xl font-bold mt-8 mb-4">2. How to Request a Refund</h2>
             <p className="text-muted-foreground mb-4">
-              To request a refund, please contact our support team at hello@pingme.in with your
+              To request a refund, please contact our support team at contact@pingiff.ai with your
               order number and reason for the refund. We'll process your request within 5-7 business days.
             </p>
 
@@ -33,7 +33,7 @@ const RefundPolicy = () => {
 
             <h2 className="text-2xl font-bold mt-8 mb-4">4. Non-Refundable Items</h2>
             <p className="text-muted-foreground mb-4">
-              Custom-designed products and bulk orders may not be eligible for refunds.
+              Custom-designed products and bulk orders will not be eligible for refunds.
               Please check with our support team before placing such orders.
             </p>
 
@@ -50,7 +50,7 @@ const RefundPolicy = () => {
               <strong className="text-foreground">Ping IFF LLP</strong><br />
               745, First Floor,<br /> Rani Boutique<br />
               Kesho Ram Complex<br />
-              Ram Electricals, Sector 45<br />
+              Near By Ram Electricals, Sector 45<br />
               Burail, Chandigarh<br />
               Chandigarh – 160047<br />
               India

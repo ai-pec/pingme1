@@ -759,7 +759,7 @@ export const buildInvoiceDataFromPrebooking = (
       name: "Ping IFF LLP",
       addressLines: [
         "745, First Floor, Rani Boutique",
-        "Kesho Ram Complex, Ram Electricals",
+        "Kesho Ram Complex, Near By Ram Electricals",
         "Sector 45, Burail",
         "Chandigarh, Chandigarh, 160047, India",
       ],

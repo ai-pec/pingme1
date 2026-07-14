@@ -39,6 +39,7 @@ const categoryEmojiBySlug: Record<string, string> = {
   "pet-tags": "🐾",
   "nfc-cards": "💳",
   "keychain-tags": "🔑",
+  "smart-keychain-tags": "🔑",
   "backpack-stickers": "🎒",
 };
 
@@ -47,6 +48,7 @@ const categoryBadgePalette: Record<string, { bg: string; color: string }> = {
   "pet-tags":          { bg: "rgba(192,57,43,0.12)",  color: "#c0392b" },
   "nfc-cards":         { bg: "hsl(var(--primary) / 0.12)", color: "hsl(var(--primary))" },
   "keychain-tags":     { bg: "rgba(61,80,168,0.12)",  color: "#3d50a8" },
+  "smart-keychain-tags": { bg: "rgba(61,80,168,0.12)",  color: "#3d50a8" },
   "backpack-stickers": { bg: "rgba(154,107,30,0.12)", color: "#9a6b1e" },
 };
 
@@ -284,24 +286,19 @@ const ProductCardItem = ({ product, categorySlug }: { product: ProductVariant & 
         .pm-card-img { transition: transform 0.4s ease; }
       `}</style>
       <button type="button" className="pm-card" onClick={() => navigate(productRoute)}>
-        {product.popular && (
-          <span style={{ position: "absolute", top: 14, right: 14, zIndex: 2, background: GOLD, color: INK, fontFamily: "system-ui, -apple-system, sans-serif", fontSize: 11, fontWeight: 800, padding: "4px 10px", borderRadius: 999, letterSpacing: "0.05em" }}>
-            BEST SELLER
-          </span>
-        )}
-        {badge && categorySlug && (
-          <span style={{ position: "absolute", top: 14, left: 14, zIndex: 2, background: badge.bg, color: badge.color, fontFamily: "system-ui, -apple-system, sans-serif", fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 999, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-            {categoryNameFromSlug(categorySlug)}
-          </span>
-        )}
-        <div style={{ background: SMOKE, aspectRatio: "4/3", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: 20 }}>
+        <div style={{ background: SMOKE, aspectRatio: "4/3", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
           {product.image && !imageFailed ? (
-            <img src={product.image} alt={product.title} loading="lazy" decoding="async" className="pm-card-img" onError={() => setImageFailed(true)} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+            <img src={product.image} alt={product.title} loading="lazy" decoding="async" className="pm-card-img" onError={() => setImageFailed(true)} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           ) : (
             <span className="pm-card-img" style={{ fontSize: 72, display: "block", textAlign: "center" }}>{product.emoji}</span>
           )}
         </div>
         <div style={{ padding: "20px 20px 16px", display: "flex", flexDirection: "column", flex: 1 }}>
+          {product.popular && (
+            <span style={{ background: "rgba(201, 169, 110, 0.12)", color: GOLD_DEEP, fontFamily: "system-ui, -apple-system, sans-serif", fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 4, letterSpacing: "0.05em", width: "fit-content", textTransform: "uppercase", marginBottom: 8 }}>
+              ★ Best Seller
+            </span>
+          )}
           <h3 style={{ fontFamily: "system-ui, -apple-system, sans-serif", fontSize: 17, fontWeight: 800, color: INK, marginBottom: 6, lineHeight: 1.3, letterSpacing: "-0.01em" }}>
             {product.title}
           </h3>
@@ -351,30 +348,39 @@ const Products = () => {
 
   const categories = useMemo(() => {
     const groups = new Map<string, DbProduct[]>();
-    dbProducts.forEach((p) => {
+    dbProducts.filter((p) => !p.disabled).forEach((p) => {
       const slug = normalizeCategorySlug(p.categorySlug) || "uncategorized";
       groups.set(slug, [...(groups.get(slug) || []), p]);
     });
     const allSlugs = new Set([...groups.keys(), ...Object.keys(categoryMetadata)]);
-    return Array.from(allSlugs).map((slug) => {
-      const products = groups.get(slug) || [];
-      const meta = categoryMetadata[slug] || {};
-      const name = meta.name || categoryNameFromSlug(slug);
-      return {
-        slug, name,
-        description: meta.description || categoryDescriptionFromName(name),
-        icon: meta.icon?.trim() || categoryEmojiBySlug[slug] || categoryIconFromProducts(products),
-        coverImage: meta.coverImage || categoryCoverImageFromProducts(products),
-        gradient: meta.gradient || categoryGradientFromSlug(slug),
-        products: products.sort((a, b) => {
-          if (a.popular !== b.popular) return a.popular ? -1 : 1;
-          const aC = /car\s?(sticker|tag)/i.test(a.title);
-          const bC = /car\s?(sticker|tag)/i.test(b.title);
-          if (aC && !bC) return -1; if (!aC && bC) return 1;
-          return a.title.localeCompare(b.title);
-        }),
-      };
-    }).sort((a, b) => { if (a.slug === "car-tags") return -1; if (b.slug === "car-tags") return 1; return a.name.localeCompare(b.name); });
+    return Array.from(allSlugs)
+      .map((slug) => {
+        const products = groups.get(slug) || [];
+        const meta = categoryMetadata[slug] || {};
+        const name = meta.name || categoryNameFromSlug(slug);
+        return {
+          slug,
+          name,
+          description: meta.description || categoryDescriptionFromName(name),
+          icon: meta.icon?.trim() || categoryEmojiBySlug[slug] || categoryIconFromProducts(products),
+          coverImage: meta.coverImage || categoryCoverImageFromProducts(products),
+          gradient: meta.gradient || categoryGradientFromSlug(slug),
+          products: products.sort((a, b) => {
+            if (a.popular !== b.popular) return a.popular ? -1 : 1;
+            const aC = /car\s?(sticker|tag)/i.test(a.title);
+            const bC = /car\s?(sticker|tag)/i.test(b.title);
+            if (aC && !bC) return -1;
+            if (!aC && bC) return 1;
+            return a.title.localeCompare(b.title);
+          }),
+        };
+      })
+      .filter((c) => c.slug !== "uncategorized")
+      .sort((a, b) => {
+        if (a.slug === "car-tags") return -1;
+        if (b.slug === "car-tags") return 1;
+        return a.name.localeCompare(b.name);
+      });
   }, [dbProducts, categoryMetadata]);
 
   const activeCategory = categories.find((c) => c.slug === selectedCategory);
@@ -502,28 +508,11 @@ const Products = () => {
             <div className="pm-rule pm-fade pm-fade-3">
               <span style={{ color: GOLD_DEEP, fontSize: 14 }}>◆</span>
             </div>
-            <div className="pm-fade pm-fade-4"><Ticker /></div>
           </div>
+          <div className="pm-fade pm-fade-4" style={{ width: "100%", overflow: "hidden" }}><Ticker /></div>
         </section>
 
-        {/* ── Filter Bar — NOT sticky ── */}
-        {!selectedCategory && categories.length > 0 && (
-          <div style={{ background: "hsl(var(--card))", borderBottom: `1px solid ${MIST}`, padding: "14px 0" }}>
-            <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
-              <div className="pm-filter-scroll" style={{ display: "flex", gap: 8, flex: 1 }}>
-                <button className={`pm-tab${filterSlug === "all" ? " pm-tab-active" : ""}`} onClick={() => setFilterSlug("all")}>All Products</button>
-                {categories.map((c) => (
-                  <button key={c.slug} className={`pm-tab${filterSlug === c.slug ? " pm-tab-active" : ""}`} onClick={() => setFilterSlug(c.slug)}>
-                    {c.icon} {c.name}
-                  </button>
-                ))}
-              </div>
-              <span style={{ fontFamily: "system-ui, -apple-system, sans-serif", fontSize: 12, fontWeight: 600, color: TEXT_MUTED, whiteSpace: "nowrap", flexShrink: 0 }}>
-                {displayedCategories.length} categor{displayedCategories.length !== 1 ? "ies" : "y"}
-              </span>
-            </div>
-          </div>
-        )}
+
 
         {selectedCategory && (
           <div style={{ background: "hsl(var(--card))", borderBottom: `1px solid ${MIST}`, padding: "14px 0" }}>
@@ -599,23 +588,6 @@ const Products = () => {
           {/* Product Grid */}
           {selectedCategory && activeCategory && (
             <div style={{ display: "flex", flexDirection: "column", gap: 40 }}>
-              {activeTutorial && (
-                <div style={{ borderRadius: 16, border: `1px solid ${MIST}`, background: "hsl(var(--card))", padding: "clamp(24px, 4vw, 40px)" }}>
-                  <h2 style={{ fontFamily: "system-ui, -apple-system, sans-serif", fontSize: "clamp(20px, 4vw, 30px)", fontWeight: 800, color: INK, marginBottom: 8, letterSpacing: "-0.02em" }}>{activeTutorial.title}</h2>
-                  <p style={{ fontFamily: "system-ui, -apple-system, sans-serif", fontSize: 15, color: TEXT_SEC, marginBottom: 28, maxWidth: 600 }}>{activeTutorial.subtitle}</p>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 14, marginBottom: 20 }}>
-                    {activeTutorial.steps.map((step, idx) => (
-                      <div key={idx} style={{ background: "hsl(var(--muted))", borderRadius: 10, border: `1px solid ${MIST}`, padding: "14px 16px", display: "flex", gap: 12, alignItems: "flex-start" }}>
-                        <span style={{ width: 26, height: 26, borderRadius: "50%", background: GOLD_LIGHT, color: GOLD_DEEP, fontFamily: "system-ui, -apple-system, sans-serif", fontSize: 12, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{idx + 1}</span>
-                        <p style={{ fontFamily: "system-ui, -apple-system, sans-serif", fontSize: 13, fontWeight: 500, color: TEXT_SEC, lineHeight: 1.5, margin: 0 }}>{step}</p>
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{ borderRadius: 10, border: `1px solid ${MIST}`, background: "hsl(var(--primary) / 0.08)", padding: "12px 16px", fontFamily: "system-ui, -apple-system, sans-serif", fontSize: 13, color: TEXT_SEC }}>
-                    <strong style={{ color: INK, fontWeight: 800 }}>Pro Tip:</strong> {activeTutorial.tip}
-                  </div>
-                </div>
-              )}
               <div className="pm-product-grid">
                 {displayedProducts.map((product, idx) => (
                   <div key={product.id} className={`pm-fade pm-fade-${Math.min(idx + 1, 4)}`} style={{ height: "100%" }}>
