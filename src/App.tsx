@@ -46,15 +46,21 @@ const NFCLanding = lazy(() => import("./pages/NFCLanding"));
 const NfcPrivacyPolicy = lazy(() => import("./pages/NfcPrivacyPolicy"));
 
 
+import logo from "@/assets/ping-me-logo.png";
+
 const PageLoader = () => (
-  <div className="flex h-[100dvh] w-full flex-col items-center justify-center bg-background gap-6">
-    <div className="relative flex items-center justify-center">
-      <div className="absolute h-16 w-16 animate-ping rounded-full bg-primary/20" />
-      <Loader2 className="h-8 w-8 animate-spin text-primary relative z-10" />
+  <div className="loader-container">
+    <div className="loader">
+      <div className="box">
+        <div className="logo">
+          <img src={logo} alt="PingME Logo" />
+        </div>
+      </div>
+      <div className="box"></div>
+      <div className="box"></div>
+      <div className="box"></div>
+      <div className="box"></div>
     </div>
-    <p className="text-sm font-medium tracking-widest text-muted-foreground animate-pulse uppercase">
-      Loading PingME
-    </p>
   </div>
 );
 
