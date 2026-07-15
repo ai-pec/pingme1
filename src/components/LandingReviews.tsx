@@ -509,6 +509,99 @@ const Eyebrow: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 );
 
 /* ----------------------------------------------------------------
+   IMAGE / PHOTO REVIEWS
+---------------------------------------------------------------- */
+const IMAGE_REVIEWS = [
+  { path: "/reviews/key/7973062102.jpeg", alt: "Customer keytag review" },
+  { path: "/reviews/key/8283063202.jpeg", alt: "Customer keytag review" },
+  { path: "/reviews/key/8295284238.jpeg", alt: "Customer keytag review" },
+  { path: "/reviews/key/8437638449.jpeg", alt: "Customer keytag review" },
+  { path: "/reviews/key/9417416970.jpeg", alt: "Customer keytag review" },
+  { path: "/reviews/key/9464007351_a.jpeg", alt: "Customer keytag review" },
+  { path: "/reviews/key/9464989692.jpeg", alt: "Customer keytag review" },
+  { path: "/reviews/key/9646024731.jpeg", alt: "Customer keytag review" },
+  { path: "/reviews/key/9815883366.jpeg", alt: "Customer keytag review" },
+  { path: "/reviews/key/9888393915.jpeg", alt: "Customer keytag review" },
+  { path: "/reviews/key/9914346423.jpeg", alt: "Customer keytag review" },
+  { path: "/reviews/key/9988717146.jpeg", alt: "Customer keytag review" },
+  { path: "/reviews/key/9996293105.jpeg", alt: "Customer keytag review" },
+  { path: "/reviews/vehicle/9034400034_v.jpeg", alt: "Customer vehicle tag review" },
+  { path: "/reviews/vehicle/9115131993.jpeg", alt: "Customer vehicle tag review" },
+  { path: "/reviews/vehicle/9464007351_v.jpeg", alt: "Customer vehicle tag review" }
+];
+
+const PhotoReviews: React.FC = () => {
+  const half = Math.ceil(IMAGE_REVIEWS.length / 2);
+  const row1 = IMAGE_REVIEWS.slice(0, half);
+  const row2 = IMAGE_REVIEWS.slice(half);
+
+  return (
+    <div className="space-y-6 pt-6">
+      <div className="max-w-2xl mx-auto text-center px-4 space-y-1">
+        <h3 className="text-xl font-extrabold text-foreground md:text-2xl">
+          Customer Screenshots & Photos
+        </h3>
+        <p className="text-sm text-muted-foreground">
+          Real chats, setup confirmations, and feedback from our users.
+        </p>
+      </div>
+
+      {/* Row 1: Scrolling Left */}
+      <div
+        className="relative flex items-center overflow-hidden py-2"
+        style={{
+          maskImage: "linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%)",
+          WebkitMaskImage: "linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%)",
+        }}
+      >
+        <div className="pm-photo-track pm-photo-left">
+          {[...row1, ...row1, ...row1].map((img, i) => (
+            <div
+              key={i}
+              className="inline-block flex-shrink-0 overflow-hidden rounded-2xl border border-border/40 bg-card shadow-sm hover:shadow-md transition-shadow duration-300 mx-2"
+              style={{ height: "200px" }}
+            >
+              <img
+                src={img.path}
+                alt={img.alt}
+                className="h-full w-auto object-contain select-none"
+                loading="lazy"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Row 2: Scrolling Right */}
+      <div
+        className="relative flex items-center overflow-hidden py-2"
+        style={{
+          maskImage: "linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%)",
+          WebkitMaskImage: "linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%)",
+        }}
+      >
+        <div className="pm-photo-track pm-photo-right">
+          {[...row2, ...row2, ...row2].map((img, i) => (
+            <div
+              key={i}
+              className="inline-block flex-shrink-0 overflow-hidden rounded-2xl border border-border/40 bg-card shadow-sm hover:shadow-md transition-shadow duration-300 mx-2"
+              style={{ height: "200px" }}
+            >
+              <img
+                src={img.path}
+                alt={img.alt}
+                className="h-full w-auto object-contain select-none"
+                loading="lazy"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ----------------------------------------------------------------
    MAIN EXPORT
 ---------------------------------------------------------------- */
 const LandingReviews: React.FC = () => {
@@ -578,6 +671,9 @@ const LandingReviews: React.FC = () => {
         <MarqueeTrack reviews={row1} direction="left"  speed={36} />
         <MarqueeTrack reviews={row2} direction="right" speed={30} />
       </div>
+
+      {/* ── CUSTOMER PHOTO REVIEWS (WhatsApp & setup screenshots) ── */}
+      <PhotoReviews />
 
       {/* Bottom trust note */}
       <motion.p

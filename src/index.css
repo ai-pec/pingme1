@@ -15,7 +15,7 @@
     --ping-white: 0 0% 100%;
     --ping-cream: 42 100% 96%;
     --ping-brown: 30 75% 26%;
-    
+
     /* Semantic tokens */
     --background: 0 0% 100%;
     --foreground: 40 76% 7%;
@@ -130,6 +130,7 @@
 }
 
 @layer components {
+
   /* Container */
   .container {
     @apply max-w-[1200px] mx-auto px-4;
@@ -260,23 +261,19 @@
 
   /* Hazard stripe pattern */
   .hazard-stripe {
-    background: repeating-linear-gradient(
-      -45deg,
-      hsl(var(--primary)),
-      hsl(var(--primary)) 10px,
-      hsl(var(--ping-dark)) 10px,
-      hsl(var(--ping-dark)) 20px
-    );
+    background: repeating-linear-gradient(-45deg,
+        hsl(var(--primary)),
+        hsl(var(--primary)) 10px,
+        hsl(var(--ping-dark)) 10px,
+        hsl(var(--ping-dark)) 20px);
   }
 
   .hazard-stripe-thin {
-    background: repeating-linear-gradient(
-      -45deg,
-      hsl(var(--primary)),
-      hsl(var(--primary)) 5px,
-      hsl(var(--ping-dark)) 5px,
-      hsl(var(--ping-dark)) 10px
-    );
+    background: repeating-linear-gradient(-45deg,
+        hsl(var(--primary)),
+        hsl(var(--primary)) 5px,
+        hsl(var(--ping-dark)) 5px,
+        hsl(var(--ping-dark)) 10px);
   }
 }
 
@@ -307,6 +304,7 @@
     color: hsl(var(--ping-ink));
   }
 }
+
 /* =============================================
    PingME — LandingReviews styles (brand-matched)
    reviews.css  —  matches plzpingme.com theme
@@ -323,7 +321,7 @@
 
   background:
     radial-gradient(circle at 15% 10%, rgba(255, 231, 170, 0.35), transparent 50%),
-    radial-gradient(circle at 85% 5%,  rgba(255, 248, 226, 0.40), transparent 45%),
+    radial-gradient(circle at 85% 5%, rgba(255, 248, 226, 0.40), transparent 45%),
     hsl(0 0% 100%);
 }
 
@@ -399,7 +397,8 @@
   gap: 5px;
   padding: 3px 10px 3px 8px;
   border-radius: 99px;
-  background: hsl(var(--ping-card));        /* warm amber-tinted card */
+  background: hsl(var(--ping-card));
+  /* warm amber-tinted card */
   color: hsl(var(--ping-brown));
   border: 1px solid hsl(var(--border));
   font-size: 11px;
@@ -495,8 +494,13 @@
   background: linear-gradient(to left, hsl(42 100% 96%), transparent);
 }
 
-.dark .pm-fade-left  { background: linear-gradient(to right,  hsl(0 0% 5%), transparent); }
-.dark .pm-fade-right { background: linear-gradient(to left, hsl(0 0% 5%), transparent); }
+.dark .pm-fade-left {
+  background: linear-gradient(to right, hsl(0 0% 5%), transparent);
+}
+
+.dark .pm-fade-right {
+  background: linear-gradient(to left, hsl(0 0% 5%), transparent);
+}
 
 /* ──────────────────────────────────────────────
    Section header elements
@@ -610,11 +614,9 @@
   height: 5px;
   border-radius: 3px;
   width: 48px;
-  background: repeating-linear-gradient(
-    -45deg,
-    hsl(45 100% 48%)   0px,  hsl(45 100% 48%)  5px,
-    hsl(40 76% 7%)     5px,  hsl(40 76% 7%)   10px
-  );
+  background: repeating-linear-gradient(-45deg,
+      hsl(45 100% 48%) 0px, hsl(45 100% 48%) 5px,
+      hsl(40 76% 7%) 5px, hsl(40 76% 7%) 10px);
 }
 
 
@@ -653,7 +655,7 @@
 .dark .office-card {
   background: hsl(var(--card)) !important;
   border-color: hsl(var(--border)) !important;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.3) !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3) !important;
 }
 
 /* ── About inline "white" cards (ValueCard, ProductCard, TestiCard, FAQItem, PingTicker) */
@@ -702,8 +704,8 @@
 }
 
 /* Products filter bar and category breadcrumb bar */
-.dark [class="pm-page"] > div[style*="rgba(249,244,236"],
-.dark .pm-page > div > div[style*="rgba(249,244,236"] {
+.dark [class="pm-page"]>div[style*="rgba(249,244,236"],
+.dark .pm-page>div>div[style*="rgba(249,244,236"] {
   background: hsl(var(--card) / 0.98) !important;
 }
 
@@ -715,10 +717,21 @@
 }
 
 /* stone-* classes used throughout Partners */
-.dark .text-stone-900 { color: hsl(var(--foreground)) !important; }
-.dark .text-stone-600 { color: hsl(var(--muted-foreground)) !important; }
-.dark .text-stone-700 { color: hsl(var(--muted-foreground)) !important; }
-.dark .text-stone-400 { color: hsl(var(--muted-foreground) / 0.6) !important; }
+.dark .text-stone-900 {
+  color: hsl(var(--foreground)) !important;
+}
+
+.dark .text-stone-600 {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+.dark .text-stone-700 {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+.dark .text-stone-400 {
+  color: hsl(var(--muted-foreground) / 0.6) !important;
+}
 
 /* bg-white/* cards in Partners */
 .dark .bg-white\/70,
@@ -795,7 +808,9 @@
 }
 
 /* ── Dashboard pages (NfcVisitsDashboard, NfcLeadsDashboard) ───────────── */
-.dark .text-stone-900 { color: hsl(var(--foreground)) !important; }
+.dark .text-stone-900 {
+  color: hsl(var(--foreground)) !important;
+}
 
 /* Chart tooltip white background */
 .dark [style*="rgba(255, 255, 255, 0.95)"],
@@ -806,18 +821,36 @@
 }
 
 /* ── LandingHero — bg-white / bg-white/N classes on cards ──────────────── */
-.dark .bg-white\/92 { background-color: hsl(var(--card) / 0.92) !important; }
-.dark .bg-white\/96 { background-color: hsl(var(--card) / 0.96) !important; }
-.dark .bg-white\/82 { background-color: hsl(var(--card) / 0.82) !important; }
-.dark .bg-white\/72 { background-color: hsl(var(--card) / 0.72) !important; }
-.dark .bg-white\/62 { background-color: hsl(var(--card) / 0.62) !important; }
-.dark .bg-white\/55 { background-color: hsl(var(--card) / 0.55) !important; }
+.dark .bg-white\/92 {
+  background-color: hsl(var(--card) / 0.92) !important;
+}
+
+.dark .bg-white\/96 {
+  background-color: hsl(var(--card) / 0.96) !important;
+}
+
+.dark .bg-white\/82 {
+  background-color: hsl(var(--card) / 0.82) !important;
+}
+
+.dark .bg-white\/72 {
+  background-color: hsl(var(--card) / 0.72) !important;
+}
+
+.dark .bg-white\/62 {
+  background-color: hsl(var(--card) / 0.62) !important;
+}
+
+.dark .bg-white\/55 {
+  background-color: hsl(var(--card) / 0.55) !important;
+}
 
 /* ── bg-cream / bg-ping-card sections (NFCLanding, Contact, Blog) ───────── */
 /* bg-cream is already defined as hsl(var(--ping-cream)) so we override
    the CSS variable's effective value in dark mode */
 .dark {
-  --ping-cream: 220 15% 12%;  /* dark blue-gray replaces warm cream in dark mode */
+  --ping-cream: 220 15% 12%;
+  /* dark blue-gray replaces warm cream in dark mode */
   --ping-card: 220 15% 14%;
   --ping-white: 0 0% 5%;
   --ping-dark: 0 0% 98%;
@@ -896,22 +929,48 @@
 /* =============================================================================
    DARK MODE — Dashboard & additional stone/white class overrides
    ============================================================================= */
-.dark .text-stone-500 { color: hsl(var(--muted-foreground)) !important; }
-.dark .text-stone-800 { color: hsl(var(--foreground)) !important; }
-.dark .text-stone-600 { color: hsl(var(--muted-foreground)) !important; }
-.dark .text-stone-400 { color: hsl(var(--muted-foreground) / 0.6) !important; }
-.dark .text-stone-100 { color: hsl(var(--muted-foreground) / 0.4) !important; }
+.dark .text-stone-500 {
+  color: hsl(var(--muted-foreground)) !important;
+}
 
-.dark .bg-stone-100    { background-color: hsl(var(--muted)) !important; }
-.dark .bg-stone-50     { background-color: hsl(var(--muted)) !important; }
-.dark .border-stone-100 { border-color: hsl(var(--border)) !important; }
-.dark .border-stone-200 { border-color: hsl(var(--border)) !important; }
+.dark .text-stone-800 {
+  color: hsl(var(--foreground)) !important;
+}
+
+.dark .text-stone-600 {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+.dark .text-stone-400 {
+  color: hsl(var(--muted-foreground) / 0.6) !important;
+}
+
+.dark .text-stone-100 {
+  color: hsl(var(--muted-foreground) / 0.4) !important;
+}
+
+.dark .bg-stone-100 {
+  background-color: hsl(var(--muted)) !important;
+}
+
+.dark .bg-stone-50 {
+  background-color: hsl(var(--muted)) !important;
+}
+
+.dark .border-stone-100 {
+  border-color: hsl(var(--border)) !important;
+}
+
+.dark .border-stone-200 {
+  border-color: hsl(var(--border)) !important;
+}
 
 /* Refresh button in dashboards */
 .dark .border-stone-200.bg-white {
   background-color: hsl(var(--card)) !important;
   border-color: hsl(var(--border)) !important;
 }
+
 .dark .hover\:bg-stone-50:hover {
   background-color: hsl(var(--muted)) !important;
 }
@@ -942,6 +1001,7 @@
 .dark .about-root h4[style] {
   color: hsl(var(--foreground));
 }
+
 .dark .about-root p[style*="#666"],
 .dark .about-root p[style*="#555"],
 .dark .about-root span[style*="#888"],
@@ -954,6 +1014,7 @@
 .dark .about-root [style*="rgba(0,0,0,0.07)"] {
   border-color: hsl(var(--border)) !important;
 }
+
 .dark .about-root [style*="rgba(0,0,0,.07)"] {
   border-color: hsl(var(--border)) !important;
 }
@@ -964,6 +1025,7 @@
 .dark .pm-page [style*="background:#ffffff"] {
   background: hsl(var(--card)) !important;
 }
+
 .dark .pm-page [style*="background: \"#fdf8f2\""],
 .dark .pm-page [style*="background: #fdf8f2"],
 .dark .pm-page [style*="background:#fdf8f2"] {
@@ -986,11 +1048,9 @@
   --size: 200px;
   --duration: 2s;
   --logo-color: hsl(var(--primary));
-  --background: linear-gradient(
-    0deg,
-    rgba(201, 169, 110, 0.05) 0%,
-    rgba(201, 169, 110, 0.15) 100%
-  );
+  --background: linear-gradient(0deg,
+      rgba(201, 169, 110, 0.05) 0%,
+      rgba(201, 169, 110, 0.15) 100%);
   height: var(--size);
   aspect-ratio: 1;
   position: relative;
@@ -1047,14 +1107,14 @@
   align-items: center;
   justify-content: center;
   z-index: 100;
-  padding: 30%;
+  padding: 50%;
 }
 
 .loader .logo img {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
 }
 
 @keyframes ripple {
@@ -1062,12 +1122,38 @@
     transform: scale(1);
     box-shadow: rgba(0, 0, 0, 0.15) 0px 10px 15px -3px;
   }
+
   50% {
     transform: scale(1.15);
     box-shadow: rgba(201, 169, 110, 0.2) 0px 20px 30px -5px;
   }
+
   100% {
     transform: scale(1);
     box-shadow: rgba(0, 0, 0, 0.15) 0px 10px 15px -3px;
   }
+}
+
+/* ── Photo Review Marquees ── */
+@keyframes scrollLeft {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-33.3333%); }
+}
+@keyframes scrollRight {
+  0% { transform: translateX(-33.3333%); }
+  100% { transform: translateX(0); }
+}
+.pm-photo-track {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+}
+.pm-photo-left {
+  animation: scrollLeft 35s linear infinite;
+}
+.pm-photo-right {
+  animation: scrollRight 35s linear infinite;
+}
+.pm-photo-track:hover {
+  animation-play-state: paused;
 }
