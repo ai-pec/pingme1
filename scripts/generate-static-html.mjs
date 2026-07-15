@@ -282,7 +282,7 @@ const privacyContent = policyContent("Privacy Policy", "Last updated: January 20
 ]);
 
 const refundContent = policyContent("Refund Policy", "Last updated: January 2026", [
-  { heading: "Refund Eligibility", body: "We offer a 60-day money-back guarantee on all our products." },
+  { heading: "Refund Eligibility", body: "We offer a 7-day money-back guarantee on all our products." },
   { heading: "How to Request a Refund", body: "To request a refund, please contact our support team with your order number and reason for the refund." },
   { heading: "Refund Process", body: "Once approved, refunds will be credited to your original payment method within 7-10 business days." },
 ]);

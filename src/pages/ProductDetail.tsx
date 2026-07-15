@@ -278,6 +278,21 @@ const ImageGallery = ({
           ))}
         </div>
       )}
+
+      {/* Disclaimer */}
+      <p
+        style={{
+          fontFamily: "'DM Sans', system-ui, sans-serif",
+          fontSize: 12,
+          fontWeight: 500,
+          color: TEXT_MUTED,
+          textAlign: "center",
+          lineHeight: 1.5,
+          margin: 0,
+        }}
+      >
+        * Actual product color/finish may vary slightly from the image due to photography and screen settings.
+      </p>
     </div>
   );
 };
@@ -737,12 +752,25 @@ const ProductDetail = () => {
   const categoryName =
     categoryMeta?.name || (normalizedSlug ? categoryNameFromSlug(normalizedSlug) : "Products");
 
+  /* ── Color variants (photos for other colors of this same product) ── */
+  const [selectedColorIdx, setSelectedColorIdx] = useState<number | null>(null);
+  const colorVariants = product?.colorVariants ?? [];
+
+  // Reset color selection whenever the product itself changes
+  useEffect(() => {
+    setSelectedColorIdx(null);
+  }, [productId]);
+
+  const selectedColor = selectedColorIdx !== null ? colorVariants[selectedColorIdx] : null;
+
   /* ── Derived fields ── */
   const images: string[] = [];
-  if (product?.image) {
+  if (selectedColor?.image) {
+    images.push(selectedColor.image);
+  } else if (product?.image) {
     images.push(product.image);
   }
-  if (product?.images && Array.isArray(product.images)) {
+  if (!selectedColor && product?.images && Array.isArray(product.images)) {
     product.images.forEach((img) => {
       if (img && img !== product.image && !images.includes(img)) {
         images.push(img);
@@ -766,10 +794,10 @@ const ProductDetail = () => {
     for (let i = 0; i < qty; i++) {
       addToCart({
         id: product.id,
-        title: product.title,
+        title: selectedColor ? `${product.title} - ${selectedColor.color}` : product.title,
         price: product.price,
         originalPrice: product.originalPrice,
-        image: product.image,
+        image: selectedColor?.image || product.image,
         emoji: product.emoji,
       });
     }
@@ -1023,6 +1051,81 @@ const ProductDetail = () => {
         .pm-btn-cart:hover { border-color: ${GOLD_DEEP}; background: ${GOLD_LIGHT}; transform: translateY(-2px); }
         .pm-btn-cart-added { background: ${SUCCESS} !important; color: #fff !important; border-color: ${SUCCESS} !important; }
 
+        /* ── Color swatch selector ── */
+        .pm-swatch-track {
+          display: flex;
+          gap: 20px;
+          flex-wrap: wrap;
+        }
+        .pm-swatch {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 9px;
+          background: none;
+          border: none;
+          padding: 0;
+          cursor: pointer;
+          -webkit-tap-highlight-color: transparent;
+        }
+        .pm-swatch-ring {
+          width: 60px;
+          height: 60px;
+          border-radius: 50%;
+          padding: 3px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 1.5px solid ${MIST};
+          background: ${WHITE};
+          position: relative;
+          transition: border-color 0.28s cubic-bezier(0.4,0,0.2,1), box-shadow 0.28s cubic-bezier(0.4,0,0.2,1), transform 0.28s cubic-bezier(0.4,0,0.2,1);
+        }
+        .pm-swatch-photo {
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          overflow: hidden;
+          background: ${SMOKE};
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .pm-swatch-photo img { width: 100%; height: 100%; object-fit: cover; }
+        .pm-swatch:hover .pm-swatch-ring {
+          border-color: ${GOLD_DEEP};
+          transform: translateY(-2px);
+          box-shadow: 0 6px 18px rgba(201,146,42,0.18);
+        }
+        .pm-swatch-ring.is-active {
+          border-color: ${GOLD_DEEP};
+          box-shadow: 0 0 0 3px rgba(201,146,42,0.14), 0 8px 20px rgba(201,146,42,0.2);
+        }
+        .pm-swatch-check {
+          position: absolute;
+          bottom: -3px;
+          right: -3px;
+          width: 19px;
+          height: 19px;
+          border-radius: 50%;
+          background: ${GOLD_DEEP};
+          border: 2px solid ${WHITE};
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 2px 6px rgba(26,20,16,0.25);
+        }
+        .pm-swatch-label {
+          font-family: 'DM Sans', system-ui, sans-serif;
+          font-size: 12.5px;
+          font-weight: 600;
+          color: ${TEXT_SEC};
+          letter-spacing: 0.01em;
+          transition: color 0.2s ease;
+        }
+        .pm-swatch:hover .pm-swatch-label { color: ${GOLD_DEEP}; }
+        .pm-swatch-label.is-active { color: ${GOLD_DEEP}; font-weight: 700; }
+
         .pm-reviews-container {
           display: grid;
           grid-template-columns: 280px 1fr;
@@ -1181,6 +1284,27 @@ const ProductDetail = () => {
                   ⭐ Best Seller
                 </span>
               )}
+              {normalizedSlug === "smart-keychain-tags" && product?.tags && product.tags.length > 0 && (
+                product.tags.map((tag, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      background: "rgba(61, 80, 168, 0.12)",
+                      color: "#3d50a8",
+                      fontFamily: "'DM Sans', system-ui, sans-serif",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      padding: "4px 10px",
+                      borderRadius: 999,
+                      letterSpacing: "0.02em",
+                      textTransform: "capitalize",
+                      border: "1px solid rgba(61, 80, 168, 0.2)",
+                    }}
+                  >
+                    {tag}
+                  </span>
+                ))
+              )}
             </div>
 
             {/* Title */}
@@ -1268,14 +1392,32 @@ const ProductDetail = () => {
               {product?.originalPrice && (
                 <span
                   style={{
-                    fontFamily: "'DM Mono', monospace",
-                    fontSize: 18,
-                    fontWeight: 400,
-                    color: TEXT_MUTED,
-                    textDecoration: "line-through",
+                    display: "inline-flex",
+                    alignItems: "baseline",
+                    gap: 5,
                   }}
                 >
-                  {product.originalPrice}
+                  <span
+                    style={{
+                      fontFamily: "'DM Sans', system-ui, sans-serif",
+                      fontSize: 13,
+                      fontWeight: 500,
+                      color: TEXT_MUTED,
+                    }}
+                  >
+                    M.R.P.
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "'DM Mono', monospace",
+                      fontSize: 18,
+                      fontWeight: 400,
+                      color: TEXT_MUTED,
+                      textDecoration: "line-through",
+                    }}
+                  >
+                    {product.originalPrice}
+                  </span>
                 </span>
               )}
               {discountPct && (
@@ -1315,6 +1457,83 @@ const ProductDetail = () => {
               style={{ height: 1, background: MIST, marginBottom: 24 }}
               className="pm-anim pm-anim-2"
             />
+
+            {/* Color Selector */}
+            {colorVariants.length > 0 && (
+              <div
+                className="pm-anim pm-anim-2"
+                style={{ marginBottom: 28 }}
+              >
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 16 }}>
+                  <span
+                    style={{
+                      fontFamily: "'DM Sans', system-ui, sans-serif",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: TEXT_SEC,
+                      letterSpacing: "0.08em",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Colour
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "'Playfair Display', Georgia, serif",
+                      fontSize: 14,
+                      fontStyle: "italic",
+                      color: GOLD_DEEP,
+                    }}
+                  >
+                    {selectedColor ? selectedColor.color : "Default"}
+                  </span>
+                </div>
+                <div className="pm-swatch-track">
+                  {/* Default / original photo swatch */}
+                  <button className="pm-swatch" onClick={() => setSelectedColorIdx(null)}>
+                    <div className={`pm-swatch-ring${selectedColorIdx === null ? " is-active" : ""}`}>
+                      <div className="pm-swatch-photo">
+                        {product?.image ? (
+                          <img src={product.image} alt="Default" />
+                        ) : (
+                          <span style={{ fontSize: 22 }}>{product?.emoji || "🏷️"}</span>
+                        )}
+                      </div>
+                      {selectedColorIdx === null && (
+                        <span className="pm-swatch-check">
+                          <CheckCircle2 size={12} color={WHITE} strokeWidth={3} />
+                        </span>
+                      )}
+                    </div>
+                    <span className={`pm-swatch-label${selectedColorIdx === null ? " is-active" : ""}`}>
+                      Default
+                    </span>
+                  </button>
+
+                  {colorVariants.map((variant, idx) => (
+                    <button key={idx} className="pm-swatch" onClick={() => setSelectedColorIdx(idx)}>
+                      <div className={`pm-swatch-ring${selectedColorIdx === idx ? " is-active" : ""}`}>
+                        <div className="pm-swatch-photo">
+                          {variant.image ? (
+                            <img src={variant.image} alt={variant.color} />
+                          ) : (
+                            <span style={{ fontSize: 22 }}>{product?.emoji || "🏷️"}</span>
+                          )}
+                        </div>
+                        {selectedColorIdx === idx && (
+                          <span className="pm-swatch-check">
+                            <CheckCircle2 size={12} color={WHITE} strokeWidth={3} />
+                          </span>
+                        )}
+                      </div>
+                      <span className={`pm-swatch-label${selectedColorIdx === idx ? " is-active" : ""}`}>
+                        {variant.color}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Qty + CTA */}
             <div
@@ -1477,11 +1696,11 @@ const ProductDetail = () => {
                 <div>
                   {[
                     { label: "Category", value: categoryName },
-                    { label: "Technology", value: "QR Code + NFC (where supported)" },
-                    { label: "Material", value: "Durable PVC / Aluminium (product-specific)" },
+                    { label: "Technology", value: "QR Code" },
+                    { label: "Material", value: "Durable PVC" },
                     { label: "Connectivity", value: "No Bluetooth. No battery. No app for scanner." },
                     { label: "Account Required", value: "Yes — for tag owner. Not for finder." },
-                    { label: "Compatibility", value: "All smartphones with camera (QR). NFC-enabled for tap." },
+                    { label: "Compatibility", value: "All smartphones with camera (QR)." },
                     { label: "Replaceable", value: "Yes — contact support" },
                   ].map((spec) => (
                     <div

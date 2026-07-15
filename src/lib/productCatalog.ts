@@ -1,3 +1,8 @@
+export interface ColorVariant {
+  color: string;
+  image: string;
+}
+
 export interface ProductVariant {
   id: string;
   title: string;
@@ -9,6 +14,8 @@ export interface ProductVariant {
   popular?: boolean;
   features: string[];
   disabled?: boolean;
+  tags?: string[];
+  colorVariants?: ColorVariant[];
 }
 
 export interface ProductCategory {

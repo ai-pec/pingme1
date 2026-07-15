@@ -15,8 +15,8 @@ const RefundPolicy = () => {
 
             <h2 className="text-2xl font-bold mt-8 mb-4">1. Refund Eligibility</h2>
             <p className="text-muted-foreground mb-4">
-              We offer a 60-day money-back guarantee on all our products. If you're not satisfied
-              with your purchase, you can request a full refund within 60 days of delivery.
+              We offer a 7-day money-back guarantee on all our products. If you're not satisfied
+              with your purchase, you can request a refund within 7 days of delivery.
             </p>
 
             <h2 className="text-2xl font-bold mt-8 mb-4">2. How to Request a Refund</h2>

@@ -1,7 +1,7 @@
 import { collection, doc, getDocs, onSnapshot, setDoc, deleteDoc, serverTimestamp, writeBatch, query, where, getDoc, onSnapshot as onSnap, type DocumentData } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "./firebase";
-import { normalizeCategorySlug, ProductVariant, resolveProductImageUrl } from "./productCatalog";
+import { normalizeCategorySlug, ProductVariant, ColorVariant, resolveProductImageUrl } from "./productCatalog";
 
 export interface DbProduct extends ProductVariant {
   categorySlug: string;
@@ -18,6 +18,31 @@ const normalizeFeatures = (value: unknown): string[] => {
     .filter((feature): feature is string => typeof feature === "string")
     .map((feature) => feature.trim())
     .filter(Boolean);
+};
+
+const normalizeTags = (value: unknown): string[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .filter((tag): tag is string => typeof tag === "string")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+};
+
+const normalizeColorVariants = (value: unknown): ColorVariant[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .filter((v): v is Record<string, unknown> => typeof v === "object" && v !== null)
+    .map((v) => ({
+      color: typeof v.color === "string" ? v.color.trim() : "",
+      image: resolveProductImageUrl(typeof v.image === "string" ? v.image : ""),
+    }))
+    .filter((v) => v.color && v.image);
 };
 
 const mapToDbProduct = (id: string, value: Record<string, unknown>): DbProduct => {
@@ -41,7 +66,7 @@ const mapToDbProduct = (id: string, value: Record<string, unknown>): DbProduct =
     id,
     categorySlug,
     title: typeof value.title === "string" ? value.title : "",
-    price: formatPrice(value.price), 
+    price: formatPrice(value.price),
     originalPrice: ((): string | undefined => {
       const op = formatPrice(value.originalPrice);
       return op ? op : undefined;
@@ -52,6 +77,11 @@ const mapToDbProduct = (id: string, value: Record<string, unknown>): DbProduct =
     popular: Boolean(value.popular),
     disabled: Boolean(value.disabled),
     features: normalizeFeatures(value.features),
+    tags: normalizeTags(value.tags),
+    colorVariants: (() => {
+      const cv = normalizeColorVariants(value.colorVariants);
+      return cv.length > 0 ? cv : undefined;
+    })(),
     createdAt: value.createdAt,
     updatedAt: value.updatedAt,
   };
@@ -114,6 +144,16 @@ export const saveProduct = async (product: Omit<DbProduct, "updatedAt">) => {
     ...(Array.isArray(product.images) && product.images.length > 0
       ? { images: product.images.map((img) => resolveProductImageUrl(img)).filter(Boolean) }
       : { images: [] }),
+    ...(Array.isArray(product.tags) && product.tags.length > 0
+      ? { tags: normalizeTags(product.tags) }
+      : {}),
+    ...(Array.isArray(product.colorVariants) && product.colorVariants.length > 0
+      ? {
+          colorVariants: product.colorVariants
+            .filter((v) => v.color?.trim() && v.image?.trim())
+            .map((v) => ({ color: v.color.trim(), image: resolveProductImageUrl(v.image) })),
+        }
+      : { colorVariants: [] }),
     ...(product.createdAt ? { createdAt: product.createdAt } : {}),
   };
 

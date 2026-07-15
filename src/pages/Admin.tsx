@@ -20,7 +20,7 @@ import {
   CheckCircle2, Copy, Eye, EyeOff, Loader2, MessageSquare, Save,
   Search, Shield, SlidersHorizontal, XCircle, Plus, Edit,
   Trash2, HelpCircle, ChevronDown, ChevronRight, Filter,
-  ReceiptText, Package, ArrowLeft, MoreVertical, X,
+  ReceiptText, Package, ArrowLeft, MoreVertical, X, Ticket,
 } from "lucide-react";
 import { toast } from "sonner";
 import MainLayout from "@/layouts/MainLayout";
@@ -65,6 +65,9 @@ import type { PrebookingRecord } from "@/lib/prebookService";
 import {
   subscribeToFAQs, saveFAQ, deleteFAQ, initializeDefaultFAQs, type FAQItem,
 } from "@/lib/faqService";
+import {
+  subscribeToCoupons, saveCoupon, deleteCoupon, initializeDefaultCoupons, type Coupon,
+} from "@/lib/couponService";
 
 /* ──────────────────────── pure helpers ──────────────────────── */
 
@@ -89,6 +92,13 @@ const catIcon = (ps: DbProduct[]) =>
 
 const statusColor = (s?: string) =>
   s === "confirmed" ? "default" : s === "cancelled" ? "destructive" : "outline";
+
+const SMART_KEYCHAIN_TAG_OPTIONS = [
+  "Zodiac Signs",
+  "Religious",
+  "Best Seller",
+  "Others",
+];
 
 /* ──────────────────────── tiny shared UI ──────────────────────── */
 
@@ -247,7 +257,7 @@ const ProductMedia = ({ product }: { product: DbProduct }) => {
    MAIN COMPONENT
 ══════════════════════════════════════════════════════════════ */
 
-type TabId = "orders" | "products" | "messages" | "faqs";
+type TabId = "orders" | "products" | "messages" | "faqs" | "coupons";
 
 export default function Admin() {
   const { user } = useAuth();
@@ -277,9 +287,15 @@ export default function Admin() {
   const [newCatIcon,        setNewCatIcon]        = useState("");
   const [newCatDesc,        setNewCatDesc]        = useState("");
   const [newCatTip,         setNewCatTip]         = useState("");
+  const [newCatCoverImage,  setNewCatCoverImage]  = useState("");
+  const [isUploadingCatImg, setIsUploadingCatImg] = useState(false);
   const [isRenameOpen,      setIsRenameOpen]      = useState(false);
   const [renameTarget,      setRenameTarget]      = useState<string | null>(null);
   const [renameName,        setRenameName]        = useState("");
+  const [isEditCatOpen,     setIsEditCatOpen]     = useState(false);
+  const [editCatSlug,       setEditCatSlug]       = useState<string | null>(null);
+  const [editCatCoverImg,   setEditCatCoverImg]   = useState("");
+  const [isUploadingEditCat, setIsUploadingEditCat] = useState(false);
   const [isMoveOpen,        setIsMoveOpen]        = useState(false);
   const [moveProductId,     setMoveProductId]     = useState<string | null>(null);
   const [moveSlug,          setMoveSlug]          = useState("");
@@ -290,6 +306,7 @@ export default function Admin() {
   const [isUploadingImage,  setIsUploadingImage]  = useState(false);
   const [isUploadingAdditional, setIsUploadingAdditional] = useState(false);
   const [newAdditionalUrl, setNewAdditionalUrl] = useState("");
+  const [uploadingColorIdx, setUploadingColorIdx] = useState<number | null>(null);
 
   /* ── messages ── */
   const [messages,        setMessages]        = useState<ContactMessage[]>([]);
@@ -305,6 +322,15 @@ export default function Admin() {
   const [isFaqOpen,      setIsFaqOpen]      = useState(false);
   const [savingFaqId,    setSavingFaqId]    = useState<string | null>(null);
   const [initFaqs,       setInitFaqs]       = useState(false);
+
+  /* ── coupons ── */
+  const [coupons,         setCoupons]         = useState<Coupon[]>([]);
+  const [loadingCoupons,  setLoadingCoupons]  = useState(true);
+  const [couponSearch,    setCouponSearch]    = useState("");
+  const [editingCoupon,   setEditingCoupon]   = useState<Omit<Coupon, "createdAt"|"updatedAt"> | null>(null);
+  const [isCouponOpen,    setIsCouponOpen]    = useState(false);
+  const [savingCouponId,  setSavingCouponId]  = useState<string | null>(null);
+  const [initCoupons,     setInitCoupons]     = useState(false);
 
   /* ── subscriptions ── */
   useEffect(() => {
@@ -338,6 +364,14 @@ export default function Admin() {
     return subscribeToFAQs(
       (d) => { setFaqs(d); setLoadingFaqs(false); },
       (e) => { console.error(e); toast.error("Failed to load FAQs"); setLoadingFaqs(false); },
+    );
+  }, []);
+
+  useEffect(() => {
+    setLoadingCoupons(true);
+    return subscribeToCoupons(
+      (d) => { setCoupons(d); setLoadingCoupons(false); },
+      (e) => { console.error(e); toast.error("Failed to load coupons"); setLoadingCoupons(false); },
     );
   }, []);
 
@@ -396,6 +430,11 @@ export default function Admin() {
     return faqs.filter((f) => !q || [f.question, f.answer, f.category].join(" ").toLowerCase().includes(q));
   }, [faqs, faqSearch]);
 
+  const filteredCoupons = useMemo(() => {
+    const q = couponSearch.toLowerCase();
+    return coupons.filter((c) => !q || [c.code, c.description].join(" ").toLowerCase().includes(q));
+  }, [coupons, couponSearch]);
+
   /* badge counts for tabs */
   const pendingCount = orders.filter((o) => o.status === "pending").length;
   const unreadCount  = messages.filter((m) => m.status === "new").length;
@@ -404,8 +443,8 @@ export default function Admin() {
   const openProduct = (product: DbProduct | null, categorySlug?: string) => {
     const slug = normalizeCategorySlug(categorySlug ?? "") || defaultSlug;
     setEditingProduct(product
-      ? { ...product, categorySlug: normalizeCategorySlug(product.categorySlug) || defaultSlug, images: product.images || [] }
-      : { id: "", categorySlug: slug, title: "", price: "", originalPrice: "", image: "", images: [], emoji: "", features: [""], popular: false, disabled: false },
+      ? { ...product, categorySlug: normalizeCategorySlug(product.categorySlug) || defaultSlug, images: product.images || [], tags: product.tags || [], colorVariants: product.colorVariants || [] }
+      : { id: "", categorySlug: slug, title: "", price: "", originalPrice: "", image: "", images: [], emoji: "", features: [""], tags: [], popular: false, disabled: false, colorVariants: [] },
     );
     setIsProductOpen(true);
   };
@@ -421,6 +460,8 @@ export default function Admin() {
         price: fmtPrice(editingProduct.price) ?? editingProduct.price,
         originalPrice: editingProduct.originalPrice ? (fmtPrice(editingProduct.originalPrice) ?? editingProduct.originalPrice) : "",
         features: editingProduct.features.filter((f) => f.trim()),
+        tags: (editingProduct.tags || []).filter((t) => t.trim()),
+        colorVariants: (editingProduct.colorVariants || []).filter((cv) => cv.color.trim() && cv.image.trim()),
       });
       toast.success("Product saved");
       setIsProductOpen(false);
@@ -440,6 +481,50 @@ export default function Admin() {
       setIsCopyOpen(false); setCopyProductId(null); setCopySlug("");
     } catch (err) { console.error(err); toast.error("Failed to copy product"); }
     finally { setSavingProductId(null); }
+  };
+
+  const handleCategoryImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setIsUploadingCatImg(true);
+      const url = await uploadProductImage(file, "category-covers");
+      setNewCatCoverImage(url);
+      toast.success("Category image uploaded");
+    } catch (err) { console.error(err); toast.error("Failed to upload category image"); }
+    finally { setIsUploadingCatImg(false); }
+  };
+
+  const handleEditCategoryImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setIsUploadingEditCat(true);
+      const url = await uploadProductImage(file, "category-covers");
+      setEditCatCoverImg(url);
+      toast.success("Category image uploaded");
+    } catch (err) { console.error(err); toast.error("Failed to upload category image"); }
+    finally { setIsUploadingEditCat(false); }
+  };
+
+  const openEditCategory = (slug: string) => {
+    setEditCatSlug(slug);
+    setEditCatCoverImg(categoryMeta[slug]?.coverImage || "");
+    setIsEditCatOpen(true);
+  };
+
+  const saveEditCategory = async () => {
+    if (!editCatSlug) return;
+    try {
+      await saveProductCategory(editCatSlug, {
+        ...categoryMeta[editCatSlug],
+        coverImage: editCatCoverImg
+      });
+      toast.success("Category cover image updated");
+      setIsEditCatOpen(false);
+      setEditCatSlug(null);
+      setEditCatCoverImg("");
+    } catch (err) { console.error(err); toast.error("Failed to update category"); }
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -578,11 +663,52 @@ export default function Admin() {
     finally { setInitFaqs(false); }
   };
 
+  const openCoupon = (coupon: Coupon | null) => {
+    setEditingCoupon(coupon
+      ? { id: coupon.id, code: coupon.code, type: coupon.type, value: coupon.value, label: coupon.label, maxUses: coupon.maxUses, usedCount: coupon.usedCount, expiryDate: coupon.expiryDate, isActive: coupon.isActive }
+      : { id: "", code: "", type: "percent", value: 0, label: "", maxUses: undefined, usedCount: 0, expiryDate: "", isActive: true },
+    );
+    setIsCouponOpen(true);
+  };
+
+  const saveCouponHandler = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCoupon) return;
+    try {
+      setSavingCouponId(editingCoupon.id || "new");
+      await saveCoupon({
+        ...editingCoupon,
+        value: Number(editingCoupon.value),
+        maxUses: editingCoupon.maxUses ? Number(editingCoupon.maxUses) : undefined,
+      });
+      toast.success("Coupon saved");
+      setIsCouponOpen(false);
+    } catch (err) { console.error(err); toast.error("Failed to save coupon"); }
+    finally { setSavingCouponId(null); }
+  };
+
+  const deleteCouponHandler = async (id: string) => {
+    if (!confirm("Delete this coupon?")) return;
+    try { await deleteCoupon(id); toast.success("Coupon deleted"); }
+    catch (err) { console.error(err); toast.error("Failed to delete"); }
+  };
+
+  const initDefaultCoupons = async () => {
+    if (!confirm("Create default coupon (LAUNCH)?")) return;
+    try {
+      setInitCoupons(true);
+      await initializeDefaultCoupons();
+      toast.success("Default coupon created");
+    } catch (err) { console.error(err); toast.error("Failed to create default coupon"); }
+    finally { setInitCoupons(false); }
+  };
+
   /* ── tab definitions ── */
   const tabs: { id: TabId; label: string; shortLabel: string; icon: React.ElementType; badge?: number }[] = [
     { id: "orders",   label: "Orders",   shortLabel: "Orders",   icon: ReceiptText,   badge: pendingCount },
     { id: "products", label: "Products", shortLabel: "Products", icon: Package },
     { id: "messages", label: "Messages", shortLabel: "Msgs",     icon: MessageSquare, badge: unreadCount },
+    { id: "coupons",  label: "Coupons",  shortLabel: "Coupons",  icon: Ticket },
     { id: "faqs",     label: "FAQs",     shortLabel: "FAQs",     icon: HelpCircle },
   ];
 
@@ -643,7 +769,7 @@ export default function Admin() {
           <div className="min-w-0">
             <h1 className="text-lg sm:text-xl font-bold tracking-tight truncate">Admin Panel</h1>
             <p className="text-xs text-muted-foreground mt-0.5 hidden sm:block">
-              Orders · Products · Messages · FAQs
+              Orders · Products · Messages · Coupons · FAQs
             </p>
           </div>
           <Badge variant="secondary" className="shrink-0 flex items-center gap-1.5 px-2.5 py-1 text-xs max-w-[180px]">
@@ -932,7 +1058,7 @@ export default function Admin() {
                           </div>
                         </AccordionTrigger>
                         <div className="flex items-center gap-0.5 shrink-0">
-                          <IconBtn icon={Edit} label={`Rename ${cat.name}`} onClick={() => { setRenameTarget(cat.slug); setRenameName(cat.name); setIsRenameOpen(true); }} />
+                          <IconBtn icon={Edit} label={`Edit ${cat.name}`} onClick={() => openEditCategory(cat.slug)} />
                           <IconBtn icon={Trash2} label={`Delete ${cat.name}`} danger disabled={cat.slug === "uncategorized"} onClick={() => deleteCat(cat.slug)} />
                         </div>
                       </div>
@@ -1086,6 +1212,132 @@ export default function Admin() {
                                 className="h-9 w-9 flex items-center justify-center rounded-lg text-destructive hover:bg-destructive/10">
                                 <Trash2 className="w-4 h-4" />
                               </button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* ╔══════════════ COUPONS ══════════════╗ */}
+          {activeTab === "coupons" && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                <Stat label="Total Coupons" value={coupons.length} />
+                <Stat label="Active" value={coupons.filter((c) => c.isActive).length} accent />
+                <Stat label="Total Used" value={coupons.reduce((sum, c) => sum + (c.usedCount || 0), 0)} />
+              </div>
+
+              {/* actions */}
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <SearchBar value={couponSearch} onChange={setCouponSearch} placeholder="Search coupon code…" />
+                </div>
+                <Button size="sm" className="h-11 gap-1.5 rounded-xl shrink-0" onClick={() => openCoupon(null)}>
+                  <Plus className="w-4 h-4" />
+                  <span className="hidden sm:inline">Add Coupon</span>
+                </Button>
+              </div>
+
+              {coupons.length === 0 && !loadingCoupons && (
+                <Button variant="outline" className="w-full h-11 rounded-xl gap-2" onClick={initDefaultCoupons} disabled={initCoupons}>
+                  {initCoupons ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                  Create Default LAUNCH Coupon
+                </Button>
+              )}
+
+              <p className="text-xs text-muted-foreground px-0.5">
+                {filteredCoupons.length} coupon{filteredCoupons.length !== 1 ? "s" : ""}{couponSearch ? " matching" : ""}
+              </p>
+
+              {loadingCoupons && <div className="space-y-3">{[1,2,3].map((i) => <SkeletonCard key={i} />)}</div>}
+
+              {!loadingCoupons && filteredCoupons.length === 0 && (
+                <Empty icon={Ticket} title={coupons.length === 0 ? "No coupons yet. Create your first discount coupon." : "No coupons match your search."} />
+              )}
+
+              {/* mobile cards */}
+              {!loadingCoupons && filteredCoupons.length > 0 && (
+                <>
+                  <div className="md:hidden space-y-3">
+                    {filteredCoupons.map((coupon) => (
+                      <div key={coupon.id} className="bg-card border rounded-xl p-4 space-y-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <div>
+                            <p className="font-semibold text-sm font-mono">{coupon.code}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {coupon.type === "percent" ? `${coupon.value}% off` : `₹${coupon.value} off`}
+                            </p>
+                          </div>
+                          <Badge variant={coupon.isActive ? "default" : "outline"} className="text-[10px] shrink-0">
+                            {coupon.isActive ? "Active" : "Inactive"}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{coupon.label}</p>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div>
+                            <p className="text-muted-foreground">Used</p>
+                            <p className="font-semibold">{coupon.usedCount}/{coupon.maxUses ?? "∞"}</p>
+                          </div>
+                          {coupon.expiryDate && (
+                            <div>
+                              <p className="text-muted-foreground">Expires</p>
+                              <p className="font-semibold">{coupon.expiryDate}</p>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex justify-end gap-1 pt-1">
+                          <IconBtn icon={Edit}  label="Edit Coupon"   onClick={() => openCoupon(coupon)} />
+                          <IconBtn icon={Trash2} label="Delete Coupon" danger onClick={() => deleteCouponHandler(coupon.id)} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* desktop table */}
+                  <div className="hidden md:block rounded-xl border overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/40">
+                          <TableHead className="font-semibold">Code</TableHead>
+                          <TableHead className="font-semibold">Discount</TableHead>
+                          <TableHead className="font-semibold">Status</TableHead>
+                          <TableHead className="font-semibold">Used / Max</TableHead>
+                          <TableHead className="hidden lg:table-cell font-semibold">Expires</TableHead>
+                          <TableHead className="font-semibold">Description</TableHead>
+                          <TableHead className="w-[90px] text-right font-semibold">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredCoupons.map((coupon) => (
+                          <TableRow key={coupon.id} className="hover:bg-muted/30 transition-colors">
+                            <TableCell className="font-mono font-semibold text-sm">{coupon.code}</TableCell>
+                            <TableCell className="font-semibold">
+                              {coupon.type === "percent" ? `${coupon.value}%` : `₹${coupon.value}`}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={coupon.isActive ? "default" : "outline"} className="text-xs">
+                                {coupon.isActive ? "Active" : "Inactive"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              {coupon.usedCount}/{coupon.maxUses ?? "∞"}
+                            </TableCell>
+                            <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
+                              {coupon.expiryDate || "—"}
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground max-w-[220px] truncate">
+                              {coupon.label}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end">
+                                <IconBtn icon={Edit}  label="Edit Coupon"   onClick={() => openCoupon(coupon)} />
+                                <IconBtn icon={Trash2} label="Delete Coupon" danger onClick={() => deleteCouponHandler(coupon.id)} />
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -1485,6 +1737,92 @@ export default function Admin() {
               )}
             </div>
 
+            {/* ── Color variant section ── */}
+            <div className="space-y-3 pt-3 border-t">
+              <div>
+                <Label className="text-xs font-semibold">Add Color (Optional)</Label>
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  Add 2-3 colors with their own photo — a color switcher will show on the product page.
+                </p>
+              </div>
+
+              {/* existing color rows */}
+              {(editingProduct.colorVariants ?? []).map((cv, idx) => (
+                <div key={idx} className="flex items-start gap-2 p-3 rounded-xl border bg-muted/20">
+                  <div className="flex-1 space-y-2">
+                    <Input
+                      value={cv.color}
+                      onChange={(e) => {
+                        const next = [...(editingProduct.colorVariants ?? [])];
+                        next[idx] = { ...next[idx], color: e.target.value };
+                        setEditingProduct({ ...editingProduct, colorVariants: next });
+                      }}
+                      placeholder="e.g. Black, Red, Blue"
+                      className="h-11 text-sm rounded-xl"
+                    />
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        disabled={uploadingColorIdx === idx}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          try {
+                            setUploadingColorIdx(idx);
+                            const url = await uploadProductImage(file, editingProduct.categorySlug);
+                            const next = [...(editingProduct.colorVariants ?? [])];
+                            next[idx] = { ...next[idx], image: url };
+                            setEditingProduct({ ...editingProduct, colorVariants: next });
+                            toast.success("Color photo uploaded");
+                          } catch (err) { console.error(err); toast.error("Failed to upload photo"); }
+                          finally { setUploadingColorIdx(null); }
+                        }}
+                        className="h-11 text-sm rounded-xl file:mr-3 file:rounded-lg file:border-0 file:bg-primary/10 file:text-primary file:text-xs file:font-medium file:h-7 file:px-3 flex-1"
+                      />
+                      {uploadingColorIdx === idx && <Loader2 className="w-4 h-4 animate-spin shrink-0" />}
+                    </div>
+                    <Input
+                      value={cv.image}
+                      onChange={(e) => {
+                        const next = [...(editingProduct.colorVariants ?? [])];
+                        next[idx] = { ...next[idx], image: e.target.value };
+                        setEditingProduct({ ...editingProduct, colorVariants: next });
+                      }}
+                      placeholder="Or paste photo URL"
+                      className="h-11 text-sm rounded-xl"
+                    />
+                    {cv.image && (
+                      <div className="w-16 h-16 rounded-lg border overflow-hidden bg-muted">
+                        <img src={cv.image} alt={cv.color || "Color preview"} className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                  </div>
+                  <IconBtn
+                    icon={Trash2}
+                    label="Remove color"
+                    danger
+                    onClick={() => {
+                      const next = (editingProduct.colorVariants ?? []).filter((_, i) => i !== idx);
+                      setEditingProduct({ ...editingProduct, colorVariants: next });
+                    }}
+                  />
+                </div>
+              ))}
+
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full h-11 rounded-xl gap-2"
+                onClick={() => {
+                  const next = [...(editingProduct.colorVariants ?? []), { color: "", image: "" }];
+                  setEditingProduct({ ...editingProduct, colorVariants: next });
+                }}
+              >
+                <Plus className="w-4 h-4" /> Add Color
+              </Button>
+            </div>
+
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold">Emoji (fallback if no image)</Label>
               <Input value={editingProduct.emoji ?? ""} onChange={(e) => setEditingProduct({ ...editingProduct, emoji: e.target.value })}
@@ -1502,6 +1840,38 @@ export default function Admin() {
                 className="text-sm rounded-xl resize-none"
               />
             </div>
+
+            {normalizeCategorySlug(editingProduct.categorySlug) === "smart-keychain-tags" && (
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold">Tags (Smart Keychain Tags only)</Label>
+                <div className="flex flex-wrap gap-2">
+                  {SMART_KEYCHAIN_TAG_OPTIONS.map((option) => (
+                    <label
+                      key={option}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer hover:bg-muted/40 transition-colors"
+                      style={{
+                        background: (editingProduct.tags || []).includes(option) ? "hsl(var(--primary) / 0.12)" : "transparent",
+                        borderColor: (editingProduct.tags || []).includes(option) ? "hsl(var(--primary))" : "hsl(var(--border))",
+                      }}
+                    >
+                      <Checkbox
+                        checked={(editingProduct.tags || []).includes(option)}
+                        onCheckedChange={(checked) => {
+                          const currentTags = editingProduct.tags || [];
+                          setEditingProduct({
+                            ...editingProduct,
+                            tags: checked
+                              ? [...currentTags, option]
+                              : currentTags.filter((t) => t !== option),
+                          });
+                        }}
+                      />
+                      <span className="text-sm font-medium">{option}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <label className="flex items-center gap-3 p-3 rounded-xl border cursor-pointer hover:bg-muted/40 transition-colors">
               <Checkbox checked={editingProduct.popular} onCheckedChange={(c) => setEditingProduct({ ...editingProduct, popular: !!c })} />
@@ -1535,10 +1905,10 @@ export default function Admin() {
         <form onSubmit={async (e) => {
           e.preventDefault();
           try {
-            await saveProductCategory(newCatName || newCatIcon || String(Date.now()), { name: newCatName, icon: newCatIcon, description: newCatDesc, proTip: newCatTip });
+            await saveProductCategory(newCatName || newCatIcon || String(Date.now()), { name: newCatName, icon: newCatIcon, description: newCatDesc, proTip: newCatTip, coverImage: newCatCoverImage });
             toast.success("Category created");
             setIsCategoryOpen(false);
-            setNewCatName(""); setNewCatIcon(""); setNewCatDesc(""); setNewCatTip("");
+            setNewCatName(""); setNewCatIcon(""); setNewCatDesc(""); setNewCatTip(""); setNewCatCoverImage("");
           } catch (err) { console.error(err); toast.error("Failed to create category"); }
         }} className="space-y-3">
           <div className="space-y-1.5">
@@ -1557,11 +1927,61 @@ export default function Admin() {
             <Label className="text-xs font-semibold">Pro Tip</Label>
             <Input value={newCatTip} onChange={(e) => setNewCatTip(e.target.value)} placeholder="Quick tip shown below features" className="h-11 text-sm rounded-xl" />
           </div>
+
+          {/* Cover Image Upload */}
+          <div className="space-y-2 border-t pt-3">
+            <Label className="text-xs font-semibold">Category Cover Image (Optional)</Label>
+            <Input type="file" accept="image/*" onChange={handleCategoryImageUpload} disabled={isUploadingCatImg}
+              className="h-11 text-sm rounded-xl file:mr-3 file:rounded-lg file:border-0 file:bg-primary/10 file:text-primary file:text-xs file:font-medium file:h-7 file:px-3" />
+            <Input value={newCatCoverImage} onChange={(e) => setNewCatCoverImage(e.target.value)}
+              placeholder="Or paste image URL" className="h-11 text-sm rounded-xl" />
+            {isUploadingCatImg && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Loader2 className="w-3 h-3 animate-spin" /> Uploading…
+              </div>
+            )}
+            {newCatCoverImage && (
+              <div className="w-24 h-16 rounded-lg border overflow-hidden bg-muted">
+                <img src={newCatCoverImage} alt="Category Cover" className="w-full h-full object-cover" />
+              </div>
+            )}
+          </div>
+
           <div className="grid grid-cols-2 gap-3 pt-2 border-t">
             <Button type="button" variant="outline" className="h-11 rounded-xl" onClick={() => setIsCategoryOpen(false)}>Cancel</Button>
             <Button type="submit" className="h-11 rounded-xl">Create</Button>
           </div>
         </form>
+      </Sheet>
+
+      {/* ── Edit category (cover image) ── */}
+      <Sheet open={isEditCatOpen} onClose={() => { setIsEditCatOpen(false); setEditCatSlug(null); setEditCatCoverImg(""); }} title="Edit Category" description="Update category cover image">
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label className="text-xs font-semibold">Category Cover Image</Label>
+            <Input type="file" accept="image/*" onChange={handleEditCategoryImageUpload} disabled={isUploadingEditCat}
+              className="h-11 text-sm rounded-xl file:mr-3 file:rounded-lg file:border-0 file:bg-primary/10 file:text-primary file:text-xs file:font-medium file:h-7 file:px-3" />
+            <Input value={editCatCoverImg} onChange={(e) => setEditCatCoverImg(e.target.value)}
+              placeholder="Or paste image URL" className="h-11 text-sm rounded-xl" />
+            {isUploadingEditCat && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Loader2 className="w-3 h-3 animate-spin" /> Uploading…
+              </div>
+            )}
+            {editCatCoverImg && (
+              <div className="w-32 h-24 rounded-lg border overflow-hidden bg-muted">
+                <img src={editCatCoverImg} alt="Category Cover" className="w-full h-full object-cover" />
+              </div>
+            )}
+            <p className="text-[10px] text-muted-foreground">Recommended: 1200×900px (4:3 aspect ratio)</p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 pt-2 border-t">
+            <Button type="button" variant="outline" className="h-11 rounded-xl" onClick={() => { setIsEditCatOpen(false); setEditCatSlug(null); setEditCatCoverImg(""); }}>Cancel</Button>
+            <Button className="h-11 rounded-xl gap-2" onClick={saveEditCategory}>
+              <Save className="w-4 h-4" /> Save
+            </Button>
+          </div>
+        </div>
       </Sheet>
 
       {/* ── Rename category ── */}
@@ -1628,6 +2048,100 @@ export default function Admin() {
             <Button type="submit" className="h-11 rounded-xl" disabled={savingProductId === copyProductId}>Copy</Button>
           </div>
         </form>
+      </Sheet>
+
+      {/* ── Coupon add / edit ── */}
+      <Sheet
+        open={isCouponOpen}
+        onClose={() => setIsCouponOpen(false)}
+        title={editingCoupon?.id ? "Edit Coupon" : "Add Coupon"}
+        description="Create or update discount coupon codes."
+      >
+        {editingCoupon && (
+          <form onSubmit={saveCouponHandler} className="space-y-4 admin-form-scroll max-h-[65dvh] pr-0.5">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Coupon Code</Label>
+              <Input value={editingCoupon.code} onChange={(e) => setEditingCoupon({ ...editingCoupon, code: e.target.value })}
+                placeholder="e.g. SUMMER20" required className="h-11 text-sm rounded-xl uppercase" />
+              <p className="text-[10px] text-muted-foreground">Will be converted to uppercase and used as ID</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Discount Type</Label>
+                <Select value={editingCoupon.type} onValueChange={(v) => setEditingCoupon({ ...editingCoupon, type: v as "percent" | "fixed" })}>
+                  <SelectTrigger className="h-11 text-sm rounded-xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="percent">Percentage (%)</SelectItem>
+                    <SelectItem value="fixed">Fixed Amount (₹)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Discount Value</Label>
+                <Input type="number" value={editingCoupon.value} onChange={(e) => setEditingCoupon({ ...editingCoupon, value: Number(e.target.value) })}
+                  placeholder={editingCoupon.type === "percent" ? "15" : "100"} required className="h-11 text-sm rounded-xl" />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Label (Display Text)</Label>
+              <Input value={editingCoupon.label} onChange={(e) => setEditingCoupon({ ...editingCoupon, label: e.target.value })}
+                placeholder="e.g. 15% off — Launch special" required className="h-11 text-sm rounded-xl" />
+              <p className="text-[10px] text-muted-foreground">Shown to users when coupon is applied</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Max Uses (Optional)</Label>
+                <Input type="number" value={editingCoupon.maxUses ?? ""} onChange={(e) => setEditingCoupon({ ...editingCoupon, maxUses: e.target.value ? Number(e.target.value) : undefined })}
+                  placeholder="Leave blank for unlimited" className="h-11 text-sm rounded-xl" />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Expiry Date (Optional)</Label>
+                <Input type="date" value={editingCoupon.expiryDate ?? ""} onChange={(e) => setEditingCoupon({ ...editingCoupon, expiryDate: e.target.value })}
+                  className="h-11 text-sm rounded-xl" />
+              </div>
+            </div>
+
+            <label className="flex items-center gap-3 p-3 rounded-xl border cursor-pointer hover:bg-muted/40 transition-colors">
+              <Checkbox checked={editingCoupon.isActive} onCheckedChange={(c) => setEditingCoupon({ ...editingCoupon, isActive: !!c })} />
+              <div>
+                <p className="text-sm font-medium">Active</p>
+                <p className="text-xs text-muted-foreground">Enable or disable this coupon code</p>
+              </div>
+            </label>
+
+            <div className="space-y-1.5 p-3 bg-muted/40 rounded-xl">
+              <p className="text-xs font-semibold text-muted-foreground">Usage Stats</p>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <p className="text-xs text-muted-foreground">Times Used</p>
+                  <p className="font-bold text-lg">{editingCoupon.usedCount}</p>
+                </div>
+                {editingCoupon.maxUses && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Max Uses</p>
+                    <p className="font-bold text-lg">{editingCoupon.maxUses}</p>
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">Note: Usage count increments automatically when coupon is applied during checkout</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-2 border-t">
+              <Button type="button" variant="outline" className="h-11 rounded-xl" onClick={() => setIsCouponOpen(false)}>Cancel</Button>
+              <Button type="submit" className="h-11 rounded-xl gap-2" disabled={savingCouponId !== null}>
+                {savingCouponId ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                Save Coupon
+              </Button>
+            </div>
+          </form>
+        )}
       </Sheet>
 
       {/* ── FAQ add / edit ── */}

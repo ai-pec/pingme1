@@ -294,18 +294,30 @@ const ProductCardItem = ({ product, categorySlug }: { product: ProductVariant & 
           )}
         </div>
         <div style={{ padding: "20px 20px 16px", display: "flex", flexDirection: "column", flex: 1 }}>
-          {product.popular && (
-            <span style={{ background: "rgba(201, 169, 110, 0.12)", color: GOLD_DEEP, fontFamily: "system-ui, -apple-system, sans-serif", fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 4, letterSpacing: "0.05em", width: "fit-content", textTransform: "uppercase", marginBottom: 8 }}>
-              ★ Best Seller
-            </span>
-          )}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
+            {product.popular && (
+              <span style={{ background: "rgba(201, 169, 110, 0.12)", color: GOLD_DEEP, fontFamily: "system-ui, -apple-system, sans-serif", fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 4, letterSpacing: "0.05em", textTransform: "uppercase" }}>
+                ★ Best Seller
+              </span>
+            )}
+            {categorySlug === "smart-keychain-tags" && product.tags && product.tags.length > 0 && (
+              product.tags.map((tag, i) => (
+                <span key={i} style={{ background: "rgba(61, 80, 168, 0.12)", color: "#3d50a8", fontFamily: "system-ui, -apple-system, sans-serif", fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 3, letterSpacing: "0.02em", textTransform: "capitalize" }}>
+                  {tag}
+                </span>
+              ))
+            )}
+          </div>
           <h3 style={{ fontFamily: "system-ui, -apple-system, sans-serif", fontSize: 17, fontWeight: 800, color: INK, marginBottom: 6, lineHeight: 1.3, letterSpacing: "-0.01em" }}>
             {product.title}
           </h3>
           <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 12 }}>
             <span style={{ fontFamily: "system-ui, -apple-system, sans-serif", fontSize: 20, fontWeight: 800, color: GOLD_DEEP, letterSpacing: "-0.02em" }}>{product.price}</span>
             {product.originalPrice && (
-              <span style={{ fontFamily: "system-ui, -apple-system, sans-serif", fontSize: 13, color: TEXT_MUTED, textDecoration: "line-through" }}>{product.originalPrice}</span>
+              <span style={{ display: "inline-flex", alignItems: "baseline", gap: 4 }}>
+                <span style={{ fontFamily: "system-ui, -apple-system, sans-serif", fontSize: 11, fontWeight: 500, color: TEXT_MUTED }}>M.R.P.</span>
+                <span style={{ fontFamily: "system-ui, -apple-system, sans-serif", fontSize: 13, color: TEXT_MUTED, textDecoration: "line-through" }}>{product.originalPrice}</span>
+              </span>
             )}
           </div>
           <div style={{ borderTop: `1px solid ${MIST}`, marginBottom: 12 }} />
@@ -327,6 +339,13 @@ const ProductCardItem = ({ product, categorySlug }: { product: ProductVariant & 
 };
 
 /* ═══════════════════════════════════ MAIN ═══════════════════════════════════ */
+const SMART_KEYCHAIN_TAG_OPTIONS = [
+  "Zodiac Signs",
+  "Religious",
+  "Best Seller",
+  "Others",
+];
+
 const Products = () => {
   const { categorySlug } = useParams<{ categorySlug?: string }>();
   const navigate = useNavigate();
@@ -335,6 +354,7 @@ const Products = () => {
   const [categoryMetadata, setCategoryMetadata] = useState<Record<string, { name?: string; description?: string; icon?: string; coverImage?: string; gradient?: string }>>({});
   const [filterSlug, setFilterSlug] = useState<string>("all");
   const [sortOrder, setSortOrder] = useState<string>("featured");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   useEffect(() => {
     const unsub = subscribeToProducts((latest) => setDbProducts(latest), (err) => console.error(err));
@@ -345,6 +365,11 @@ const Products = () => {
     const unsub = subscribeToProductCategories((map) => setCategoryMetadata(map), (err) => console.error(err));
     return unsub;
   }, []);
+
+  // Reset tag filters when category changes
+  useEffect(() => {
+    setSelectedTags([]);
+  }, [selectedCategory]);
 
   const categories = useMemo(() => {
     const groups = new Map<string, DbProduct[]>();
@@ -389,10 +414,19 @@ const Products = () => {
   const displayedProducts = useMemo(() => {
     if (!activeCategory) return [];
     let list = [...activeCategory.products];
+
+    // Filter by tags if smart-keychain-tags and tags are selected
+    if (selectedCategory === "smart-keychain-tags" && selectedTags.length > 0) {
+      list = list.filter((product) => {
+        const productTags = product.tags || [];
+        return selectedTags.some((tag) => productTags.includes(tag));
+      });
+    }
+
     if (sortOrder === "price-asc") list.sort((a, b) => parseFloat(a.price.replace(/[^\d.]/g, "")) - parseFloat(b.price.replace(/[^\d.]/g, "")));
     else if (sortOrder === "price-desc") list.sort((a, b) => parseFloat(b.price.replace(/[^\d.]/g, "")) - parseFloat(a.price.replace(/[^\d.]/g, "")));
     return list;
-  }, [activeCategory, sortOrder]);
+  }, [activeCategory, sortOrder, selectedTags, selectedCategory]);
 
   const displayedCategories = useMemo(() => filterSlug === "all" ? categories : categories.filter((c) => c.slug === filterSlug), [categories, filterSlug]);
 
@@ -514,21 +548,125 @@ const Products = () => {
 
 
 
-        {selectedCategory && (
-          <div style={{ background: "hsl(var(--card))", borderBottom: `1px solid ${MIST}`, padding: "14px 0" }}>
-            <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
-              <button onClick={() => navigate("/products")} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", fontFamily: "system-ui, -apple-system, sans-serif", fontSize: 14, fontWeight: 700, color: TEXT_SEC, padding: 0 }}>
-                <ArrowLeft size={16} /> Back to All Categories
-              </button>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontFamily: "system-ui, -apple-system, sans-serif", fontSize: 12, fontWeight: 600, color: TEXT_MUTED }}>
-                  {displayedProducts.length} design{displayedProducts.length !== 1 ? "s" : ""}
+        {selectedCategory === "smart-keychain-tags" && (
+          <div style={{
+            background: "linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--card) / 0.95) 100%)",
+            borderBottom: `1px solid ${MIST}`,
+            padding: "16px 0",
+            position: "relative",
+            overflow: "hidden",
+          }}>
+            <style>{`
+              @keyframes slideDown {
+                from { opacity: 0; transform: translateY(-8px); }
+                to { opacity: 1; transform: translateY(0); }
+              }
+              .pm-tag-filter-container { animation: slideDown 0.5s ease-out; }
+              .pm-tag-button {
+                transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+                position: relative;
+              }
+              .pm-tag-button::before {
+                content: '';
+                position: absolute;
+                inset: 0;
+                border-radius: 10px;
+                background: linear-gradient(135deg, #c9a96e 0%, #edd09f 100%);
+                opacity: 0;
+                transition: opacity 0.35s ease;
+                z-index: -1;
+              }
+              .pm-tag-button:hover::before {
+                opacity: 0.08;
+              }
+            `}</style>
+            <div className="pm-tag-filter-container" style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                <span style={{
+                  fontFamily: "'Playfair Display', Georgia, serif",
+                  fontSize: "13px",
+                  fontWeight: 700,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: GOLD_DEEP,
+                }}>
+                  Collections
                 </span>
-                <select className="pm-select" value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
-                  <option value="featured">Featured</option>
-                  <option value="price-asc">Price: Low to High</option>
-                  <option value="price-desc">Price: High to Low</option>
-                </select>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", flex: 1, justifyContent: "flex-start" }}>
+                  {SMART_KEYCHAIN_TAG_OPTIONS.map((tag) => {
+                    const tagIcons: Record<string, string> = {
+                      "Zodiac Signs": "♈",
+                      "Religious": "✨",
+                      "Best Seller": "⭐",
+                      "Others": "🎁",
+                    };
+                    const isSelected = selectedTags.includes(tag);
+
+                    return (
+                      <button
+                        key={tag}
+                        className="pm-tag-button"
+                        onClick={() => {
+                          setSelectedTags((prev) =>
+                            prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+                          );
+                        }}
+                        style={{
+                          fontFamily: "system-ui, -apple-system, sans-serif",
+                          fontSize: "12px",
+                          fontWeight: isSelected ? 700 : 600,
+                          padding: "7px 12px",
+                          borderRadius: 10,
+                          border: `1.5px solid ${isSelected ? "#c9a96e" : MIST}`,
+                          background: isSelected
+                            ? "linear-gradient(135deg, rgba(201, 169, 110, 0.15) 0%, rgba(237, 208, 159, 0.08) 100%)"
+                            : "hsl(var(--background))",
+                          color: isSelected ? GOLD_DEEP : TEXT_SEC,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 4,
+                          boxShadow: isSelected ? `0 3px 12px ${GOLD_LIGHT}` : "none",
+                          transform: isSelected ? "translateY(-1px)" : "translateY(0)",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        <span style={{ fontSize: "12px" }}>{tagIcons[tag]}</span>
+                        <span>{tag}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {selectedTags.length > 0 && (
+                  <button
+                    onClick={() => setSelectedTags([])}
+                    style={{
+                      fontFamily: "system-ui, -apple-system, sans-serif",
+                      fontSize: "11px",
+                      fontWeight: 600,
+                      color: GOLD_DEEP,
+                      background: "transparent",
+                      border: `1px solid ${GOLD_DEEP}`,
+                      padding: "4px 8px",
+                      borderRadius: 6,
+                      cursor: "pointer",
+                      transition: "all 0.2s ease",
+                      letterSpacing: "0.02em",
+                      whiteSpace: "nowrap",
+                    }}
+                    onMouseEnter={(e) => {
+                      const el = e.currentTarget as HTMLElement;
+                      el.style.background = `${GOLD_LIGHT}`;
+                    }}
+                    onMouseLeave={(e) => {
+                      const el = e.currentTarget as HTMLElement;
+                      el.style.background = "transparent";
+                    }}
+                  >
+                    Clear
+                  </button>
+                )}
               </div>
             </div>
           </div>

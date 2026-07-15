@@ -35,6 +35,7 @@ import {
   isNfcLineProfileComplete,
   isNfcCartItem,
 } from "@/lib/nfcCheckout";
+import { subscribeToCoupons, type Coupon } from "@/lib/couponService";
 
 /* ─────────────────────────── CONSTANTS ─────────────────────────────────── */
 
@@ -46,9 +47,7 @@ const indianStates = [
   "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal",
 ];
 
-const VALID_COUPONS = {
-  LAUNCH: { type: "percent", value: 15, label: "15% off — Launch special" },
-};
+/* Coupons are now fetched from Firestore via subscribeToCoupons() */
 
 const GST_RATE = 0.18;
 
@@ -1615,12 +1614,21 @@ const Prebook = () => {
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState("");
+  const [availableCoupons, setAvailableCoupons] = useState<Coupon[]>([]);
   const [paymentMethod, setPaymentMethod] = useState("upi");
   const [saveAddress, setSaveAddress] = useState(false);
   const [selectedSavedAddr, setSelectedSavedAddr] = useState(null);
   const [pincodeStatus, setPincodeStatus] = useState(null);
 
   const pincodeTimer = useRef(null);
+
+  /* ── Fetch coupons from Firestore ── */
+  useEffect(() => {
+    return subscribeToCoupons(
+      (coupons) => setAvailableCoupons(coupons.filter(c => c.isActive)),
+      (error) => console.error("Failed to load coupons:", error),
+    );
+  }, []);
 
   const checkUsernameWithDebounce = useCallback((username: string, lineKey: string) => {
     if (!username?.trim()) {
@@ -1762,9 +1770,9 @@ const Prebook = () => {
     if (!code) { setCouponError("Enter a coupon code"); return; }
     setCouponLoading(true); setCouponError("");
     setTimeout(() => {
-      const found = VALID_COUPONS[code];
+      const found = availableCoupons.find(c => c.code === code);
       if (found) {
-        setAppliedCoupon({ code, ...found });
+        setAppliedCoupon({ code: found.code, type: found.type, value: found.value, label: found.label });
         setCouponInput("");
         toast({ title: "Coupon applied!", description: found.label });
       } else { setCouponError("Invalid or expired coupon code"); }
@@ -2236,15 +2244,17 @@ const Prebook = () => {
                             </button>
                           </div>
                           {couponError && <div className="field-error" style={{ marginTop: 6 }}><AlertCircle size={11} />{couponError}</div>}
-                          <div className="coupon-suggestions">
-                            <p>Available codes (demo):</p>
-                            <div className="coupon-chips">
-                              {Object.entries(VALID_COUPONS).map(([code]) => (
-                                <span key={code} className="coupon-chip"
-                                  onClick={() => { setCouponInput(code); setCouponError(""); }}>{code}</span>
-                              ))}
+                          {availableCoupons.length > 0 && (
+                            <div className="coupon-suggestions">
+                              <p>Available codes:</p>
+                              <div className="coupon-chips">
+                                {availableCoupons.map((coupon) => (
+                                  <span key={coupon.code} className="coupon-chip"
+                                    onClick={() => { setCouponInput(coupon.code); setCouponError(""); }}>{coupon.code}</span>
+                                ))}
+                              </div>
                             </div>
-                          </div>
+                          )}
                         </>
                       )}
                     </div>

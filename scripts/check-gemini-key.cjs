@@ -2,7 +2,6 @@ const admin = require("firebase-admin");
 const { getFirestore } = require("firebase-admin/firestore");
 const path = require("path");
 const fs = require("fs");
-
 const serviceAccountPath = path.join(__dirname, "serviceAccountKey.json");
 const serviceAccount = require(serviceAccountPath);
 
