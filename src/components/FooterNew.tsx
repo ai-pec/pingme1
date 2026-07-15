@@ -75,25 +75,25 @@ const FooterNew = () => {
       style={{ backgroundColor: "hsl(var(--ping-cream))", color: "hsl(var(--ping-dark))" }}
     >
       <div
-        className="h-0.5 mb-12"
+        className="h-0.5 mb-6"
         style={{
           background:
             "linear-gradient(90deg, transparent, hsl(var(--ping-yellow) / 10.5), transparent)",
         }}
       />
 
-      <div className="container mx-auto px-4 py-10 md:py-16 lg:py-20">
+      <div className="container mx-auto px-4 py-8 md:py-10 lg:py-12">
         {/* MAIN GRID */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 md:gap-12 mb-10 md:mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 md:gap-8 mb-6 md:mb-10">
 
           {/* Brand Section */}
-          <div className="lg:col-span-1 flex flex-col space-y-4">
-            <div className="flex flex-col items-start space-y-3">
+          <div className="lg:col-span-1 flex flex-col space-y-2.5">
+            <div className="flex flex-col items-start space-y-2">
               <div className="flex items-center gap-3">
                 <img
                   src={logo}
                   alt="PingME"
-                  className="h-12 w-auto sm:h-16 md:h-20 object-contain hover:scale-110 transition-transform duration-300"
+                  className="h-10 w-auto sm:h-12 md:h-14 object-contain hover:scale-105 transition-transform duration-300"
                 />
               </div>
               <p
@@ -155,12 +155,9 @@ const FooterNew = () => {
               >
                 <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" />
                 <span>
-                  745, First Floor,<br /> Rani Boutique<br />
-                  Kesho Ram Complex<br />
-                  Near By Ram Electricals,<br />Sector 45<br />
-                  Burail, Chandigarh<br />
-                  Chandigarh – 160047<br />
-                  India
+                  745, First Floor, Rani Boutique,<br />
+                  Kesho Ram Complex, Near By Ram Electricals,<br />
+                  Sector 45, Burail, Chandigarh - 160047, India
                 </span>
               </div>
             </div>
@@ -249,7 +246,7 @@ const FooterNew = () => {
         </div>
 
         {/* PING ME — letters justified across full width */}
-        <div className="mb-[6px] mt-[-50px] pt-7">
+        <div className="mb-1 mt-[-30px] pt-4">
           <div
             className="flex justify-between items-baseline w-full"
             style={{
@@ -260,7 +257,7 @@ const FooterNew = () => {
             {["P", "I", "N", "G", "M", "E"].map((letter) => (
               <span
                 key={letter}
-                className="text-5xl md:text-6xl lg:text-7xl font-black"
+                className="text-3xl md:text-4xl lg:text-5xl font-black"
                 style={{ letterSpacing: "0", lineHeight: 1 }}
               >
                 {letter}
@@ -271,7 +268,7 @@ const FooterNew = () => {
 
         {/* DIVIDER */}
         <div
-          className="h-0.5 mb-12"
+          className="h-0.5 mb-6"
           style={{
             background:
               "linear-gradient(90deg, transparent, hsl(var(--ping-yellow) / 10.5), transparent)",

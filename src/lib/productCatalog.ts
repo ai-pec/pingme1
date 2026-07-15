@@ -16,6 +16,7 @@ export interface ProductVariant {
   disabled?: boolean;
   tags?: string[];
   colorVariants?: ColorVariant[];
+  videoLinks?: string[];
 }
 
 export interface ProductCategory {

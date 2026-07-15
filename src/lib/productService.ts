@@ -82,6 +82,9 @@ const mapToDbProduct = (id: string, value: Record<string, unknown>): DbProduct =
       const cv = normalizeColorVariants(value.colorVariants);
       return cv.length > 0 ? cv : undefined;
     })(),
+    videoLinks: Array.isArray(value.videoLinks)
+      ? value.videoLinks.filter((link): link is string => typeof link === "string" && link.trim() !== "")
+      : [],
     createdAt: value.createdAt,
     updatedAt: value.updatedAt,
   };
@@ -110,10 +113,10 @@ export const subscribeToProducts = (
 };
 
 export const getProducts = async (): Promise<DbProduct[]> => {
-  const productsRef = collection(db, "products");
-  const snapshot = await getDocs(productsRef);
+  const q = query(collection(db, "products"));
+  const querySnapshot = await getDocs(q);
   const products: DbProduct[] = [];
-  snapshot.forEach((doc) => {
+  querySnapshot.forEach((doc) => {
     products.push(mapToDbProduct(doc.id, doc.data() as Record<string, unknown>));
   });
   return products;
@@ -154,6 +157,9 @@ export const saveProduct = async (product: Omit<DbProduct, "updatedAt">) => {
             .map((v) => ({ color: v.color.trim(), image: resolveProductImageUrl(v.image) })),
         }
       : { colorVariants: [] }),
+    ...(Array.isArray(product.videoLinks)
+      ? { videoLinks: product.videoLinks.filter((link) => typeof link === "string" && link.trim() !== "") }
+      : { videoLinks: [] }),
     ...(product.createdAt ? { createdAt: product.createdAt } : {}),
   };
 

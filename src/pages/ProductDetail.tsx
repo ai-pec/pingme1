@@ -642,6 +642,209 @@ const SupportBanner = () => (
   </section>
 );
 
+/* ─── Tutorial Videos Section ─── */
+const TUTORIAL_VIDEOS: Record<string, { title: string; desc: string; embedId: string; duration: string }[]> = {
+  "car-tags": [
+    {
+      title: "How to Login & Register Your pingME Car Parking Sticker | Step-by-Step Guide",
+      desc: "A simple step-by-step walkthrough showing you how to scan, login, and register your new pingME car parking sticker.",
+      embedId: "JFidzncL9tA",
+      duration: "0:56"
+    },
+    {
+      title: "Anonymous Calls & Notifications Demo",
+      desc: "See exactly how the masked calling system works when someone scans your car tag to report an issue.",
+      embedId: "dQw4w9WgXcQ",
+      duration: "2:05"
+    },
+    {
+      title: "Best Practices: Placement & Styling",
+      desc: "Learn where to apply your car sticker or place your card on the windshield for optimal scanner visibility.",
+      embedId: "z5n2fT89E8Y",
+      duration: "1:48"
+    }
+  ],
+  "smart-keychain-tags": [
+    {
+      title: "Activating Your Smart Keychain Tag",
+      desc: "Step-by-step instructions to register your new PingME keychain and set up your safe contact information.",
+      embedId: "ScMzIvxBSi4",
+      duration: "1:15"
+    },
+    {
+      title: "Updating Your Contact Details",
+      desc: "How to update your phone number, email, or custom message in real-time from your account dashboard.",
+      embedId: "dQw4w9WgXcQ",
+      duration: "1:50"
+    }
+  ],
+  "keychain-tags": [
+    {
+      title: "Activating Your Keychain Tag",
+      desc: "Step-by-step instructions to register your new PingME keychain and set up your safe contact information.",
+      embedId: "ScMzIvxBSi4",
+      duration: "1:15"
+    },
+    {
+      title: "Updating Your Contact Details",
+      desc: "How to update your phone number, email, or custom message in real-time from your account dashboard.",
+      embedId: "dQw4w9WgXcQ",
+      duration: "1:50"
+    }
+  ]
+};
+
+const TutorialSection = ({ categorySlug, customLinks }: { categorySlug: string; customLinks?: string[] }) => {
+  const [activeVideoIdx, setActiveVideoIdx] = useState(0);
+
+  const getYouTubeId = (url: string): string => {
+    if (!url) return "";
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : url;
+  };
+
+  const videos = useMemo(() => {
+    if (customLinks && customLinks.length > 0) {
+      return customLinks.map((link, idx) => {
+        const embedId = getYouTubeId(link);
+        return {
+          title: idx === 0 ? "How to Setup & Activate" : `Guide Video #${idx + 1}`,
+          desc: "Step-by-step instructions to get your PingME tag activated.",
+          embedId,
+          duration: "Walkthrough"
+        };
+      });
+    }
+    return TUTORIAL_VIDEOS[categorySlug] || [];
+  }, [categorySlug, customLinks]);
+
+  // Reset active index if playlist changes
+  useEffect(() => {
+    setActiveVideoIdx(0);
+  }, [videos]);
+
+  if (videos.length === 0) return null;
+
+  const currentVideo = videos[activeVideoIdx];
+
+  return (
+    <div style={{ maxWidth: "1200px", margin: "48px auto 0", padding: "0 clamp(16px, 4vw, 32px)", boxSizing: "border-box", width: "100%" }}>
+      <div style={{ borderTop: `1px solid var(--pm-mist)`, paddingTop: 48 }}>
+        <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: "clamp(24px, 4vw, 28px)", fontWeight: 700, color: "var(--pm-ink)", marginBottom: 8 }}>
+          Setup & Tutorial Videos
+        </h2>
+        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "var(--pm-text-sec)", marginBottom: 32, maxWidth: 600 }}>
+          Watch these step-by-step guides to get your PingME tag set up and activated in minutes.
+        </p>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1.8fr 1fr", gap: 32 }} className="pm-tutorial-grid">
+          {/* Main Player */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{
+              position: "relative",
+              paddingBottom: "56.25%", /* 16:9 Aspect Ratio */
+              height: 0,
+              overflow: "hidden",
+              borderRadius: 16,
+              border: `1px solid var(--pm-mist)`,
+              background: "var(--pm-smoke)",
+              boxShadow: "0 8px 30px rgba(0,0,0,0.04)"
+            }}>
+              <iframe
+                title={currentVideo.title}
+                src={`https://www.youtube.com/embed/${currentVideo.embedId}`}
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: "100%",
+                  border: 0
+                }}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+            <div>
+              <h3 style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 18, fontWeight: 700, color: "var(--pm-ink)", margin: "0 0 6px" }}>
+                {currentVideo.title}
+              </h3>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "var(--pm-text-sec)", margin: 0, lineHeight: 1.5 }}>
+                {currentVideo.desc}
+              </p>
+            </div>
+          </div>
+
+          {/* Playlist Sidebar */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <h4 style={{ margin: "0 0 4px", fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 700, color: "var(--pm-text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              Video Playlist
+            </h4>
+            {videos.map((vid, idx) => {
+              const isActive = idx === activeVideoIdx;
+              return (
+                <button
+                  key={idx}
+                  onClick={() => setActiveVideoIdx(idx)}
+                  style={{
+                    display: "flex",
+                    textAlign: "left",
+                    gap: 16,
+                    padding: 16,
+                    borderRadius: 12,
+                    border: `1.5px solid ${isActive ? "var(--pm-gold-deep)" : "var(--pm-mist)"}`,
+                    background: isActive ? `linear-gradient(135deg, var(--pm-gold-light) 0%, rgba(255,255,255,0.4) 100%)` : "var(--pm-white)",
+                    cursor: "pointer",
+                    transition: "all 0.25s ease"
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) e.currentTarget.style.borderColor = "var(--pm-gold)";
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) e.currentTarget.style.borderColor = "var(--pm-mist)";
+                  }}
+                >
+                  {/* Thumbnail / Icon Circle */}
+                  <div style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 8,
+                    background: isActive ? "var(--pm-gold-deep)" : "var(--pm-smoke)",
+                    color: isActive ? "var(--pm-white)" : "var(--pm-gold-deep)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 18,
+                    flexShrink: 0
+                  }}>
+                    ▶
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700, color: "var(--pm-ink)", lineHeight: 1.3 }}>
+                      {vid.title}
+                    </span>
+                    <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "var(--pm-text-muted)", fontWeight: 600 }}>
+                      Duration: {vid.duration}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+      <style>{`
+        @media (max-width: 768px) {
+          .pm-tutorial-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
+    </div>
+  );
+};
+
 /* ══════════════════════════════════════════════════════════════════
    MAIN COMPONENT
 ══════════════════════════════════════════════════════════════════ */
@@ -1336,7 +1539,8 @@ const ProductDetail = () => {
             {/* Rating Summary */}
             {product && (
               <div 
-                className="pm-anim flex items-center gap-2 mb-4 cursor-pointer hover:opacity-85 transition-opacity"
+                className="pm-anim flex items-center gap-2 mb-4 cursor-pointer hover:opacity-85 transition-opacity w-fit"
+                style={{ display: "inline-flex" }}
                 onClick={() => {
                   const el = document.getElementById("customer-reviews");
                   if (el) el.scrollIntoView({ behavior: "smooth" });
@@ -1696,6 +1900,12 @@ const ProductDetail = () => {
                 <div>
                   {[
                     { label: "Category", value: categoryName },
+                    ...(product && product.title.toLowerCase().includes("car card") ? [
+                      { label: "Dimensions", value: "89 mm x 59 mm x 0.3 mm (Width x Height x Thickness)" }
+                    ] : []),
+                    ...(product && (product.title.toLowerCase().includes("keychain") || categorySlug?.includes("keychain")) ? [
+                      { label: "Dimensions", value: "56 mm (Diameter) x 3 mm (Thickness)" }
+                    ] : []),
                     { label: "Technology", value: "QR Code" },
                     { label: "Material", value: "Durable PVC" },
                     { label: "Connectivity", value: "No Bluetooth. No battery. No app for scanner." },
@@ -1780,6 +1990,11 @@ const ProductDetail = () => {
 
           </div>
         </div>
+
+        {/* ── Setup & Tutorial Videos ── */}
+        {normalizedSlug && (
+          <TutorialSection categorySlug={normalizedSlug} customLinks={product?.videoLinks} />
+        )}
 
         {/* ── Customer Reviews Section ── */}
         <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 clamp(16px, 4vw, 32px)", boxSizing: "border-box", width: "100%" }}>
