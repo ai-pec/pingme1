@@ -43,6 +43,7 @@ import {
   Activity,
   Scan,
   Phone,
+  Key,
 } from "lucide-react";
 
 import carcardFront from "@/assets/product-card.png";
@@ -129,22 +130,39 @@ const getOfferings = (products: DbProduct[], hasProductSnapshot: boolean) => [
     tag: "Most popular",
   },
   {
-    categorySlug: "backpack-stickers",
-    icon: PackageSearch,
-    title: "Lost & Found",
-    subtitle: "For bags & everyday items",
+    categorySlug: "keychain-tags",
+    icon: Key,
+    title: "Keychain Tags",
+    subtitle: "For keys & everyday items",
     description:
-      "When your bag goes missing, a finder scans the sticker and you're instantly reachable — without anyone knowing who you are or where you live.",
+      "Secure your keys, bag, or backpack. If someone finds them, they scan the tag and ping you privately — keeping your personal phone number completely hidden.",
     image: getBestSellingImage(
       products,
-      "backpack-stickers",
-      hasProductSnapshot ? buildProductImageUrl("products/backpack-stickers/backpack_sticker2.png") : undefined,
+      "keychain-tags",
+      hasProductSnapshot ? buildProductImageUrl("products/keychain-tags/keychain_fallback.png") : undefined,
     ),
-    accent: "#475569",
-    accentMid: "#64748B",
-    accentBg: "rgba(100,116,139,0.09)",
-    points: ["Bags, laptops & keys", "Finder-friendly scan", "Private return flow"],
-    tag: null,
+    accent: "#3b50a8",
+    accentMid: "#4f65c1",
+    accentBg: "rgba(79,101,193,0.09)",
+    points: ["Keys, bags & everyday items", "NFC & QR dual technology", "Owner stays anonymous"],
+  },
+  {
+    categorySlug: "smart-keychain-tags",
+    icon: Key,
+    title: "Smart Keychain Tags",
+    subtitle: "Zodiac & religious designs",
+    description:
+      "Express yourself with premium engraved tags. Scan to activate your secure profile and share contact options instantly.",
+    image: getBestSellingImage(
+      products,
+      "smart-keychain-tags",
+      hasProductSnapshot ? buildProductImageUrl("products/smart-keychain-tags/keytag_fallback.png") : undefined,
+    ),
+    accent: "#7C3AED",
+    accentMid: "#8B5CF6",
+    accentBg: "rgba(139,92,246,0.09)",
+    points: ["Premium engraved metal/leather", "Zodiac & religious designs", "Instant secure contact options"],
+    tag: "New designs",
   },
   {
     categorySlug: "pet-tags",
