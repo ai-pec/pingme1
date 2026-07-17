@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Smartphone, X } from "lucide-react";
+import { X } from "lucide-react";
 
-type AppPlatform = "playstore" | "appstore" | "apk";
+type AppPlatform = "playstore" | "appstore";
 
 const LandingDownloadSection: React.FC = () => {
   const [active, setActive] = useState<AppPlatform | null>(null);
@@ -46,7 +46,6 @@ const LandingDownloadSection: React.FC = () => {
   const labels: Record<AppPlatform, string> = {
     playstore: "Google Play Store App",
     appstore: "Apple App Store App",
-    apk: "Direct APK Download",
   };
 
   return (
@@ -144,18 +143,6 @@ const LandingDownloadSection: React.FC = () => {
             </div>
           </button>
 
-          {/* APK Button */}
-          <button
-            onClick={() => handleClick("apk")}
-            className="group flex items-center gap-3.5 rounded-2xl border-2 border-border/80 bg-background px-6 py-3.5 shadow-sm transition-all duration-300 hover:border-primary hover:shadow-md hover:-translate-y-1 active:scale-95 w-full sm:w-auto justify-center cursor-pointer"
-            aria-label="Download Android Direct APK"
-          >
-            <Smartphone className="h-6 w-6 shrink-0 text-foreground transition-colors duration-300 group-hover:text-primary" />
-            <div className="flex flex-col text-left leading-none">
-              <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Android App</span>
-              <span className="text-[15px] font-bold text-foreground mt-0.5">Direct APK</span>
-            </div>
-          </button>
         </div>
       </div>
       

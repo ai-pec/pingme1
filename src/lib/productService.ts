@@ -45,6 +45,19 @@ const normalizeColorVariants = (value: unknown): ColorVariant[] => {
     .filter((v) => v.color && v.image);
 };
 
+// Keeps videoLinks/videoTitles index-aligned while dropping empty links
+const normalizeVideoPairs = (linksValue: unknown, titlesValue: unknown): { videoLinks: string[]; videoTitles: string[] } => {
+  const links = Array.isArray(linksValue) ? linksValue : [];
+  const titles = Array.isArray(titlesValue) ? titlesValue : [];
+  const pairs = links
+    .map((link, i) => ({
+      link: typeof link === "string" ? link.trim() : "",
+      title: typeof titles[i] === "string" ? (titles[i] as string).trim() : "",
+    }))
+    .filter((p) => p.link !== "");
+  return { videoLinks: pairs.map((p) => p.link), videoTitles: pairs.map((p) => p.title) };
+};
+
 const mapToDbProduct = (id: string, value: Record<string, unknown>): DbProduct => {
   const categorySlug = normalizeCategorySlug(typeof value.categorySlug === "string" ? value.categorySlug : "") || "uncategorized";
   const image = resolveProductImageUrl(typeof value.image === "string" ? value.image : "");
@@ -82,9 +95,7 @@ const mapToDbProduct = (id: string, value: Record<string, unknown>): DbProduct =
       const cv = normalizeColorVariants(value.colorVariants);
       return cv.length > 0 ? cv : undefined;
     })(),
-    videoLinks: Array.isArray(value.videoLinks)
-      ? value.videoLinks.filter((link): link is string => typeof link === "string" && link.trim() !== "")
-      : [],
+    ...normalizeVideoPairs(value.videoLinks, value.videoTitles),
     createdAt: value.createdAt,
     updatedAt: value.updatedAt,
   };
@@ -157,9 +168,7 @@ export const saveProduct = async (product: Omit<DbProduct, "updatedAt">) => {
             .map((v) => ({ color: v.color.trim(), image: resolveProductImageUrl(v.image) })),
         }
       : { colorVariants: [] }),
-    ...(Array.isArray(product.videoLinks)
-      ? { videoLinks: product.videoLinks.filter((link) => typeof link === "string" && link.trim() !== "") }
-      : { videoLinks: [] }),
+    ...normalizeVideoPairs(product.videoLinks, product.videoTitles),
     ...(product.createdAt ? { createdAt: product.createdAt } : {}),
   };
 

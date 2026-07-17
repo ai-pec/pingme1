@@ -470,8 +470,8 @@ export default function Admin() {
     }
 
     setEditingProduct(product
-      ? { ...product, categorySlug: slug, images: product.images || [], tags: product.tags || [], colorVariants: product.colorVariants || [], videoLinks: initialVideoLinks }
-      : { id: "", categorySlug: slug, title: "", price: "", originalPrice: "", image: "", images: [], emoji: "", features: [""], tags: [], popular: false, disabled: false, colorVariants: [], videoLinks: initialVideoLinks },
+      ? { ...product, categorySlug: slug, images: product.images || [], tags: product.tags || [], colorVariants: product.colorVariants || [], videoLinks: initialVideoLinks, videoTitles: product.videoTitles || [] }
+      : { id: "", categorySlug: slug, title: "", price: "", originalPrice: "", image: "", images: [], emoji: "", features: [""], tags: [], popular: false, disabled: false, colorVariants: [], videoLinks: initialVideoLinks, videoTitles: [] },
     );
     setIsProductOpen(true);
   };
@@ -489,7 +489,8 @@ export default function Admin() {
         features: editingProduct.features.filter((f) => f.trim()),
         tags: (editingProduct.tags || []).filter((t) => t.trim()),
         colorVariants: (editingProduct.colorVariants || []).filter((cv) => cv.color.trim() && cv.image.trim()),
-        videoLinks: (editingProduct.videoLinks || []).filter((link) => link.trim()),
+        videoLinks: editingProduct.videoLinks || [],
+        videoTitles: editingProduct.videoTitles || [],
       });
       toast.success("Product saved");
       setIsProductOpen(false);
@@ -1860,25 +1861,39 @@ export default function Admin() {
             <div className="space-y-2">
               <Label className="text-xs font-semibold">Tutorial Video Links (YouTube URLs / Shorts)</Label>
               {(editingProduct.videoLinks ?? []).map((link, idx) => (
-                <div key={idx} className="flex gap-2 items-center">
-                  <Input
-                    value={link}
-                    placeholder="e.g. https://www.youtube.com/watch?v=..."
-                    onChange={(e) => {
-                      const next = [...(editingProduct.videoLinks ?? [])];
-                      next[idx] = e.target.value;
-                      setEditingProduct({ ...editingProduct, videoLinks: next });
-                    }}
-                    className="h-11 text-sm rounded-xl flex-1"
-                  />
+                <div key={idx} className="flex gap-2 items-start rounded-xl border border-border/60 p-2">
+                  <div className="flex-1 space-y-2">
+                    <Input
+                      value={(editingProduct.videoTitles ?? [])[idx] ?? ""}
+                      placeholder={idx === 0 ? "Video name (default: How to Setup & Activate)" : `Video name (default: Guide Video #${idx + 1})`}
+                      onChange={(e) => {
+                        const next = [...(editingProduct.videoTitles ?? [])];
+                        while (next.length < (editingProduct.videoLinks ?? []).length) next.push("");
+                        next[idx] = e.target.value;
+                        setEditingProduct({ ...editingProduct, videoTitles: next });
+                      }}
+                      className="h-11 text-sm rounded-xl"
+                    />
+                    <Input
+                      value={link}
+                      placeholder="e.g. https://www.youtube.com/watch?v=..."
+                      onChange={(e) => {
+                        const next = [...(editingProduct.videoLinks ?? [])];
+                        next[idx] = e.target.value;
+                        setEditingProduct({ ...editingProduct, videoLinks: next });
+                      }}
+                      className="h-11 text-sm rounded-xl"
+                    />
+                  </div>
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
                     className="h-11 w-11 rounded-xl text-destructive hover:text-destructive hover:bg-destructive/10"
                     onClick={() => {
-                      const next = (editingProduct.videoLinks ?? []).filter((_, i) => i !== idx);
-                      setEditingProduct({ ...editingProduct, videoLinks: next });
+                      const nextLinks = (editingProduct.videoLinks ?? []).filter((_, i) => i !== idx);
+                      const nextTitles = (editingProduct.videoTitles ?? []).filter((_, i) => i !== idx);
+                      setEditingProduct({ ...editingProduct, videoLinks: nextLinks, videoTitles: nextTitles });
                     }}
                   >
                     <Trash2 className="w-4 h-4" />
@@ -1890,8 +1905,10 @@ export default function Admin() {
                 variant="outline"
                 className="w-full h-11 rounded-xl gap-2"
                 onClick={() => {
-                  const next = [...(editingProduct.videoLinks ?? []), ""];
-                  setEditingProduct({ ...editingProduct, videoLinks: next });
+                  const nextLinks = [...(editingProduct.videoLinks ?? []), ""];
+                  const nextTitles = [...(editingProduct.videoTitles ?? [])];
+                  while (nextTitles.length < nextLinks.length) nextTitles.push("");
+                  setEditingProduct({ ...editingProduct, videoLinks: nextLinks, videoTitles: nextTitles });
                 }}
               >
                 <Plus className="w-4 h-4" /> Add Video Link

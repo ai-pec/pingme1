@@ -17,6 +17,7 @@ export interface ProductVariant {
   tags?: string[];
   colorVariants?: ColorVariant[];
   videoLinks?: string[];
+  videoTitles?: string[];
 }
 
 export interface ProductCategory {

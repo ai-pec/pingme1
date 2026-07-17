@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { State, City } from "country-state-city";
+import indiaLocations from "@/data/india-locations.json";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { addressSchema, type AddressFormData } from "@/lib/validations/auth";
@@ -54,12 +54,12 @@ export function AddressManagement() {
   });
 
   const watchStateName = addressForm.watch("state");
-  const inStates = State.getStatesOfCountry(APP_CONFIG.DEFAULT_COUNTRY_ISO) as StateOption[];
-  const selectedStateObj = inStates.find(
+  const inStates: StateOption[] = indiaLocations;
+  const selectedStateObj = indiaLocations.find(
     (stateOption) => stateOption.name === watchStateName
   );
-  const cities = selectedStateObj
-    ? (City.getCitiesOfState(APP_CONFIG.DEFAULT_COUNTRY_ISO, selectedStateObj.isoCode) as CityOption[])
+  const cities: CityOption[] = selectedStateObj
+    ? selectedStateObj.cities.map((name) => ({ name }))
     : [];
 
   const saveAddressMutation = useMutation({

@@ -111,8 +111,6 @@ const Navbar = () => {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
-
         :root {
           --primary-yellow: hsl(45 100% 48%);
           --dark-brown: hsl(40 76% 7%);
@@ -555,14 +553,14 @@ const Navbar = () => {
                       </Button>
                     </div>
                   )}
-</SheetContent>
-               </Sheet>
+                </SheetContent>
+              </Sheet>
 
-               {/* Theme Toggle */}
-               <ThemeToggle />
+              {/* Theme Toggle */}
+              <ThemeToggle />
 
-               {/* User / Login */}
-               {!loading && (
+              {/* User / Login */}
+              {!loading && (
                 user ? (
                   <UserAvatar />
                 ) : (
@@ -637,7 +635,7 @@ const Navbar = () => {
                   {items.length > 0 && (
                     <div className="pt-4 border-t border-border mt-auto">
                       <div className="flex justify-between mb-4">
-                        <span className="font-semibold">Estimated Total</span>
+                        <span className="font-semibold">Total Amount</span>
                         <span className="font-bold text-lg">₹{cartTotal.toFixed(2)}</span>
                       </div>
                       <Button
@@ -655,17 +653,17 @@ const Navbar = () => {
                       </Button>
                     </div>
                   )}
-</SheetContent>
-               </Sheet>
+                </SheetContent>
+              </Sheet>
 
-               {!loading && user && <UserAvatar />}
+              {!loading && user && <UserAvatar />}
 
-               <ThemeToggle />
+              <ThemeToggle />
 
-               <button
-                 className={`menu-toggle ${mobileMenuOpen ? "open" : ""}`}
-                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-               >
+              <button
+                className={`menu-toggle ${mobileMenuOpen ? "open" : ""}`}
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              >
                 <Menu className="menu-icon w-5 h-5" />
               </button>
             </div>
@@ -694,22 +692,22 @@ const Navbar = () => {
                   ) : (
                     <Link
                       key={link.label}
-to={link.to}
-                       onClick={() => setMobileMenuOpen(false)}
-                       className="mobile-menu-item px-4 py-3 rounded-lg font-semibold text-foreground hover:bg-yellow-50 dark:hover:bg-yellow-400/10 hover:text-yellow-600 transition-all relative group"
-                       style={{ animationDelay: `${idx * 0.06}s` }}
-                     >
-                       <div className="flex items-center justify-between">
-                         {link.label}
-                         <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity transform group-hover:translate-x-1" />
-                       </div>
-                       {isActive(link) && <div className="accent-line absolute left-4 bottom-0" />}
-                     </Link>
-                   )
-                 ))}
-               </nav>
+                      to={link.to}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="mobile-menu-item px-4 py-3 rounded-lg font-semibold text-foreground hover:bg-yellow-50 dark:hover:bg-yellow-400/10 hover:text-yellow-600 transition-all relative group"
+                      style={{ animationDelay: `${idx * 0.06}s` }}
+                    >
+                      <div className="flex items-center justify-between">
+                        {link.label}
+                        <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity transform group-hover:translate-x-1" />
+                      </div>
+                      {isActive(link) && <div className="accent-line absolute left-4 bottom-0" />}
+                    </Link>
+                  )
+                ))}
+              </nav>
 
-               <div className="border-t border-border pt-4 space-y-3">
+              <div className="border-t border-border pt-4 space-y-3">
                 {!loading && !user && (
                   isNfcSubdomain ? (
                     <a
@@ -731,43 +729,43 @@ to={link.to}
                 )}
                 {!loading && user && (
                   <>
-<Link
-                       to="/profile"
-                       onClick={() => setMobileMenuOpen(false)}
-                       className="mobile-menu-item block py-3 px-4 rounded-lg border-2 border-border text-foreground font-semibold text-center hover:border-yellow-400 hover:text-yellow-600"
-                     >
-                       My Profile
-                     </Link>
-                     <Link
-                       to="/profile/visits"
-                       onClick={() => setMobileMenuOpen(false)}
-                       className="mobile-menu-item block py-3 px-4 rounded-lg border-2 border-border text-foreground font-semibold text-center hover:border-yellow-400 hover:text-yellow-600"
-                     >
+                    <Link
+                      to="/profile"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="mobile-menu-item block py-3 px-4 rounded-lg border-2 border-border text-foreground font-semibold text-center hover:border-yellow-400 hover:text-yellow-600"
+                    >
+                      My Profile
+                    </Link>
+                    <Link
+                      to="/profile/visits"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="mobile-menu-item block py-3 px-4 rounded-lg border-2 border-border text-foreground font-semibold text-center hover:border-yellow-400 hover:text-yellow-600"
+                    >
                       NFC Profile Visits
                     </Link>
-<Link
-                       to="/profile/leads"
-                       onClick={() => setMobileMenuOpen(false)}
-                       className="mobile-menu-item block py-3 px-4 rounded-lg border-2 border-border text-foreground font-semibold text-center hover:border-yellow-400 hover:text-yellow-600"
-                     >
-                       NFC Leads & Outreach
-                     </Link>
-                     <Link
-                       to="/admin"
-                       onClick={() => setMobileMenuOpen(false)}
-                       className="mobile-menu-item block py-3 px-4 rounded-lg border-2 border-border text-foreground font-semibold text-center hover:border-yellow-400 hover:text-yellow-600"
-                     >
-                       Admin Panel
-                     </Link>
-                     <button
-                       type="button"
-                       onClick={async () => {
-                         setMobileMenuOpen(false);
-                         await logout();
-                         navigate("/");
-                       }}
-                       className="mobile-menu-item block w-full py-3 px-4 rounded-lg border-2 border-red-300 text-red-600 font-semibold hover:bg-red-50 dark:hover:bg-red-900/20"
-                     >
+                    <Link
+                      to="/profile/leads"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="mobile-menu-item block py-3 px-4 rounded-lg border-2 border-border text-foreground font-semibold text-center hover:border-yellow-400 hover:text-yellow-600"
+                    >
+                      NFC Leads & Outreach
+                    </Link>
+                    <Link
+                      to="/admin"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="mobile-menu-item block py-3 px-4 rounded-lg border-2 border-border text-foreground font-semibold text-center hover:border-yellow-400 hover:text-yellow-600"
+                    >
+                      Admin Panel
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setMobileMenuOpen(false);
+                        await logout();
+                        navigate("/");
+                      }}
+                      className="mobile-menu-item block w-full py-3 px-4 rounded-lg border-2 border-red-300 text-red-600 font-semibold hover:bg-red-50 dark:hover:bg-red-900/20"
+                    >
                       Logout
                     </button>
                   </>

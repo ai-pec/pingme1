@@ -643,58 +643,7 @@ const SupportBanner = () => (
 );
 
 /* ─── Tutorial Videos Section ─── */
-const TUTORIAL_VIDEOS: Record<string, { title: string; desc: string; embedId: string; duration: string }[]> = {
-  "car-tags": [
-    {
-      title: "How to Login & Register Your pingME Car Parking Sticker | Step-by-Step Guide",
-      desc: "A simple step-by-step walkthrough showing you how to scan, login, and register your new pingME car parking sticker.",
-      embedId: "JFidzncL9tA",
-      duration: "0:56"
-    },
-    {
-      title: "Anonymous Calls & Notifications Demo",
-      desc: "See exactly how the masked calling system works when someone scans your car tag to report an issue.",
-      embedId: "dQw4w9WgXcQ",
-      duration: "2:05"
-    },
-    {
-      title: "Best Practices: Placement & Styling",
-      desc: "Learn where to apply your car sticker or place your card on the windshield for optimal scanner visibility.",
-      embedId: "z5n2fT89E8Y",
-      duration: "1:48"
-    }
-  ],
-  "smart-keychain-tags": [
-    {
-      title: "Activating Your Smart Keychain Tag",
-      desc: "Step-by-step instructions to register your new PingME keychain and set up your safe contact information.",
-      embedId: "ScMzIvxBSi4",
-      duration: "1:15"
-    },
-    {
-      title: "Updating Your Contact Details",
-      desc: "How to update your phone number, email, or custom message in real-time from your account dashboard.",
-      embedId: "dQw4w9WgXcQ",
-      duration: "1:50"
-    }
-  ],
-  "keychain-tags": [
-    {
-      title: "Activating Your Keychain Tag",
-      desc: "Step-by-step instructions to register your new PingME keychain and set up your safe contact information.",
-      embedId: "ScMzIvxBSi4",
-      duration: "1:15"
-    },
-    {
-      title: "Updating Your Contact Details",
-      desc: "How to update your phone number, email, or custom message in real-time from your account dashboard.",
-      embedId: "dQw4w9WgXcQ",
-      duration: "1:50"
-    }
-  ]
-};
-
-const TutorialSection = ({ categorySlug, customLinks }: { categorySlug: string; customLinks?: string[] }) => {
+const TutorialSection = ({ customLinks, customTitles }: { categorySlug: string; customLinks?: string[]; customTitles?: string[] }) => {
   const [activeVideoIdx, setActiveVideoIdx] = useState(0);
 
   const getYouTubeId = (url: string): string => {
@@ -705,19 +654,19 @@ const TutorialSection = ({ categorySlug, customLinks }: { categorySlug: string; 
   };
 
   const videos = useMemo(() => {
-    if (customLinks && customLinks.length > 0) {
-      return customLinks.map((link, idx) => {
-        const embedId = getYouTubeId(link);
-        return {
-          title: idx === 0 ? "How to Setup & Activate" : `Guide Video #${idx + 1}`,
-          desc: "Step-by-step instructions to get your PingME tag activated.",
-          embedId,
-          duration: "Walkthrough"
-        };
-      });
-    }
-    return TUTORIAL_VIDEOS[categorySlug] || [];
-  }, [categorySlug, customLinks]);
+    const entries = (customLinks || [])
+      .map((link, idx) => ({ link, title: (customTitles || [])[idx]?.trim() || "" }))
+      .filter((entry) => entry.link && entry.link.trim());
+    if (entries.length === 0) return [];
+    return entries.map((entry, idx) => {
+      const embedId = getYouTubeId(entry.link);
+      return {
+        title: entry.title || (idx === 0 ? "How to Setup & Activate" : `Guide Video #${idx + 1}`),
+        desc: "Step-by-step instructions to get your PingME tag activated.",
+        embedId
+      };
+    });
+  }, [customLinks, customTitles]);
 
   // Reset active index if playlist changes
   useEffect(() => {
@@ -823,9 +772,6 @@ const TutorialSection = ({ categorySlug, customLinks }: { categorySlug: string; 
                   <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                     <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700, color: "var(--pm-ink)", lineHeight: 1.3 }}>
                       {vid.title}
-                    </span>
-                    <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "var(--pm-text-muted)", fontWeight: 600 }}>
-                      Duration: {vid.duration}
                     </span>
                   </div>
                 </button>
@@ -1906,6 +1852,9 @@ const ProductDetail = () => {
                     ...(product && (product.title.toLowerCase().includes("keychain") || categorySlug?.includes("keychain")) ? [
                       { label: "Dimensions", value: "56 mm (Diameter) x 3 mm (Thickness)" }
                     ] : []),
+                    ...(product && (product.title.toLowerCase().includes("lost") || product.title.toLowerCase().includes("found") || product.title.toLowerCase().includes("backpack") || categorySlug?.includes("backpack")) ? [
+                      { label: "Dimensions", value: "25.4 mm x 38.1 mm (Width x Height)" }
+                    ] : []),
                     { label: "Technology", value: "QR Code" },
                     { label: "Material", value: "Durable PVC" },
                     { label: "Connectivity", value: "No Bluetooth. No battery. No app for scanner." },
@@ -1993,7 +1942,7 @@ const ProductDetail = () => {
 
         {/* ── Setup & Tutorial Videos ── */}
         {normalizedSlug && (
-          <TutorialSection categorySlug={normalizedSlug} customLinks={product?.videoLinks} />
+          <TutorialSection categorySlug={normalizedSlug} customLinks={product?.videoLinks} customTitles={product?.videoTitles} />
         )}
 
         {/* ── Customer Reviews Section ── */}

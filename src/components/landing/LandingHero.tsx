@@ -1620,12 +1620,9 @@ const LandingHero = () => {
                       rel="noopener noreferrer"
                       className="text-sm text-muted-foreground hover:text-primary transition-colors block leading-7"
                     >
-                      Ping IFF LLP · 745, First Floor,<br /> Rani Boutique<br />
-                      Kesho Ram Complex<br />
-                      Near By Ram Electricals, Sector 45<br />
-                      Burail, Chandigarh<br />
-                      Chandigarh – 160047<br />
-                      India
+                      745, First Floor, Rani Boutique,<br />
+                      Kesho Ram Complex, Near By Ram Electricals,<br />
+                      Sector 45, Burail, Chandigarh - 160047, India
                     </a>
                     <div className="mt-3 flex flex-wrap gap-5 text-sm text-muted-foreground">
                       <a

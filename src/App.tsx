@@ -2,9 +2,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import React, { Suspense, lazy, Component, ErrorInfo, ReactNode } from "react";
+import { Suspense, lazy, Component, ErrorInfo, ReactNode } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { Loader2, AlertCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 
@@ -13,7 +13,7 @@ import { CartProvider } from "@/contexts/CartContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import AdminRoute from "@/components/auth/AdminRoute";
-import DocsPage from "./components/DocsPage";
+const DocsPage = lazy(() => import("./components/DocsPage"));
 import SmoothScroll from "@/components/SmoothScroll";
 
 // Pages

@@ -10,9 +10,8 @@ const isNfcSubdomain =
 const mainSiteUrl = (path: string) => `${MAIN_SITE}${path}`;
 
 const FooterNavLink = ({ item }: { item: { name: string; href: string } }) => {
-  const className = "text-sm transition-all duration-300 relative group";
+  const className = "text-sm transition-all duration-300 relative group pm-footer-link";
   const style = {
-    color: "hsl(var(--ping-ash))",
     fontFamily: "'Poppins', sans-serif",
   };
   const content = (
@@ -71,15 +70,17 @@ const FooterNew = () => {
 
   return (
     <footer
-      className="relative text-foreground"
-      style={{ backgroundColor: "hsl(var(--ping-cream))", color: "hsl(var(--ping-dark))" }}
+      className="relative w-full overflow-hidden pm-footer"
     >
+      {/* Noise Grain Overlay */}
       <div
-        className="h-0.5 mb-6"
+        className="absolute inset-0 pointer-events-none opacity-[0.05] mix-blend-overlay"
         style={{
-          background:
-            "linear-gradient(90deg, transparent, hsl(var(--ping-yellow) / 10.5), transparent)",
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 250 250' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
         }}
+      />
+      <div
+        className="h-0.5 mb-6 pm-footer-divider"
       />
 
       <div className="container mx-auto px-4 py-8 md:py-10 lg:py-12">
@@ -93,13 +94,12 @@ const FooterNew = () => {
                 <img
                   src={logo}
                   alt="PingME"
-                  className="h-10 w-auto sm:h-12 md:h-14 object-contain hover:scale-105 transition-transform duration-300"
+                  className="h-10 w-auto sm:h-12 md:h-14 object-contain hover:scale-105 transition-transform duration-300 pm-footer-logo"
                 />
               </div>
               <p
-                className="text-sm leading-relaxed"
+                className="text-sm leading-relaxed pm-footer-desc"
                 style={{
-                  color: "hsl(var(--ping-ash))",
                   fontFamily: "'Poppins', sans-serif",
                 }}
               >
@@ -109,14 +109,12 @@ const FooterNew = () => {
 
             {/* Contact Info */}
             <div
-              className="flex flex-col space-y-3 pt-4"
-              style={{ borderTop: "1px solid hsl(var(--ping-brown) / 0.15)" }}
+              className="flex flex-col space-y-3 pt-4 pm-footer-contact-box"
             >
               <a
                 href="tel:+917347340007"
-                className="flex items-center gap-2 text-sm transition-all duration-300 group"
+                className="flex items-center gap-2 text-sm transition-all duration-300 group pm-footer-link"
                 style={{
-                  color: "hsl(var(--ping-ash))",
                   fontFamily: "'Poppins', sans-serif",
                 }}
               >
@@ -131,9 +129,8 @@ const FooterNew = () => {
 
               <a
                 href="mailto:contact@pingiff.ai"
-                className="flex items-center gap-2 text-sm transition-all duration-300 group"
+                className="flex items-center gap-2 text-sm transition-all duration-300 group pm-footer-link"
                 style={{
-                  color: "hsl(var(--ping-ash))",
                   fontFamily: "'Poppins', sans-serif",
                 }}
               >
@@ -147,9 +144,8 @@ const FooterNew = () => {
               </a>
 
               <div
-                className="flex items-start gap-2 text-sm"
+                className="flex items-start gap-2 text-sm pm-footer-address"
                 style={{
-                  color: "hsl(var(--ping-ash))",
                   fontFamily: "'Poppins', sans-serif",
                 }}
               >
@@ -169,9 +165,8 @@ const FooterNew = () => {
             {/* Products */}
             <div className="flex flex-col space-y-4">
               <h3
-                className="text-xs font-black uppercase"
+                className="text-xs font-black uppercase pm-footer-heading"
                 style={{
-                  color: "hsl(var(--ping-brown))",
                   fontFamily: "'Poppins', sans-serif",
                   letterSpacing: "0.14em",
                 }}
@@ -188,9 +183,8 @@ const FooterNew = () => {
             {/* Company */}
             <div className="flex flex-col space-y-4">
               <h3
-                className="text-xs font-black uppercase"
+                className="text-xs font-black uppercase pm-footer-heading"
                 style={{
-                  color: "hsl(var(--ping-brown))",
                   fontFamily: "'Poppins', sans-serif",
                   letterSpacing: "0.14em",
                 }}
@@ -207,9 +201,8 @@ const FooterNew = () => {
             {/* Legal */}
             <div className="flex flex-col space-y-4">
               <h3
-                className="text-xs font-black uppercase"
+                className="text-xs font-black uppercase pm-footer-heading"
                 style={{
-                  color: "hsl(var(--ping-brown))",
                   fontFamily: "'Poppins', sans-serif",
                   letterSpacing: "0.14em",
                 }}
@@ -226,9 +219,8 @@ const FooterNew = () => {
             {/* Support */}
             <div className="flex flex-col space-y-4">
               <h3
-                className="text-xs font-black uppercase"
+                className="text-xs font-black uppercase pm-footer-heading"
                 style={{
-                  color: "hsl(var(--ping-brown))",
                   fontFamily: "'Poppins', sans-serif",
                   letterSpacing: "0.14em",
                 }}
@@ -248,10 +240,9 @@ const FooterNew = () => {
         {/* PING ME — letters justified across full width */}
         <div className="mb-1 mt-[-30px] pt-4">
           <div
-            className="flex justify-between items-baseline w-full"
+            className="flex justify-between items-baseline w-full pm-footer-letters"
             style={{
               fontFamily: "'Poppins', sans-serif",
-              color: "hsl(var(--ping-dark))",
             }}
           >
             {["P", "I", "N", "G", "M", "E"].map((letter) => (
@@ -268,36 +259,29 @@ const FooterNew = () => {
 
         {/* DIVIDER */}
         <div
-          className="h-0.5 mb-6"
-          style={{
-            background:
-              "linear-gradient(90deg, transparent, hsl(var(--ping-yellow) / 10.5), transparent)",
-          }}
+          className="h-0.5 mb-6 pm-footer-divider"
         />
 
         {/* BOTTOM */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-6 md:gap-8">
           <div className="flex flex-col space-y-2 text-center md:text-left">
             <p
-              className="text-sm"
+              className="text-sm pm-footer-copyright"
               style={{
-                color: "hsl(var(--ping-ash))",
                 fontFamily: "'Poppins', sans-serif",
               }}
             >
               {`© ${currentYear} `}
               <span
-                style={{ color: "hsl(var(--ping-dark))" }}
-                className="font-bold"
+                className="font-bold pm-footer-brand-title"
               >
                 Ping IFF LLP
               </span>
               {". All rights reserved."}
             </p>
             <p
-              className="text-xs sm:text-sm"
+              className="text-xs sm:text-sm pm-footer-desc-secondary"
               style={{
-                color: "hsl(var(--ping-ash) / 0.7)",
                 fontFamily: "'Poppins', sans-serif",
               }}
             >
@@ -310,8 +294,8 @@ const FooterNew = () => {
 
             {/* D&B DUNS Registered Seal */}
             <div
+              className="pm-footer-seal-container"
               style={{
-                border: "1.5px solid hsl(var(--ping-brown) / 0.4)",
                 borderRadius: "6px",
                 overflow: "hidden",
                 flexShrink: 0,
@@ -340,17 +324,10 @@ const FooterNew = () => {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={label}
-                className="transition-all duration-300 group hover:scale-110"
-                style={{ color: "hsl(var(--ping-ash))" }}
+                className="transition-all duration-300 group hover:scale-110 pm-footer-social-link"
               >
                 <Icon
                   className="w-6 h-6 group-hover:scale-125 transition-transform"
-                  onMouseEnter={(e: MouseEvent<SVGSVGElement>) => {
-                    e.currentTarget.style.color = "hsl(var(--ping-yellow))";
-                  }}
-                  onMouseLeave={(e: MouseEvent<SVGSVGElement>) => {
-                    e.currentTarget.style.color = "hsl(var(--ping-ash))";
-                  }}
                 />
               </a>
             ))}

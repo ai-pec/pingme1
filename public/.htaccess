@@ -1,3 +1,33 @@
+# Disable caching for HTML files so browser always fetches the latest built assets
+<FilesMatch "\.(html|htm)$">
+  <IfModule mod_headers.c>
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires 0
+  </IfModule>
+</FilesMatch>
+
+# Vite build assets have content hashes in their filenames — cache forever
+<FilesMatch "\.(js|mjs|css|woff2?|ttf|otf)$">
+  <IfModule mod_headers.c>
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </IfModule>
+</FilesMatch>
+
+# Images/media are not hash-named — cache for 30 days
+<FilesMatch "\.(jpe?g|png|webp|avif|gif|svg|ico|mp4|webm)$">
+  <IfModule mod_headers.c>
+    Header set Cache-Control "public, max-age=2592000"
+  </IfModule>
+</FilesMatch>
+
+# Compress text-based responses
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/css text/xml
+  AddOutputFilterByType DEFLATE application/javascript application/x-javascript text/javascript
+  AddOutputFilterByType DEFLATE application/json application/xml image/svg+xml
+</IfModule>
+
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /

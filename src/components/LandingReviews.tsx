@@ -548,7 +548,7 @@ const PhotoReviews: React.FC = () => {
 
       {/* Row 1: Scrolling Left */}
       <div
-        className="relative flex items-center overflow-hidden py-2"
+        className="relative flex items-center overflow-hidden py-4"
         style={{
           maskImage: "linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%)",
           WebkitMaskImage: "linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%)",
@@ -558,8 +558,7 @@ const PhotoReviews: React.FC = () => {
           {[...row1, ...row1, ...row1].map((img, i) => (
             <div
               key={i}
-              className="inline-block flex-shrink-0 overflow-hidden rounded-2xl border border-border/40 bg-card shadow-sm hover:shadow-md transition-shadow duration-300 mx-2"
-              style={{ height: "200px" }}
+              className="pm-photo-card"
             >
               <img
                 src={img.path}
@@ -574,7 +573,7 @@ const PhotoReviews: React.FC = () => {
 
       {/* Row 2: Scrolling Right */}
       <div
-        className="relative flex items-center overflow-hidden py-2"
+        className="relative flex items-center overflow-hidden py-4"
         style={{
           maskImage: "linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%)",
           WebkitMaskImage: "linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%)",
@@ -584,8 +583,7 @@ const PhotoReviews: React.FC = () => {
           {[...row2, ...row2, ...row2].map((img, i) => (
             <div
               key={i}
-              className="inline-block flex-shrink-0 overflow-hidden rounded-2xl border border-border/40 bg-card shadow-sm hover:shadow-md transition-shadow duration-300 mx-2"
-              style={{ height: "200px" }}
+              className="pm-photo-card"
             >
               <img
                 src={img.path}

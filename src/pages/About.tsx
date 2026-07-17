@@ -5,11 +5,8 @@ import {
   ArrowRight, Zap, Lock, Globe, Star, ChevronDown, Play, Pause,
   CheckCircle, TrendingUp, Award, Sparkles,
 } from "lucide-react";
-import { getCachedPublicStats, refreshPublicStats } from "@/lib/publicStatsService";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const STATIC_CITIES_COVERED = 3;
-const STATIC_GOOGLE_RATING = 4.0;
 
 const TIMELINE = [
   { year: "2024", title: "First Tag Ships", description: "PingME v1 launched in Chandigarh. Our first 100 customers gave us feedback that shaped everything that came after.", icon: "🚀" },
@@ -25,10 +22,10 @@ const VALUES = [
 ];
 
 const PRODUCTS = [
-  { emoji: "🚗", label: "Vehicle Tags", tag: "Most Popular", description: "Hang it on your car mirror. Anyone who needs to reach you — for wrong parking, a damage alert, or an emergency — can ping you privately without seeing your number.", href: "/products/car-tags", accent: "#FF6B35" },
-  { emoji: "🎒", label: "Lost & Found Tags", tag: null, description: "Attach to bags, laptops, keys, or any essential. If someone finds it, they scan the tag and you get an instant alert — reuniting you with your belongings fast.", href: "/products/keychain-tags", accent: "#4ECDC4" },
-  { emoji: "🐾", label: "Pet Safety Tags", tag: null, description: "Replace the old engraved tag. Anyone who finds your pet scans the PingME tag and reaches you instantly — no exposure, no strangers with your number.", href: "/products/pet-tags", accent: "#A78BFA" },
-  { emoji: "📲", label: "NFC Smart Cards", tag: "New", description: "Tap-enabled cards for quick, seamless contact. Share your details on a tap — perfect for networking, deliveries, or any moment that calls for a private exchange.", href: "/products/nfc-cards", accent: "#F59E0B" },
+  { emoji: "🚗", label: "Vehicle Tags", tag: "Most Popular", description: "Durable QR/NFC tags for your car mirror or dashboard. When someone needs to reach you — wrong parking, damage alert, emergency — they scan the tag and you get an instant notification. Private, secure, and no app required for them.", href: "/products/car-tags", accent: "#FF6B35" },
+  { emoji: "🎒", label: "Lost & Found Tags", tag: null, description: "Weatherproof stickers for bags, laptops, keys, electronics, and valuables. If someone finds your item, they scan the QR code or tap the NFC chip to contact you immediately. Your personal details stay hidden — they reach you through PingME's secure platform.", href: "/products/keychain-tags", accent: "#4ECDC4" },
+  { emoji: "🐾", label: "Pet Safety Tags", tag: null, description: "Lightweight, pet-friendly tags for collars and harnesses. If your pet gets lost, anyone who finds them can instantly contact you through our secure channel. No engraving needed, no phone number exposed — just pure recovery power when it matters most.", href: "/products/pet-tags", accent: "#A78BFA" },
+  { emoji: "📲", label: "Smart Keychain Tags", tag: "Dual Tech", description: "Compact tags combining QR code + NFC technology. Attach to keys, bags, or wallets. Finders can either scan or tap to reach you. Durable, water-resistant, and backed by a 2-year guarantee. Your lost keychain just became your security backup.", href: "/products/nfc-cards", accent: "#F59E0B" },
 ];
 
 const TESTIMONIALS = [
@@ -39,10 +36,13 @@ const TESTIMONIALS = [
 ];
 
 const FAQ_ITEMS = [
-  { q: "Does the finder see my phone number?", a: "Never. PingME routes all communication through a masked channel. Your real number is never revealed to anyone who scans your tag." },
-  { q: "Do I need a smartphone to receive alerts?", a: "Yes, a basic smartphone is all you need. The person scanning doesn't need any app — they just scan with their camera." },
-  { q: "What happens when someone scans my tag?", a: "They see a simple contact page and can send you a message or trigger a predefined alert. You get an instant notification on your phone." },
-  { q: "Is PingME only for vehicles?", a: "Not at all! We have tags for bags, pets, and NFC smart cards for networking. One platform covers all your privacy needs." },
+  { q: "Does the finder see my phone number?", a: "Never. PingME routes all communication through a masked channel. Your real number is never revealed to anyone who scans your tag — whether it's a vehicle tag, lost item tag, pet tag, or smart keychain tag." },
+  { q: "Can I use Lost & Found Tags on any item?", a: "Yes! Attach them to bags, laptops, cameras, bicycles, sports equipment, electronics, or any valuable you want to protect. They're weatherproof and designed to last for years." },
+  { q: "How do Pet Tags work differently from regular ID tags?", a: "Unlike engraved tags, Pet Tags use QR codes and NFC technology. Finders scan or tap to contact you instantly through PingME — your pet's identity and location stay private until you choose to share." },
+  { q: "What are Smart Keychain Tags and why do I need one?", a: "Smart Keychain Tags combine QR codes and NFC chips in one compact device. Attach to keys or bags — if lost, finders can scan OR tap their phone to reach you. Water-resistant, durable, backed by a 2-year guarantee." },
+  { q: "Do finders need an app or special technology?", a: "No. Any smartphone camera can scan QR codes. For NFC tapping, most modern phones (iPhone 11+, Android 4.1+) have built-in readers. The finder doesn't install anything — they just reach you securely through our platform." },
+  { q: "Can I track my lost item in real-time?", a: "Tags don't provide GPS tracking, but when someone finds your item and scans the tag, you get their location and message through PingME, helping you coordinate recovery." },
+  { q: "What happens if my tag gets damaged?", a: "You can instantly deactivate it through the app and link a replacement. Your information is always linked to your account, regardless of how many physical tags you use." },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -372,10 +372,6 @@ const Eyebrow = ({ children, style }: { children: React.ReactNode; style?: React
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 const About = () => {
-  const cached = useMemo(() => getCachedPublicStats(), []);
-  const [customers, setCustomers] = useState(cached?.happyCustomers || 0);
-  const [vehicles, setVehicles] = useState(cached?.vehiclesProtected || 0);
-  const [loaded, setLoaded] = useState(false);
   const mouse = useMouseParallax();
 
   const heroV = useInView(0.1);
@@ -383,24 +379,10 @@ const About = () => {
   const productsV = useInView(0.08);
   const valuesV = useInView(0.1);
   const timelineV = useInView(0.1);
-  const statsV = useInView(0.2);
   const testiV = useInView(0.1);
   const faqV = useInView(0.1);
   const officeV = useInView(0.2);
   const ctaV = useInView(0.2);
-
-  useEffect(() => {
-    let alive = true;
-    if (cached) setLoaded(true);
-    (async () => {
-      const s = await refreshPublicStats();
-      if (!alive) return;
-      animateNumber(cached?.happyCustomers || 0, s.happyCustomers, 1500, v => alive && setCustomers(v));
-      animateNumber(cached?.vehiclesProtected || 0, s.vehiclesProtected, 1500, v => alive && setVehicles(v));
-      setLoaded(true);
-    })();
-    return () => { alive = false; };
-  }, [cached]);
 
   const mapsUrl = "https://www.google.com/maps/search/?api=1&query=745+First+Floor+Rani+Boutique+Kesho+Ram+Complex+Near+By+Ram+Electricals+Sector+45+Burail+Chandigarh+Chandigarh+160047+India";
 
@@ -602,10 +584,88 @@ const About = () => {
               One platform. <span className="g-text">Every situation.</span>
             </h2>
             <p style={{ color: "hsl(var(--muted-foreground))", fontSize: 16, marginBottom: 36, maxWidth: 440, opacity: productsV.inView ? 1 : 0, transform: productsV.inView ? "none" : "translateY(16px)", transition: "opacity .6s ease .16s, transform .6s ease .16s" }}>
-              Privacy-first contact for every moment life throws at you.
+              Privacy-first contact for every moment life throws at you — vehicles, belongings, pets, and daily carry items.
             </p>
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {PRODUCTS.map((p, i) => <ProductCard key={p.label} {...p} index={i} inView={productsV.inView} />)}
+            </div>
+
+            {/* Product Details Grid */}
+            <div style={{ marginTop: 52, paddingTop: 36, borderTop: "1.5px solid hsl(var(--border))" }}>
+              <div className="grid md:grid-cols-2 gap-8">
+                {/* Lost & Found Details */}
+                <div style={{ opacity: productsV.inView ? 1 : 0, transform: productsV.inView ? "none" : "translateY(20px)", transition: "opacity .55s ease .1s, transform .55s ease .1s" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                    <span style={{ fontSize: 28 }}>🎒</span>
+                    <h3 style={{ fontWeight: 800, fontSize: 18, color: "hsl(var(--foreground))" }}>Lost & Found Stickers</h3>
+                  </div>
+                  <p style={{ color: "hsl(var(--muted-foreground))", fontSize: 14, lineHeight: 1.75, marginBottom: 12 }}>
+                    Attach weatherproof stickers to any valuable: laptops, cameras, bicycles, musical instruments, sports equipment, or luggage. If lost, the finder simply scans the QR code or taps the NFC chip to contact you securely. No personal info exposed — just connection.
+                  </p>
+                  <ul style={{ listStyle: "none", padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+                    {["✓ Works on any item", "✓ Waterproof & UV-resistant", "✓ 2-3 year lifespan", "✓ Custom recovery messages"].map(t => (
+                      <li key={t} style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ color: "hsl(var(--primary))" }}>{t.split(" ")[0]}</span> {t.slice(2)}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Pet Tags Details */}
+                <div style={{ opacity: productsV.inView ? 1 : 0, transform: productsV.inView ? "none" : "translateY(20px)", transition: "opacity .55s ease .14s, transform .55s ease .14s" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                    <span style={{ fontSize: 28 }}>🐾</span>
+                    <h3 style={{ fontWeight: 800, fontSize: 18, color: "hsl(var(--foreground))" }}>Pet Safety Tags</h3>
+                  </div>
+                  <p style={{ color: "hsl(var(--muted-foreground))", fontSize: 14, lineHeight: 1.75, marginBottom: 12 }}>
+                    Lightweight, pet-friendly tags for collars, harnesses, or microchip housings. If your dog, cat, or pet goes missing, anyone who finds them can instantly contact you through our secure platform. Unlike engraved tags, your details stay private.
+                  </p>
+                  <ul style={{ listStyle: "none", padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+                    {["✓ Safe for all pets", "✓ Comfortable daily wear", "✓ Instant alert system", "✓ Secondary contacts support"].map(t => (
+                      <li key={t} style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ color: "hsl(var(--primary))" }}>{t.split(" ")[0]}</span> {t.slice(2)}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Smart Keychain Tags Details */}
+                <div style={{ opacity: productsV.inView ? 1 : 0, transform: productsV.inView ? "none" : "translateY(20px)", transition: "opacity .55s ease .18s, transform .55s ease .18s" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                    <span style={{ fontSize: 28 }}>🔑</span>
+                    <h3 style={{ fontWeight: 800, fontSize: 18, color: "hsl(var(--foreground))" }}>Smart Keychain Tags</h3>
+                  </div>
+                  <p style={{ color: "hsl(var(--muted-foreground))", fontSize: 14, lineHeight: 1.75, marginBottom: 12 }}>
+                    Compact dual-technology tags combining QR codes and NFC in one device. Attach to keys, bags, or wallets. Finders can scan OR tap their phone — both ways lead to secure contact. Water-resistant, durable, and built to last 2+ years.
+                  </p>
+                  <ul style={{ listStyle: "none", padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+                    {["✓ QR + NFC dual tech", "✓ Water-resistant (IP67)", "✓ Military-grade durability", "✓ Multi-item tracking per account"].map(t => (
+                      <li key={t} style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ color: "hsl(var(--primary))" }}>{t.split(" ")[0]}</span> {t.slice(2)}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Comparison Highlight */}
+                <div style={{ background: "hsl(var(--card))", border: "1.5px solid hsl(var(--primary)/.2)", borderRadius: 16, padding: 24, opacity: productsV.inView ? 1 : 0, transform: productsV.inView ? "none" : "translateY(20px)", transition: "opacity .55s ease .22s, transform .55s ease .22s" }}>
+                  <h4 style={{ fontWeight: 800, fontSize: 16, marginBottom: 16, color: "hsl(var(--foreground))" }}>Why Privacy Matters</h4>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div style={{ display: "flex", gap: 10 }}>
+                      <span style={{ color: "hsl(var(--primary))", fontWeight: 800 }}>❌</span>
+                      <span style={{ color: "hsl(var(--muted-foreground))", fontSize: 13 }}>Engraved tags expose your phone number to anyone</span>
+                    </div>
+                    <div style={{ display: "flex", gap: 10 }}>
+                      <span style={{ color: "hsl(var(--primary))", fontWeight: 800 }}>❌</span>
+                      <span style={{ color: "hsl(var(--muted-foreground))", fontSize: 13 }}>Dashboard stickers invite theft and harassment</span>
+                    </div>
+                    <div style={{ display: "flex", gap: 10 }}>
+                      <span style={{ color: "hsl(var(--primary))", fontWeight: 800 }}>✅</span>
+                      <span style={{ color: "hsl(var(--muted-foreground))", fontSize: 13 }}>PingME keeps your number hidden while enabling instant recovery</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </section>
 
@@ -664,21 +724,6 @@ const About = () => {
               </div>
             </div>
           </section>
-
-          {/* STATS ──────────────────────────────────────────────────────── */}
-          <section ref={statsV.ref} className="pm-sec">
-            <div className="stats-bg" style={{ opacity: statsV.inView ? 1 : 0, transform: statsV.inView ? "none" : "translateY(28px)", transition: "opacity .65s ease, transform .65s ease" }}>
-              <p style={{ textAlign: "center", fontSize: 10, fontWeight: 800, letterSpacing: "0.2em", textTransform: "uppercase", color: "rgba(255, 242, 0, 0.4)", marginBottom: 40 }}>By The Numbers</p>
-              <div className="stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8, textAlign: "center" }}>
-                <StatCard value={customers} label="Happy Customers" delay={0} inView={statsV.inView} />
-                <StatCard value={vehicles} label="Vehicles Protected" delay={150} inView={statsV.inView} />
-                <StatCard value={STATIC_CITIES_COVERED} label="Cities Covered" delay={300} inView={statsV.inView} />
-                <StatCard value={STATIC_GOOGLE_RATING.toFixed(1) as unknown as number} suffix="★" label="Google Rating" delay={450} inView={statsV.inView} />
-              </div>
-              {!loaded && <p style={{ marginTop: 20, textAlign: "center", fontSize: 11, color: "rgba(255,248,227,0.3)", animation: "dotPulse 1.5s ease-in-out infinite" }}>Loading live stats…</p>}
-            </div>
-          </section>
-
           {/* TESTIMONIALS ───────────────────────────────────────────────── */}
           <section ref={testiV.ref} className="pm-sec" style={{ borderTop: "1.5px solid hsl(var(--border))", paddingTop: 52 }}>
             <Eyebrow style={{ opacity: testiV.inView ? 1 : 0, transition: "opacity .5s" }}>Real Stories</Eyebrow>
@@ -725,14 +770,10 @@ const About = () => {
                   <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="c-row" style={{ alignItems: "flex-start" }}>
                     <div className="c-icon"><MapPin style={{ width: 16, height: 16, color: "hsl(var(--primary))" }} /></div>
                     <div>
-                      <p style={{ fontWeight: 800, fontSize: 14, marginBottom: 3, color: "hsl(var(--foreground))" }}>Ping IFF LLP</p>
                       <p style={{ fontSize: 14, color: "hsl(var(--muted-foreground))", lineHeight: 1.6 }}>
-                        745, First Floor,<br /> Rani Boutique<br />
-                        Kesho Ram Complex<br />
-                        Near By Ram Electricals, Sector 45<br />
-                        Burail, Chandigarh<br />
-                        Chandigarh – 160047<br />
-                        India
+                        745, First Floor, Rani Boutique,<br />
+                        Kesho Ram Complex, Near By Ram Electricals,<br />
+                        Sector 45, Burail, Chandigarh - 160047, India
                       </p>
                       <span style={{ marginTop: 5, display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "hsl(var(--primary))" }}>Open in Maps <ArrowRight style={{ width: 11, height: 11 }} /></span>
                     </div>
