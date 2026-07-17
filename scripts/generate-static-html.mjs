@@ -19,7 +19,6 @@ const siteNav = `
         <a href="/">Home</a>
         <a href="/products">Products</a>
         <a href="/blog">Blog</a>
-        <a href="/partners">Partners</a>
         <a href="/about">About Us</a>
         <a href="/contact">Contact Us</a>
       </nav>
@@ -228,24 +227,6 @@ const contactContent = `
     </section>
   </main>`;
 
-const partnersContent = `
-  <main>
-    <section class="container py-16 max-w-5xl">
-      <p class="section-eyebrow">Partners</p>
-      <h1 class="text-4xl font-bold tracking-tight text-foreground">Building safer experiences through strategic collaboration</h1>
-      <p class="mt-6 text-lg leading-8 text-muted-foreground">
-        PingME is proud to announce a pilot partnership with Pro Ultimate Gym Chain, our first collaborator. This program
-        validates how privacy-first communication can improve member safety and day-to-day operations.
-      </p>
-      <ul class="mt-6 space-y-2 text-muted-foreground">
-        <li>Pilot onboarding for Pro Ultimate locations</li>
-        <li>Operational feedback loop between gym teams and PingME</li>
-        <li>Measure notification response and issue resolution time</li>
-        <li>Prepare a scalable partnership rollout model</li>
-      </ul>
-    </section>
-  </main>`;
-
 const faqContent = `
   <main>
     <section class="container py-16 max-w-5xl">
@@ -331,7 +312,6 @@ const pages = [
   { route: "about", file: path.join("about", "index.html"), title: "About PingME", description: "The story behind privacy-first vehicle contact.", content: aboutContent },
   { route: "products", file: path.join("products", "index.html"), title: "PingME Products", description: "Browse privacy-first QR and NFC products.", content: productsContent },
   { route: "blog", file: path.join("blog", "index.html"), title: "PingME Blog", description: "Blog posts about vehicle tags, pet tags, lost and found tags, door tags, privacy, and guides.", content: blogContent },
-  { route: "partners", file: path.join("partners", "index.html"), title: "PingME Partners", description: "PingME partnership program and pilot collaboration details.", content: partnersContent },
   { route: "contact", file: path.join("contact", "index.html"), title: "Contact PingME", description: "Get in touch with PingME.", content: contactContent },
   { route: "faq", file: path.join("faq", "index.html"), title: "PingME FAQ", description: "Answers to common PingME questions.", content: faqContent },
   { route: "privacy-policy", file: path.join("privacy-policy", "index.html"), title: "Privacy Policy | PingME", description: "PingME privacy policy.", content: privacyContent },

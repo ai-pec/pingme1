@@ -39,7 +39,6 @@ const mainSiteUrl = (path: string) => {
 const navLinks = [
   { label: "Home", to: "/" },
   { label: "Products", to: "/products" },
-  { label: "Partners", to: "/partners" },
   { label: "About", to: "/about" },
   { label: "Blog", to: "/blog" },
   { label: "Contact", to: "/contact" },

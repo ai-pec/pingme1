@@ -47,7 +47,6 @@ const FooterNew = () => {
     ],
     company: [
       { name: "About Us", href: "/about" },
-      { name: "Partners", href: "/partners" },
       { name: "Contact Us", href: "/contact" },
       { name: "Blog", href: "/blog" },
     ],

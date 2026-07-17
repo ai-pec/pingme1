@@ -24,7 +24,6 @@ const AddReview = lazy(() => import("./pages/AddReview"));
 const Blog = lazy(() => import("./pages/Blog"));
 const Prebook = lazy(() => import("./pages/Prebook"));
 const About = lazy(() => import("./pages/About"));
-const Partners = lazy(() => import("./pages/Partners"));
 const Contact = lazy(() => import("./pages/Contact"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const RefundPolicy = lazy(() => import("./pages/RefundPolicy"));
@@ -157,7 +156,6 @@ const App = () => (
                 />
                 <Route path="/prebook" element={<Navigate to="/booking" replace />} />
                 <Route path="/about" element={<About />} />
-                <Route path="/partners" element={<Partners />} />
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/report" element={<Navigate to="/contact" replace />} />
 
