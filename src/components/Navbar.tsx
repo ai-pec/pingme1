@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { resolveProductImageUrl } from "@/lib/productCatalog";
+import { CompressedImg } from "@/components/CompressedImg";
 import CartButton from "./CartButton";
 
 const MAIN_SITE = "https://plzpingme.com";
@@ -502,7 +503,7 @@ const Navbar = () => {
                         <div key={item.id} className="flex gap-4 p-3 border border-border rounded-xl bg-card">
                           <div className="w-16 h-16 bg-secondary rounded-lg flex items-center justify-center shrink-0">
                             {resolveProductImageUrl(item.image) ? (
-                              <img src={resolveProductImageUrl(item.image)} alt={item.title} className="max-w-[80%] max-h-[80%] object-contain" loading="lazy" decoding="async" />
+                              <CompressedImg src={resolveProductImageUrl(item.image)} alt={item.title} className="max-w-[80%] max-h-[80%] object-contain" loading="lazy" decoding="async" />
                             ) : (
                               <span className="text-2xl">{item.emoji}</span>
                             )}
@@ -602,7 +603,7 @@ const Navbar = () => {
                         <div key={item.id} className="flex gap-4 p-3 border border-border rounded-xl bg-card">
                           <div className="w-16 h-16 bg-secondary rounded-lg flex items-center justify-center shrink-0">
                             {resolveProductImageUrl(item.image) ? (
-                              <img src={resolveProductImageUrl(item.image)} alt={item.title} className="max-w-[80%] max-h-[80%] object-contain" loading="lazy" decoding="async" />
+                              <CompressedImg src={resolveProductImageUrl(item.image)} alt={item.title} className="max-w-[80%] max-h-[80%] object-contain" loading="lazy" decoding="async" />
                             ) : (
                               <span className="text-2xl">{item.emoji}</span>
                             )}

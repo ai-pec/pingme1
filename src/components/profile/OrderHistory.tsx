@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import type { PrebookingRecord, CartItem } from "@/lib/prebookService";
 import { getNfcLineProfilesFromOrder, expandNfcCartUnits } from "@/lib/nfcCheckout";
+import { CompressedImg } from "@/components/CompressedImg";
 
 interface OrderHistoryProps {
   orders: PrebookingRecord[];
@@ -194,7 +195,7 @@ export function OrderHistory({ orders, ordersLoading, onEditNFC }: OrderHistoryP
                           <div className="flex items-center gap-3 min-w-0">
                             <div className="w-10 h-10 rounded-md border border-border bg-secondary/40 flex items-center justify-center shrink-0 overflow-hidden">
                               {itemImage ? (
-                                <img
+                                <CompressedImg
                                   src={itemImage}
                                   alt={itemTitle}
                                   className="w-full h-full object-contain"

@@ -28,6 +28,7 @@ import {
   verifyRazorpayPaymentAndCreatePrebooking,
 } from "@/lib/paymentService";
 import { resolveProductImageUrl } from "@/lib/productCatalog";
+import { CompressedImg } from "@/components/CompressedImg";
 import { checkUsernameUniqueness, generateUsernameSuggestions, checkUsernameAvailability } from "@/lib/publicNfcService";
 import {
   expandNfcCartUnits,
@@ -1457,7 +1458,7 @@ function OrderSummaryCard({
           <div key={item.id} className="order-item">
             <div className="order-thumb">
               {resolveProductImageUrl(item.image)
-                ? <img src={resolveProductImageUrl(item.image)} alt={item.title} loading="lazy" />
+                ? <CompressedImg src={resolveProductImageUrl(item.image)} alt={item.title} loading="lazy" />
                 : <span style={{ fontSize: 19 }}>{item.emoji}</span>}
             </div>
             <div className="order-item-info">

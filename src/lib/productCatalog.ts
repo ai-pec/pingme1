@@ -119,6 +119,32 @@ export const resolveProductImageUrl = (image?: string): string => {
   return buildProductImageUrl(fileName);
 };
 
+// Compressed thumbnails live under products/thumbs/ with ".webp" appended to
+// the full original filename (e.g. products/hero_i.PNG -> products/thumbs/hero_i.PNG.webp).
+// This naming must stay in lockstep with scripts/compress-product-images.cjs.
+const THUMBS_PREFIX = "products/thumbs/";
+
+/**
+ * Maps a full-quality Firebase Storage products/ URL to its compressed WebP
+ * thumbnail URL. Returns the input unchanged for data: URIs, non-storage URLs,
+ * unparseable values, and URLs already pointing at a thumbnail.
+ */
+export const buildCompressedImageUrl = (originalUrl: string): string => {
+  const raw = (originalUrl || "").trim();
+
+  if (!raw || /^data:/i.test(raw) || !/^https?:\/\//i.test(raw)) {
+    return raw;
+  }
+
+  const objectPath = extractStoragePathFromUrl(raw);
+
+  if (!objectPath || !objectPath.startsWith("products/") || objectPath.startsWith(THUMBS_PREFIX)) {
+    return raw;
+  }
+
+  return buildProductImageUrl(`${THUMBS_PREFIX}${objectPath.slice("products/".length)}.webp`) || raw;
+};
+
 const CATEGORY_GRADIENTS = [
   "from-amber-500/20 to-yellow-500/10",
   "from-rose-500/20 to-pink-500/10",

@@ -26,6 +26,7 @@ import { toast } from "sonner";
 import MainLayout from "@/layouts/MainLayout";
 import { Badge }  from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CompressedImg } from "@/components/CompressedImg";
 import { Input }  from "@/components/ui/input";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
@@ -241,7 +242,7 @@ const ProductMedia = ({ product }: { product: DbProduct }) => {
         <Badge variant="destructive" className="absolute top-2 left-2 text-[10px] z-10 bg-destructive/90 text-destructive-foreground">Disabled</Badge>
       )}
       {product.image && !failed ? (
-        <img
+        <CompressedImg
           src={product.image} alt={product.title}
           className="w-full h-full object-cover"
           onError={() => setFailed(true)}

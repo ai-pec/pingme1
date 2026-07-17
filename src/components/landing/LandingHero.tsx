@@ -53,6 +53,7 @@ import nfcFront from "@/assets/pingprocard_logo.jpeg";
 import petSafetyTag from "@/assets/pingprocard.jpeg";
 import { subscribeToProducts, type DbProduct } from "@/lib/productService";
 import { normalizeCategorySlug, buildProductImageUrl } from "@/lib/productCatalog";
+import { CompressedImg, useCompressedImage } from "@/components/CompressedImg";
 
 // No SSR — these use framer-motion hooks (useScroll, useVelocity) that
 // differ between server and client, causing hydration mismatches on mobile.
@@ -358,18 +359,28 @@ const ScanStory: React.FC<{ offerings: ReturnType<typeof getOfferings> }> = ({ o
   const [pingVisible, setPingVisible] = useState(false);
 
   useEffect(() => {
-    const t = setTimeout(() => setPingVisible(true), 2200);
-    return () => clearTimeout(t);
-  }, []);
+    const initialTimeout = setTimeout(() => setPingVisible(true), 2200);
+    let activeTimeout: NodeJS.Timeout | null = null;
 
-  useEffect(() => {
     const iv = setInterval(() => {
       setActiveCard((prev) => (prev + 1) % 4);
       setPingVisible(false);
-      const t = setTimeout(() => setPingVisible(true), 1000);
-      return () => clearTimeout(t);
+      
+      if (activeTimeout) {
+        clearTimeout(activeTimeout);
+      }
+      activeTimeout = setTimeout(() => {
+        setPingVisible(true);
+      }, 1000);
     }, 3800);
-    return () => clearInterval(iv);
+
+    return () => {
+      clearTimeout(initialTimeout);
+      if (activeTimeout) {
+        clearTimeout(activeTimeout);
+      }
+      clearInterval(iv);
+    };
   }, []);
 
   const active = SCAN_PRODUCTS[activeCard];
@@ -436,7 +447,7 @@ const ScanStory: React.FC<{ offerings: ReturnType<typeof getOfferings> }> = ({ o
             {/* Product image zone */}
             <div className="relative mx-5 my-3.5 h-[180px] sm:h-[198px] overflow-hidden rounded-2xl flex items-center justify-center" style={{ background: "hsl(var(--muted) / 0.9)" }}>
               {offerings[activeCard]?.image ? (
-                <img
+                <CompressedImg
                   src={offerings[activeCard].image}
                   alt={active.label}
                   className="h-full w-full object-contain"
@@ -913,6 +924,7 @@ const OfferingCard: React.FC<{
   const Icon = item.icon;
   const [hovered, setHovered] = useState(false);
   const imageFirst = idx % 2 === 0;
+  const cardImage = useCompressedImage(item.image);
 
   return (
     <FadeUp delay={idx * 0.07}>
@@ -970,7 +982,8 @@ const OfferingCard: React.FC<{
 
             {item.image ? (
               <motion.img
-                src={item.image}
+                src={cardImage.src}
+                onError={cardImage.onError}
                 alt={item.title}
                 className="relative z-10 h-36 md:h-48 w-full object-contain px-8"
                 animate={hovered ? { scale: 1.06, y: -4 } : { scale: 1, y: 0 }}

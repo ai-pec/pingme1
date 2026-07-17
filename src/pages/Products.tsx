@@ -20,6 +20,7 @@ import {
   type DbProduct,
   subscribeToProductCategories,
 } from "../lib/productService";
+import { CompressedImg } from "@/components/CompressedImg";
 
 /* ─── Brand tokens (light mode values; dark overrides live in CSS vars) ── */
 const GOLD = "hsl(var(--primary))";
@@ -241,7 +242,7 @@ const CategoryCoverImage = ({ category }: { category: ProductCategory }) => {
     return <span style={{ fontSize: 56, lineHeight: 1 }} aria-hidden>{category.icon}</span>;
   }
   return (
-    <img
+    <CompressedImg
       src={category.coverImage}
       alt={category.name}
       loading="lazy"
@@ -525,7 +526,7 @@ const ProductCardItem = ({ product, categorySlug }: { product: ProductVariant & 
                 className={`pm-slide-item${activeSlide === idx ? " pm-slide-active" : ""}`}
               >
                 {!imageFailed[idx] ? (
-                  <img
+                  <CompressedImg
                     src={slide.src}
                     alt={`${product.title} - ${slide.label}`}
                     loading="lazy"
@@ -576,7 +577,7 @@ const ProductCardItem = ({ product, categorySlug }: { product: ProductVariant & 
         ) : (
           <div style={{ background: SMOKE, aspectRatio: "4/3", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
             {product.image && !imageFailed[0] ? (
-              <img src={product.image} alt={product.title} loading="lazy" decoding="async" className="pm-card-img" onError={() => setImageFailed({ 0: true })} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <CompressedImg src={product.image} alt={product.title} loading="lazy" decoding="async" className="pm-card-img" onError={() => setImageFailed({ 0: true })} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             ) : (
               <span className="pm-card-img" style={{ fontSize: 72, display: "block", textAlign: "center" }}>{product.emoji}</span>
             )}
