@@ -25,7 +25,11 @@ import {
   downloadReceipt,
   openRazorpayCheckout,
   deleteNfcProfileDraft,
-  verifyRazorpayPaymentAndCreatePrebooking,
+  verifyRazorpayPaymentWithRetry,
+  getPaymentStatus,
+  savePendingPayment,
+  readPendingPayment,
+  clearPendingPayment,
 } from "@/lib/paymentService";
 import { resolveProductImageUrl } from "@/lib/productCatalog";
 import { CompressedImg } from "@/components/CompressedImg";
@@ -641,6 +645,24 @@ const STYLES = `
   }
   .success-meta p { font-size: 12.5px; color: var(--ink-muted); line-height: 1.6; }
   .success-meta strong { color: var(--ink); }
+
+  /* ── PAYMENT VERIFICATION ── */
+  .verify-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,0,0,.55); backdrop-filter: blur(3px);
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  .verify-card {
+    background: var(--card, #fff); border-radius: var(--r, 12px);
+    padding: 34px 30px; max-width: 340px; width: 100%; text-align: center;
+    box-shadow: 0 18px 50px rgba(0,0,0,.25);
+  }
+  .verify-card h2 { font-size: 17px; font-weight: 700; color: var(--ink); margin: 14px 0 6px; }
+  .verify-card p  { font-size: 13px; color: var(--ink-muted); line-height: 1.5; }
+  .verify-spinner { animation: verifySpin 1s linear infinite; color: var(--ink); }
+  @keyframes verifySpin { to { transform: rotate(360deg); } }
+  .pending-ring { background: rgba(201,146,42,.1); border-color: rgba(201,146,42,.25); }
+  .pending-ring svg { color: #c9922a; }
 
   /* ── EMPTY ── */
   .empty-wrap { max-width: 380px; margin: 0 auto; text-align: center; padding: 56px 20px; }
@@ -1609,6 +1631,12 @@ const Prebook = () => {
   const [success, setSuccess] = useState(false);
   const [receiptOrder, setReceiptOrder] = useState(null);
   const [invoiceEmail, setInvoiceEmail] = useState("");
+  const [verifying, setVerifying] = useState(false);
+  const [pendingConfirmation, setPendingConfirmation] = useState<{ orderId: string } | null>(null);
+  const [statusChecking, setStatusChecking] = useState(false);
+  // Set the moment Razorpay reports success, so onDismiss can never race the
+  // verification flow (delete drafts / navigate away from a paid order).
+  const paymentCapturedRef = useRef(false);
 
   /* ── Extra features ── */
   const [couponInput, setCouponInput] = useState("");
@@ -1711,6 +1739,52 @@ const Prebook = () => {
       sessionStorage.setItem(SESSION_KEY, JSON.stringify({ fullName, email, phone, address, city, state, pincode, orderNote }));
     } catch { }
   }, [fullName, email, phone, address, city, state, pincode, orderNote]);
+
+  /* ── Payment recovery: browser refreshed/closed between pay and verify ── */
+  useEffect(() => {
+    if (!user) return;
+    const pending = readPendingPayment();
+    if (!pending?.orderId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const status = await getPaymentStatus(pending.orderId);
+        if (cancelled) return;
+        if (status?.verified) {
+          clearPendingPayment();
+          sessionStorage.removeItem(SESSION_KEY);
+          setSuccess(true);
+          clearCart();
+        } else if (status && status.status !== "pending") {
+          // Payment exists but isn't finalized yet — keep the user informed.
+          setPendingConfirmation({ orderId: pending.orderId });
+        }
+      } catch { /* best-effort recovery; user can still check manually */ }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  /* ── Manual status check for a payment stuck in confirmation ── */
+  const handleCheckPaymentStatus = async (orderId: string) => {
+    setStatusChecking(true);
+    try {
+      const status = await getPaymentStatus(orderId);
+      if (status?.verified) {
+        clearPendingPayment();
+        sessionStorage.removeItem(SESSION_KEY);
+        setPendingConfirmation(null);
+        setSuccess(true);
+        clearCart();
+      } else {
+        toast({ title: "Still confirming", description: "Your payment is still being confirmed. Please check again in a moment — do not pay again." });
+      }
+    } catch {
+      toast({ title: "Could not check status", description: "Please try again in a moment.", variant: "destructive" });
+    } finally {
+      setStatusChecking(false);
+    }
+  };
 
   /* ── Prefill from auth ── */
   useEffect(() => {
@@ -1881,11 +1955,17 @@ const Prebook = () => {
           }
         }
       }
+      paymentCapturedRef.current = false;
+      savePendingPayment({ orderId: order.orderId, bookingId: order.bookingId });
       await openRazorpayCheckout({
         keyId: order.keyId, orderId: order.orderId,
         amount: order.amount, currency: order.currency,
         fullName: fullName.trim(), email: email.trim(), phone: phone.trim(),
         onSuccess: async (resp) => {
+          // Payment is captured on Razorpay's side. From here on, never treat
+          // the order as failed and never navigate until the backend confirms.
+          paymentCapturedRef.current = true;
+          setVerifying(true);
           try {
             const completed = {
               ...prebookingPayload,
@@ -1896,7 +1976,7 @@ const Prebook = () => {
                 paidAt: new Date().toISOString(), method: paymentMethod,
               },
             };
-            await verifyRazorpayPaymentAndCreatePrebooking({
+            await verifyRazorpayPaymentWithRetry({
               orderId: resp.razorpay_order_id, paymentId: resp.razorpay_payment_id,
               signature: resp.razorpay_signature, prebooking: completed,
               bookingId: order.bookingId,
@@ -1904,14 +1984,28 @@ const Prebook = () => {
             setReceiptOrder(completed);
             setInvoiceEmail(email.trim());
             sessionStorage.removeItem(SESSION_KEY);
+            clearPendingPayment();
             setSuccess(true);
             clearCart();
           } catch (err) {
-            toast({ title: "Payment verification failed", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
-            navigate("/booking");
-          } finally { setSubmitting(false); }
+            // The charge went through but confirmation didn't — keep the user
+            // here with a recovery path instead of navigating away.
+            console.error("Payment verification failed after retries:", err);
+            setPendingConfirmation({ orderId: resp.razorpay_order_id });
+            toast({
+              title: "We've received your payment and are still confirming it.",
+              description: "Please don't pay again. Use the button below to check the status.",
+            });
+          } finally {
+            setVerifying(false);
+            setSubmitting(false);
+          }
         },
         onDismiss: () => {
+          // Razorpay fires ondismiss when the modal closes without payment —
+          // never after a captured payment, but guard against the race anyway.
+          if (paymentCapturedRef.current) return;
+          clearPendingPayment();
           if (showProfileBuilding)
             for (const unit of nfcCartUnits)
               void deleteNfcProfileDraft(getNfcProfileDocId(order.orderId, unit.lineKey)).catch(() => { });
@@ -1939,6 +2033,38 @@ const Prebook = () => {
       <MainLayout>
         <div className="pb">
 
+          {/* ══ VERIFYING PAYMENT (blocking) ═════════════════════════════════ */}
+          {verifying && (
+            <div className="verify-overlay" role="alertdialog" aria-modal="true" aria-label="Verifying your payment">
+              <div className="verify-card fade-up">
+                <Loader2 size={34} className="verify-spinner" />
+                <h2>Verifying your payment…</h2>
+                <p>Please don't close or refresh this page.</p>
+              </div>
+            </div>
+          )}
+
+          {/* ══ PAYMENT RECEIVED, CONFIRMATION PENDING ═══════════════════════ */}
+          {!success && pendingConfirmation && (
+            <div className="success-wrap fade-up">
+              <div className="success-ring pending-ring"><Clock size={34} /></div>
+              <h1>Confirming Your Payment</h1>
+              <p>We've received your payment and are still confirming it.</p>
+              <p><strong>Please don't pay again.</strong></p>
+              <div className="success-btns">
+                <button
+                  className="btn-primary"
+                  style={{ padding: "0 24px" }}
+                  disabled={statusChecking}
+                  onClick={() => handleCheckPaymentStatus(pendingConfirmation.orderId)}
+                >
+                  {statusChecking ? <Loader2 size={15} className="verify-spinner" /> : <RotateCcw size={15} />} Check Status
+                </button>
+                <button className="btn-secondary" onClick={() => navigate("/booking")}>My Bookings</button>
+              </div>
+            </div>
+          )}
+
           {/* ══ SUCCESS ══════════════════════════════════════════════════════ */}
           {success && (
             <div className="success-wrap fade-up">
@@ -1948,7 +2074,7 @@ const Prebook = () => {
               <p>We'll reach out shortly with delivery details.</p>
               <div className="success-meta">
                 <p><strong>Estimated delivery:</strong> {getDeliveryEstimate()}</p>
-                <p style={{ marginTop: 6 }}><strong>Amount paid:</strong> ₹{receiptOrder?.totalAmount?.toFixed(2)}{receiptOrder?.coupon && ` (₹${receiptOrder.coupon.discount} coupon applied)`}</p>
+                {receiptOrder && <p style={{ marginTop: 6 }}><strong>Amount paid:</strong> ₹{receiptOrder?.totalAmount?.toFixed(2)}{receiptOrder?.coupon && ` (₹${receiptOrder.coupon.discount} coupon applied)`}</p>}
                 {receiptOrder?.orderNote && <p style={{ marginTop: 6 }}><strong>Note:</strong> {receiptOrder.orderNote}</p>}
               </div>
               <div className="success-btns">
@@ -1964,7 +2090,7 @@ const Prebook = () => {
           )}
 
           {/* ══ EMPTY CART ════════════════════════════════════════════════════ */}
-          {!success && items.length === 0 && (
+          {!success && !pendingConfirmation && items.length === 0 && (
             <div className="empty-wrap fade-up">
               <div className="empty-icon"><ShoppingBag size={28} /></div>
               <h1>Cart is Empty</h1>
@@ -1976,7 +2102,7 @@ const Prebook = () => {
           )}
 
           {/* ══ CHECKOUT ══════════════════════════════════════════════════════ */}
-          {!success && items.length > 0 && (
+          {!success && !pendingConfirmation && items.length > 0 && (
             <div className="pb-wrap">
 
               {/* ── RIGHT: Order Summary (hidden during profile edit to maximise space) ── */}

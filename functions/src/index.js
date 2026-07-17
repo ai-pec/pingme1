@@ -16,6 +16,7 @@ const { buildInvoiceEmailHtml } = require("./invoiceEmail");
 
 const RAZORPAY_KEY_ID = defineSecret("RAZORPAY_KEY_ID");
 const RAZORPAY_KEY_SECRET = defineSecret("RAZORPAY_KEY_SECRET");
+const RAZORPAY_WEBHOOK_SECRET = defineSecret("RAZORPAY_WEBHOOK_SECRET");
 const SMTP_HOST = defineSecret("SMTP_HOST");
 const SMTP_PORT = defineSecret("SMTP_PORT");
 const SMTP_USER = defineSecret("SMTP_USER");
@@ -570,6 +571,169 @@ const getRazorpayClient = () => {
   return new Razorpay({ key_id: keyId, key_secret: keySecret });
 };
 
+// ─── Payment records + finalization (shared by verifyPayment & webhook) ───────
+
+const PAYMENTS_COLLECTION = "payments";
+
+const timingSafeEqualHex = (a, b) => {
+  const bufA = Buffer.from(String(a || ""), "utf8");
+  const bufB = Buffer.from(String(b || ""), "utf8");
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+};
+
+// Confirms the booking, records the payment, syncs NFC profiles and sends the
+// confirmation email — exactly once per order, no matter how many times it is
+// called (verify retries, duplicate webhook deliveries, verify + webhook race).
+// Every write is a keyed set/merge so re-execution can never duplicate records;
+// the only non-idempotent side effect (email) is guarded by a transactional flag.
+const finalizeSuccessfulPayment = async ({
+  orderId,
+  paymentEntity,
+  signature = null,
+  bookingIdHint = null,
+  clientPrebooking = null,
+  source,
+}) => {
+  const paymentRef = db.collection(PAYMENTS_COLLECTION).doc(orderId);
+  const paymentSnap = await paymentRef.get();
+  const paymentRecord = paymentSnap.exists ? paymentSnap.data() : null;
+
+  if (paymentRecord?.finalized) {
+    return { alreadyProcessed: true, bookingId: paymentRecord.bookingId || bookingIdHint || null };
+  }
+
+  const bookingId =
+    bookingIdHint ||
+    paymentRecord?.bookingId ||
+    paymentEntity?.notes?.bookingId ||
+    null;
+
+  // Booking data: the Firestore draft written at createOrder is the source of
+  // truth; the client payload is only a legacy fallback.
+  let finalPrebooking = null;
+  if (bookingId) {
+    const bookingDoc = await db.collection("booking").doc(bookingId).get();
+    if (bookingDoc.exists) finalPrebooking = bookingDoc.data();
+  }
+  if (!finalPrebooking && clientPrebooking) finalPrebooking = clientPrebooking;
+
+  const paymentData = {
+    orderId,
+    paymentId: paymentEntity.id,
+    ...(signature ? { signature } : {}),
+    gateway: "razorpay",
+    amount: paymentEntity.amount,
+    currency: paymentEntity.currency,
+    method: paymentEntity.method || null,
+    userId: finalPrebooking?.userId || paymentRecord?.userId || null,
+    email: finalPrebooking?.email || paymentRecord?.email || null,
+    bookingId: bookingId || null,
+    status: "paid",
+    verified: true,
+    verifiedVia: source,
+    verifiedAt: admin.firestore.FieldValue.serverTimestamp(),
+  };
+
+  await paymentRef.set(paymentData, { merge: true });
+
+  if (!finalPrebooking) {
+    // Payment is real (validated against Razorpay) but we have no booking to
+    // confirm — record it for manual reconciliation instead of dropping it.
+    await paymentRef.set({ orphaned: true }, { merge: true });
+    console.error(`finalizeSuccessfulPayment: no booking found for order ${orderId} (source: ${source}).`);
+    return { alreadyProcessed: false, bookingId: null, orphaned: true };
+  }
+
+  const paidAt = finalPrebooking?.payment?.paidAt || new Date().toISOString();
+  const prebookingData = {
+    ...finalPrebooking,
+    status: "confirmed",
+    confirmedAt: admin.firestore.FieldValue.serverTimestamp(),
+    payment: {
+      gateway: "razorpay",
+      orderId,
+      paymentId: paymentEntity.id,
+      ...(signature ? { signature } : {}),
+      amount: paymentEntity.amount,
+      currency: paymentEntity.currency,
+      paidAt,
+      method: finalPrebooking.paymentMethod || paymentEntity.method || "Online / UPI",
+    },
+  };
+
+  const bookingRef = bookingId ? db.collection("booking").doc(bookingId) : db.collection("booking").doc();
+  const finalBookingId = bookingRef.id;
+  const legacyPrebookingRef = db.collection("prebookings").doc(finalBookingId);
+
+  await Promise.all([
+    bookingRef.set(prebookingData, { merge: true }),
+    legacyPrebookingRef.set(prebookingData, { merge: true }),
+  ]);
+
+  if (Array.isArray(prebookingData?.nfcLineProfiles) && prebookingData.nfcLineProfiles.length > 0) {
+    for (const line of prebookingData.nfcLineProfiles) {
+      if (!line?.lineKey || !line?.nfcProfile) continue;
+      try {
+        await syncProfileToNfcProfilesCollection({
+          profileId: `${orderId}_${line.lineKey}`,
+          profile: line.nfcProfile,
+          source: "verifyPayment",
+          status: "confirmed",
+        });
+      } catch (syncErr) {
+        console.error("finalizeSuccessfulPayment nfc line sync error", line.lineKey, syncErr);
+      }
+    }
+  } else if (prebookingData?.nfcProfile) {
+    try {
+      await syncProfileToNfcProfilesCollection({
+        profileId: orderId,
+        profile: prebookingData.nfcProfile,
+        source: "verifyPayment",
+        status: "confirmed",
+      });
+    } catch (syncErr) {
+      console.error("finalizeSuccessfulPayment nfc sync error", syncErr);
+    }
+  }
+
+  // Send the confirmation email exactly once across all callers.
+  const shouldSendEmail = await db.runTransaction(async (tx) => {
+    const snap = await tx.get(paymentRef);
+    if (snap.exists && snap.data().confirmationEmailSent) return false;
+    tx.set(paymentRef, { confirmationEmailSent: true }, { merge: true });
+    return true;
+  });
+
+  if (shouldSendEmail) {
+    try {
+      await sendBookingConfirmationEmail({
+        email: prebookingData?.email,
+        fullName: prebookingData?.fullName,
+        bookingId: finalBookingId,
+        items: prebookingData?.items,
+        totalAmount: prebookingData?.totalAmount,
+        payment: paymentData,
+        billingAddress: `${prebookingData?.address || ""}, ${prebookingData?.city || ""}, ${prebookingData?.state || ""} - ${prebookingData?.pincode || ""}`,
+      });
+    } catch (mailErr) {
+      console.error("booking confirmation email error", mailErr);
+    }
+  }
+
+  await paymentRef.set(
+    {
+      bookingId: finalBookingId,
+      finalized: true,
+      finalizedAt: admin.firestore.FieldValue.serverTimestamp(),
+    },
+    { merge: true }
+  );
+
+  return { alreadyProcessed: false, bookingId: finalBookingId };
+};
+
 // ─── Auth helper ──────────────────────────────────────────────────────────────
 
 const authenticate = async (req) => {
@@ -644,6 +808,27 @@ exports.createOrder = onRequest({
           bookingId: bookingId || "",
         },
       });
+
+      // Pre-create the payment record keyed by the Razorpay order id so
+      // verification and the webhook have a single idempotent document to
+      // claim, and so the expected amount/currency are pinned server-side.
+      await db.collection(PAYMENTS_COLLECTION).doc(order.id).set(
+        {
+          orderId: order.id,
+          bookingId: bookingId || null,
+          userId: decodedToken ? decodedToken.uid : "guest",
+          email: (prebooking && prebooking.email) || (decodedToken && decodedToken.email) || null,
+          gateway: "razorpay",
+          status: "pending",
+          paymentId: null,
+          verified: false,
+          finalized: false,
+          expectedAmount: order.amount,
+          currency: order.currency,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
 
       // Sync NFC profiles as drafts under Razorpay Order ID if present
       if (bookingId && prebooking) {
@@ -757,6 +942,7 @@ exports.trackInstall = onRequest({
 exports.verifyPayment = onRequest({
   region: "asia-south1",
   secrets: [
+    RAZORPAY_KEY_ID,
     RAZORPAY_KEY_SECRET,
     SMTP_HOST,
     SMTP_PORT,
@@ -780,7 +966,7 @@ exports.verifyPayment = onRequest({
     try {
       const { orderId, paymentId, signature, prebooking, bookingId } = req.body || {};
 
-      if (!orderId || !paymentId || !signature || (!prebooking && !bookingId)) {
+      if (!orderId || !paymentId || !signature) {
         res.status(400).send("Missing required payment verification fields.");
         return;
       }
@@ -796,116 +982,262 @@ exports.verifyPayment = onRequest({
         .update(`${orderId}|${paymentId}`)
         .digest("hex");
 
-      if (expectedSignature !== signature) {
+      if (!timingSafeEqualHex(expectedSignature, signature)) {
         res.status(400).send("Invalid payment signature.");
         return;
       }
 
-      let finalPrebooking = prebooking;
-      let finalBookingId = bookingId;
-
-      if (bookingId) {
-        const bookingDoc = await db.collection("booking").doc(bookingId).get();
-        if (bookingDoc.exists) {
-          finalPrebooking = bookingDoc.data();
-        } else {
-          console.warn(`Booking draft ${bookingId} not found in Firestore. Falling back to prebooking payload.`);
-        }
+      // Idempotency: if this order is already finalized (earlier verify call or
+      // the webhook), acknowledge success without reprocessing anything.
+      const paymentRef = db.collection(PAYMENTS_COLLECTION).doc(orderId);
+      const existingSnap = await paymentRef.get();
+      const existingRecord = existingSnap.exists ? existingSnap.data() : null;
+      if (existingRecord?.finalized) {
+        res.status(200).json({
+          success: true,
+          prebookingId: existingRecord.bookingId || bookingId || "",
+          alreadyProcessed: true,
+        });
+        return;
       }
 
-      if (!finalPrebooking) {
+      // Never trust the client for payment facts: fetch the payment from
+      // Razorpay and validate status, order linkage, amount and currency.
+      const razorpay = getRazorpayClient();
+      const paymentEntity = await razorpay.payments.fetch(paymentId);
+
+      if (!paymentEntity || paymentEntity.order_id !== orderId) {
+        res.status(400).send("Payment does not belong to this order.");
+        return;
+      }
+
+      if (paymentEntity.status !== "captured") {
+        if (paymentEntity.status === "authorized") {
+          // Capture is still settling — the client should retry; the webhook
+          // will also finalize this order once payment.captured fires.
+          res.status(409).send("Payment not captured yet. Please retry.");
+        } else {
+          res.status(400).send(`Payment is not successful (status: ${paymentEntity.status}).`);
+        }
+        return;
+      }
+
+      let expectedAmount = existingRecord?.expectedAmount;
+      let expectedCurrency = existingRecord?.currency;
+      if (expectedAmount == null || !expectedCurrency) {
+        const order = await razorpay.orders.fetch(orderId);
+        expectedAmount = expectedAmount == null ? order.amount : expectedAmount;
+        expectedCurrency = expectedCurrency || order.currency;
+      }
+
+      if (Number(paymentEntity.amount) !== Number(expectedAmount)) {
+        res.status(400).send("Payment amount does not match the order amount.");
+        return;
+      }
+
+      if (expectedCurrency && paymentEntity.currency !== expectedCurrency) {
+        res.status(400).send("Payment currency does not match the order currency.");
+        return;
+      }
+
+      const result = await finalizeSuccessfulPayment({
+        orderId,
+        paymentEntity,
+        signature,
+        bookingIdHint: bookingId || null,
+        clientPrebooking: prebooking || null,
+        source: "verifyPayment",
+      });
+
+      if (result.orphaned) {
         res.status(400).send("Booking details not found.");
         return;
       }
 
-      const paymentData = {
-        orderId,
-        paymentId,
-        signature,
-        gateway: "razorpay",
-        amount: finalPrebooking.payment?.amount || finalPrebooking.totalAmount || null,
-        currency: finalPrebooking.payment?.currency || "INR",
-        userId: finalPrebooking.userId || null,
-        email: finalPrebooking.email || null,
-        status: "captured",
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      };
-
-      await db.collection("payments").add(paymentData);
-
-      const prebookingData = {
-        ...finalPrebooking,
-        status: "confirmed",
-        confirmedAt: admin.firestore.FieldValue.serverTimestamp(),
-        payment: {
-          gateway: "razorpay",
-          orderId,
-          paymentId,
-          signature,
-          amount: finalPrebooking.totalAmount ? Math.round(finalPrebooking.totalAmount * 100) : (paymentData.amount || 0),
-          currency: paymentData.currency,
-          paidAt: new Date().toISOString(),
-          method: finalPrebooking.paymentMethod || "Online / UPI",
-        }
-      };
-
-      const bookingRef = finalBookingId ? db.collection("booking").doc(finalBookingId) : db.collection("booking").doc();
-      finalBookingId = bookingRef.id;
-      const legacyPrebookingRef = db.collection("prebookings").doc(finalBookingId);
-
-      await Promise.all([
-        bookingRef.set(prebookingData, { merge: true }),
-        legacyPrebookingRef.set(prebookingData, { merge: true }),
-      ]);
-
-      if (Array.isArray(prebookingData?.nfcLineProfiles) && prebookingData.nfcLineProfiles.length > 0) {
-        for (const line of prebookingData.nfcLineProfiles) {
-          if (!line?.lineKey || !line?.nfcProfile) continue;
-          try {
-            await syncProfileToNfcProfilesCollection({
-              profileId: `${orderId}_${line.lineKey}`,
-              profile: line.nfcProfile,
-              source: "verifyPayment",
-              status: "confirmed",
-            });
-          } catch (syncErr) {
-            console.error("verifyPayment nfc line sync error", line.lineKey, syncErr);
-          }
-        }
-      } else if (prebookingData?.nfcProfile) {
-        try {
-          await syncProfileToNfcProfilesCollection({
-            profileId: orderId,
-            profile: prebookingData.nfcProfile,
-            source: "verifyPayment",
-            status: "confirmed",
-          });
-        } catch (syncErr) {
-          console.error("verifyPayment nfc sync error", syncErr);
-        }
-      }
-
-      try {
-        await sendBookingConfirmationEmail({
-          email: prebookingData?.email,
-          fullName: prebookingData?.fullName,
-          bookingId: finalBookingId,
-          items: prebookingData?.items,
-          totalAmount: prebookingData?.totalAmount,
-          payment: paymentData,
-          billingAddress: `${prebookingData?.address || ""}, ${prebookingData?.city || ""}, ${prebookingData?.state || ""} - ${prebookingData?.pincode || ""}`,
-        });
-      } catch (mailErr) {
-        console.error("booking confirmation email error", mailErr);
-      }
-
       res.status(200).json({
         success: true,
-        prebookingId: finalBookingId,
+        prebookingId: result.bookingId,
+        alreadyProcessed: result.alreadyProcessed === true,
       });
     } catch (error) {
       console.error("verifyPayment error", error);
       res.status(500).send("Failed to verify payment.");
+    }
+  });
+});
+
+// ─── Razorpay webhook (backup path when the client never calls verify) ────────
+
+exports.razorpayWebhook = onRequest({
+  region: "asia-south1",
+  secrets: [
+    RAZORPAY_WEBHOOK_SECRET,
+    RAZORPAY_KEY_ID,
+    RAZORPAY_KEY_SECRET,
+    SMTP_HOST,
+    SMTP_PORT,
+    SMTP_USER,
+    SMTP_PASS,
+    SMTP_FROM,
+  ],
+}, async (req, res) => {
+  // Server-to-server call from Razorpay — no CORS, no user auth.
+  if (req.method !== "POST") {
+    res.status(405).send("Method Not Allowed");
+    return;
+  }
+
+  try {
+    const webhookSecret = (RAZORPAY_WEBHOOK_SECRET.value() || process.env.RAZORPAY_WEBHOOK_SECRET || "").trim();
+    if (!webhookSecret) {
+      console.error("razorpayWebhook: RAZORPAY_WEBHOOK_SECRET is not configured.");
+      res.status(500).send("Webhook secret is not configured.");
+      return;
+    }
+
+    const signature = req.headers["x-razorpay-signature"];
+    const rawBody = req.rawBody ? req.rawBody.toString("utf8") : JSON.stringify(req.body || {});
+    const expectedSignature = crypto
+      .createHmac("sha256", webhookSecret)
+      .update(rawBody)
+      .digest("hex");
+
+    if (!signature || !timingSafeEqualHex(expectedSignature, signature)) {
+      res.status(400).send("Invalid webhook signature.");
+      return;
+    }
+
+    const event = JSON.parse(rawBody);
+
+    // Deduplicate deliveries: Razorpay retries webhooks, and the same event id
+    // must only be processed once. If processing fails below, the claim is
+    // released so the retried delivery is processed instead of skipped.
+    const eventId = req.headers["x-razorpay-event-id"];
+    let eventClaimRef = null;
+    if (eventId) {
+      const claimRef = db.collection("razorpayWebhookEvents").doc(String(eventId));
+      const isFirstDelivery = await db.runTransaction(async (tx) => {
+        const snap = await tx.get(claimRef);
+        if (snap.exists) return false;
+        tx.set(claimRef, {
+          event: event.event || "unknown",
+          receivedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        return true;
+      });
+      if (!isFirstDelivery) {
+        res.status(200).json({ ok: true, duplicate: true });
+        return;
+      }
+      eventClaimRef = claimRef;
+    }
+
+    try {
+      await handleRazorpayWebhookEvent(event, res);
+    } catch (processingError) {
+      if (eventClaimRef) {
+        try { await eventClaimRef.delete(); } catch (releaseErr) {
+          console.error("razorpayWebhook: failed to release event claim", releaseErr);
+        }
+      }
+      throw processingError;
+    }
+  } catch (error) {
+    console.error("razorpayWebhook error", error);
+    // Non-2xx makes Razorpay retry the delivery, which is what we want for
+    // transient failures; processing is idempotent so retries are safe.
+    if (!res.headersSent) {
+      res.status(500).send("Webhook processing failed.");
+    }
+  }
+});
+
+const handleRazorpayWebhookEvent = async (event, res) => {
+  if (event.event === "payment.captured") {
+    const paymentEntity = event.payload?.payment?.entity;
+    const orderId = paymentEntity?.order_id;
+
+    if (!paymentEntity || !orderId) {
+      console.error("razorpayWebhook: payment.captured event missing payment entity or order id.");
+      res.status(200).json({ ok: true, skipped: true });
+      return;
+    }
+
+    // The signature already proves this came from Razorpay; the amount check
+    // guards against a tampered order. On mismatch, flag for reconciliation
+    // instead of confirming the booking.
+    const paymentRecordSnap = await db.collection(PAYMENTS_COLLECTION).doc(orderId).get();
+    const paymentRecord = paymentRecordSnap.exists ? paymentRecordSnap.data() : null;
+    if (
+      paymentRecord?.expectedAmount != null &&
+      Number(paymentEntity.amount) !== Number(paymentRecord.expectedAmount)
+    ) {
+      console.error(`razorpayWebhook: amount mismatch for order ${orderId}. expected=${paymentRecord.expectedAmount} got=${paymentEntity.amount}`);
+      await db.collection(PAYMENTS_COLLECTION).doc(orderId).set(
+        { flagged: true, flagReason: "webhook amount mismatch" },
+        { merge: true }
+      );
+      res.status(200).json({ ok: true, flagged: true });
+      return;
+    }
+
+    await finalizeSuccessfulPayment({
+      orderId,
+      paymentEntity,
+      source: "webhook",
+    });
+  }
+
+  res.status(200).json({ ok: true });
+};
+
+// ─── Payment status (recovery after refresh / interrupted verification) ───────
+
+exports.paymentStatus = onRequest({
+  region: "asia-south1",
+}, (req, res) => {
+  corsHandler(req, res, async () => {
+    if (req.method !== "GET") {
+      res.status(405).send("Method Not Allowed");
+      return;
+    }
+
+    const decodedToken = await authenticate(req);
+    if (!decodedToken) {
+      res.status(401).send("Unauthorized");
+      return;
+    }
+
+    try {
+      const orderId = String(req.query?.orderId || "").trim();
+      if (!orderId) {
+        res.status(400).send("orderId query param is required.");
+        return;
+      }
+
+      const snap = await db.collection(PAYMENTS_COLLECTION).doc(orderId).get();
+      if (!snap.exists) {
+        res.status(404).send("Payment record not found.");
+        return;
+      }
+
+      const data = snap.data() || {};
+
+      // Only the user who created the order may query its status.
+      if (data.userId && data.userId !== "guest" && data.userId !== decodedToken.uid) {
+        res.status(403).send("Forbidden.");
+        return;
+      }
+
+      res.status(200).json({
+        orderId,
+        status: data.status || "pending",
+        verified: data.verified === true && data.finalized === true,
+        bookingId: data.bookingId || null,
+      });
+    } catch (error) {
+      console.error("paymentStatus error", error);
+      res.status(500).send("Failed to load payment status.");
     }
   });
 });

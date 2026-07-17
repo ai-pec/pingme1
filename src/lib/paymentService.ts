@@ -798,6 +798,23 @@ interface CreateOrderResponse {
 interface VerifyPaymentResponse {
   success: boolean;
   prebookingId: string;
+  alreadyProcessed?: boolean;
+}
+
+export interface PaymentStatusResponse {
+  orderId: string;
+  status: string;
+  verified: boolean;
+  bookingId: string | null;
+}
+
+export class PaymentApiError extends Error {
+  status?: number;
+  constructor(message: string, status?: number) {
+    super(message);
+    this.name = "PaymentApiError";
+    this.status = status;
+  }
 }
 
 interface RazorpayHandlerResponse {
@@ -895,8 +912,98 @@ export const verifyRazorpayPaymentAndCreatePrebooking = async (input: {
     body: JSON.stringify(input),
   });
 
-  if (!res.ok) { const text = await res.text(); throw new Error(text || "Payment verification failed."); }
+  if (!res.ok) { const text = await res.text(); throw new PaymentApiError(text || "Payment verification failed.", res.status); }
   return (await res.json()) as VerifyPaymentResponse;
+};
+
+export const getPaymentStatus = async (orderId: string): Promise<PaymentStatusResponse | null> => {
+  const baseUrl = getPaymentApiBaseUrl();
+  if (!baseUrl) throw new Error("Payment API is not configured. Add VITE_PAYMENT_API_BASE_URL to your env.");
+
+  const currentUser = auth.currentUser;
+  if (!currentUser) throw new Error("You must be logged in to check payment status.");
+
+  const idToken = await currentUser.getIdToken();
+  const res = await fetch(`${baseUrl}/paymentStatus?orderId=${encodeURIComponent(orderId)}`, {
+    headers: { "Authorization": `Bearer ${idToken}` },
+  });
+
+  if (res.status === 404) return null;
+  if (!res.ok) { const text = await res.text(); throw new PaymentApiError(text || "Failed to load payment status.", res.status); }
+  return (await res.json()) as PaymentStatusResponse;
+};
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+// Statuses worth retrying: network failure (no status), server errors,
+// rate limiting, and 409 (payment authorized but not captured yet).
+const isRetryableVerifyError = (err: unknown): boolean => {
+  if (!(err instanceof PaymentApiError)) return true; // network / unexpected
+  if (err.status === undefined) return true;
+  return err.status >= 500 || err.status === 429 || err.status === 409;
+};
+
+const VERIFY_RETRY_DELAYS_MS = [0, 2000, 5000, 10000];
+
+export const verifyRazorpayPaymentWithRetry = async (input: {
+  orderId: string;
+  paymentId: string;
+  signature: string;
+  prebooking?: PrebookPayloadData;
+  bookingId?: string;
+}): Promise<VerifyPaymentResponse> => {
+  let lastError: unknown = null;
+
+  for (const delayMs of VERIFY_RETRY_DELAYS_MS) {
+    if (delayMs > 0) await sleep(delayMs);
+    try {
+      return await verifyRazorpayPaymentAndCreatePrebooking(input);
+    } catch (err) {
+      lastError = err;
+      if (!isRetryableVerifyError(err)) throw err;
+      // The webhook may have finalized the order while our verify call was
+      // failing — check the status endpoint before retrying.
+      try {
+        const status = await getPaymentStatus(input.orderId);
+        if (status?.verified) {
+          return { success: true, prebookingId: status.bookingId || input.bookingId || "", alreadyProcessed: true };
+        }
+      } catch { /* status check is best-effort */ }
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error("Payment verification failed.");
+};
+
+// ─── Pending payment recovery (browser refresh / crash between pay & verify) ──
+
+const PENDING_PAYMENT_KEY = "pingme_pending_payment";
+
+export interface PendingPaymentRecord {
+  orderId: string;
+  bookingId?: string;
+  createdAt: string;
+}
+
+export const savePendingPayment = (record: { orderId: string; bookingId?: string }): void => {
+  try {
+    sessionStorage.setItem(PENDING_PAYMENT_KEY, JSON.stringify({ ...record, createdAt: new Date().toISOString() }));
+  } catch { /* storage unavailable */ }
+};
+
+export const readPendingPayment = (): PendingPaymentRecord | null => {
+  try {
+    const raw = sessionStorage.getItem(PENDING_PAYMENT_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as PendingPaymentRecord;
+    return parsed?.orderId ? parsed : null;
+  } catch {
+    return null;
+  }
+};
+
+export const clearPendingPayment = (): void => {
+  try { sessionStorage.removeItem(PENDING_PAYMENT_KEY); } catch { /* ignore */ }
 };
 
 export const deleteNfcProfileDraft = async (profileId: string): Promise<void> => {

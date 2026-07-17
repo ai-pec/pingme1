@@ -511,23 +511,28 @@ const Eyebrow: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 /* ----------------------------------------------------------------
    IMAGE / PHOTO REVIEWS
 ---------------------------------------------------------------- */
+// Served from Firebase Storage via tokenized download URLs (no public rules needed)
+const STORAGE_BUCKET = import.meta.env.VITE_FIREBASE_STORAGE_BUCKET;
+const reviewImageUrl = (path: string, token: string) =>
+  `https://firebasestorage.googleapis.com/v0/b/${STORAGE_BUCKET}/o/${encodeURIComponent(path)}?alt=media&token=${token}`;
+
 const IMAGE_REVIEWS = [
-  { path: "/reviews/key/7973062102.jpeg", alt: "Customer keytag review" },
-  { path: "/reviews/key/8283063202.jpeg", alt: "Customer keytag review" },
-  { path: "/reviews/key/8295284238.jpeg", alt: "Customer keytag review" },
-  { path: "/reviews/key/8437638449.jpeg", alt: "Customer keytag review" },
-  { path: "/reviews/key/9417416970.jpeg", alt: "Customer keytag review" },
-  { path: "/reviews/key/9464007351_a.jpeg", alt: "Customer keytag review" },
-  { path: "/reviews/key/9464989692.jpeg", alt: "Customer keytag review" },
-  { path: "/reviews/key/9646024731.jpeg", alt: "Customer keytag review" },
-  { path: "/reviews/key/9815883366.jpeg", alt: "Customer keytag review" },
-  { path: "/reviews/key/9888393915.jpeg", alt: "Customer keytag review" },
-  { path: "/reviews/key/9914346423.jpeg", alt: "Customer keytag review" },
-  { path: "/reviews/key/9988717146.jpeg", alt: "Customer keytag review" },
-  { path: "/reviews/key/9996293105.jpeg", alt: "Customer keytag review" },
-  { path: "/reviews/vehicle/9034400034_v.jpeg", alt: "Customer vehicle tag review" },
-  { path: "/reviews/vehicle/9115131993.jpeg", alt: "Customer vehicle tag review" },
-  { path: "/reviews/vehicle/9464007351_v.jpeg", alt: "Customer vehicle tag review" }
+  { path: reviewImageUrl("reviews/key/7973062102.jpeg", "a79fc6af-0357-47a1-8f6d-8e52d70e50b7"), alt: "Customer keytag review" },
+  { path: reviewImageUrl("reviews/key/8283063202.jpeg", "54a5bfbe-9b33-4126-bff6-061713513450"), alt: "Customer keytag review" },
+  { path: reviewImageUrl("reviews/key/8295284238.jpeg", "40674ea1-1d1c-485e-8253-12ef7d94edb1"), alt: "Customer keytag review" },
+  { path: reviewImageUrl("reviews/key/8437638449.jpeg", "af029076-49f5-4f38-a00a-58a1d5b60c72"), alt: "Customer keytag review" },
+  { path: reviewImageUrl("reviews/key/9417416970.jpeg", "9b01bbbe-0782-403d-93c4-6baf85395eae"), alt: "Customer keytag review" },
+  { path: reviewImageUrl("reviews/key/9464007351_a.jpeg", "17c0d500-d819-4847-aaaf-7fe22a0c99f8"), alt: "Customer keytag review" },
+  { path: reviewImageUrl("reviews/key/9464989692.jpeg", "76e18626-5dd5-4d90-b142-3f68e40917af"), alt: "Customer keytag review" },
+  { path: reviewImageUrl("reviews/key/9646024731.jpeg", "39b8801f-bae6-48a2-8368-ec3de49602d7"), alt: "Customer keytag review" },
+  { path: reviewImageUrl("reviews/key/9815883366.jpeg", "b85cda11-a4a4-4f95-a768-1d40a0136abe"), alt: "Customer keytag review" },
+  { path: reviewImageUrl("reviews/key/9888393915.jpeg", "84ee6908-cf55-42ea-942e-0d992c0519ae"), alt: "Customer keytag review" },
+  { path: reviewImageUrl("reviews/key/9914346423.jpeg", "cd15a17a-3478-498a-8e9c-dbcc6a0c21fc"), alt: "Customer keytag review" },
+  { path: reviewImageUrl("reviews/key/9988717146.jpeg", "e7ecf721-2b66-4feb-862e-7bd06ea32303"), alt: "Customer keytag review" },
+  { path: reviewImageUrl("reviews/key/9996293105.jpeg", "a5604cc0-70da-43a7-be12-d382f0f9ee2c"), alt: "Customer keytag review" },
+  { path: reviewImageUrl("reviews/vehicle/9034400034_v.jpeg", "6ac65b60-9c36-4b75-b3e6-46a0344f896c"), alt: "Customer vehicle tag review" },
+  { path: reviewImageUrl("reviews/vehicle/9115131993.jpeg", "072c27b9-ca57-408f-985b-8d44d1571f21"), alt: "Customer vehicle tag review" },
+  { path: reviewImageUrl("reviews/vehicle/9464007351_v.jpeg", "08f17f91-741a-4f07-8d10-97dada8652ad"), alt: "Customer vehicle tag review" }
 ];
 
 const PhotoReviews: React.FC = () => {

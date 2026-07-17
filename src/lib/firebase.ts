@@ -99,6 +99,11 @@ try {
 export const auth = getAuth(app);
 export const db = initializeFirestore(app, {
   localCache: persistentLocalCache(),
+  // App WebViews / in-app browsers often block Firestore's streaming
+  // transport (WebChannel), stalling the first data load 10-30s until the
+  // SDK falls back. Long polling works everywhere; the latency cost is
+  // negligible for catalog/booking data.
+  experimentalForceLongPolling: true,
 });
 export const storage = getStorage(app);
 
