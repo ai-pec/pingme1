@@ -202,7 +202,7 @@ export const categoryDescriptionFromName = (categorySlugOrName: string, category
 
   const descriptionBySlug: Record<string, string> = {
     "car-tags": "Hang on your dashboard. Anyone who needs to reach you about parking or an emergency can scan and alert you — without ever seeing your phone number.",
-    "pet-tags": "Clip onto your pet's collar. If they wander off, whoever finds them can call or message you immediately — safely and anonymously.",
+    "pet-tags": "Clip it to your pet's collar so anyone who finds them can reach you instantly and privately.",
     "nfc-cards": "Tap your card to share contact details instantly. No app needed for the other person — seamless, private, and effortless.",
     "keychain-tags": "Attach to your keys or wallet. A quick scan lets anyone who finds them reach you safely, without knowing who you are.",
     "smart-keychain-tags": "Attach to your keys, bag, or wallet. A quick scan lets anyone who finds them reach you safely and privately.",

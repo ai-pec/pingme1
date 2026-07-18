@@ -565,13 +565,13 @@ const About = () => {
           <section ref={storyV.ref} className="pm-sec" style={{ maxWidth: 900 }}>
             <Eyebrow style={{ opacity: storyV.inView ? 1 : 0, transition: "opacity .5s" }}>Why We Built This</Eyebrow>
             <h2 style={{ fontSize: "clamp(26px,3vw,38px)", fontWeight: 900, letterSpacing: "-0.02em", marginBottom: 28, color: "hsl(var(--foreground))", opacity: storyV.inView ? 1 : 0, transform: storyV.inView ? "none" : "translateY(18px)", transition: "opacity .55s ease .08s, transform .55s ease .08s" }}>
-              Privacy shouldn't be the <span className="g-text">price of being reachable.</span>
+              You shouldn't have to choose between  <span className="g-text">privacy and connection.</span>
             </h2>
             <div style={{ opacity: storyV.inView ? 1 : 0, transform: storyV.inView ? "none" : "translateY(16px)", transition: "opacity .6s ease .18s, transform .6s ease .18s" }}>
               <div className="story-block">
                 <div className="grid md:grid-cols-2 gap-6">
                   <p style={{ color: "hsl(var(--muted-foreground))", fontSize: 16, lineHeight: 1.78 }}>It started with a blocked car and a stranger who needed to reach the owner — but had no safe way to do it. We realised the same problem plays out everywhere: a lost bag, a wandering pet, a delivery gone wrong.</p>
-                  <p style={{ color: "hsl(var(--muted-foreground))", fontSize: 16, lineHeight: 1.78 }}>PingME fixes that with elegantly designed QR and NFC smart tags for vehicles, belongings, and pets. One scan connects the finder to you through a privacy-protected channel — masked calls, predefined alerts, no app needed. Your number stays yours. Always.</p>
+                  <p style={{ color: "hsl(var(--muted-foreground))", fontSize: 16, lineHeight: 1.78 }}>PingME fixes that with advanced designed QR and NFC smart tags for vehicles, belongings, and pets. One scan connects the finder to you through a privacy-protected channel — masked calls, predefined alerts, no app needed. Your number stays yours. Always.</p>
                 </div>
               </div>
             </div>

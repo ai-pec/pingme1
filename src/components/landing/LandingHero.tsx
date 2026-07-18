@@ -23,19 +23,12 @@ import {
   Nfc,
   PackageSearch,
   PawPrint,
-  ScanLine,
-  Shield,
   ShieldCheck,
   Sparkles,
   Tag,
   Zap,
-  Lock,
-  TrendingUp,
   ChevronRight,
-  Wifi,
   QrCode,
-  Star,
-  MousePointer2,
   Bell,
   EyeOff,
   CheckCircle2,
@@ -47,8 +40,6 @@ import {
 } from "lucide-react";
 
 import carcardFront from "@/assets/product-card.png";
-import backpackSticker from "@/assets/pingwebsite-2.webp";
-import pingMeLogo from "@/assets/ping-me-logo.png";
 import nfcFront from "@/assets/pingprocard_logo.jpeg";
 import petSafetyTag from "@/assets/pingprocard.jpeg";
 import { subscribeToProducts, type DbProduct } from "@/lib/productService";
@@ -84,14 +75,6 @@ type HeroProduct = {
   image?: string;
   popular?: boolean;
 };
-
-const socialProofUsers = [
-  { color: "#F5A623" },
-  { color: "#4CAF50" },
-  { color: "#2196F3" },
-  { color: "#E91E63" },
-  { color: "#9C27B0" },
-];
 
 const getBestSellingImage = (
   products: DbProduct[],
@@ -131,23 +114,6 @@ const getOfferings = (products: DbProduct[], hasProductSnapshot: boolean) => [
     tag: "Most popular",
   },
   {
-    categorySlug: "keychain-tags",
-    icon: Key,
-    title: "Keychain Tags",
-    subtitle: "For keys & everyday items",
-    description:
-      "Secure your keys, bag, or backpack. If someone finds them, they scan the tag and ping you privately — keeping your personal phone number completely hidden.",
-    image: getBestSellingImage(
-      products,
-      "keychain-tags",
-      hasProductSnapshot ? buildProductImageUrl("products/keychain-tags/keychain_fallback.png") : undefined,
-    ),
-    accent: "#3b50a8",
-    accentMid: "#4f65c1",
-    accentBg: "rgba(79,101,193,0.09)",
-    points: ["Keys, bags & everyday items", "NFC & QR dual technology", "Owner stays anonymous"],
-  },
-  {
     categorySlug: "smart-keychain-tags",
     icon: Key,
     title: "Smart Keychain Tags",
@@ -171,7 +137,7 @@ const getOfferings = (products: DbProduct[], hasProductSnapshot: boolean) => [
     title: "Pet Safety Tags",
     subtitle: "For cats & dogs",
     description:
-      "Lost pet reunions happen faster when any stranger can ping you — without knowing your name, number, or home address.",
+      "Find Lost pet  faster while keeping your personal details private.",
     image: getBestSellingImage(products, "pet-tags", hasProductSnapshot ? petSafetyTag.src : undefined),
     accent: "#059669",
     accentMid: "#10B981",
@@ -1341,7 +1307,7 @@ const LandingHero = () => {
                       backgroundClip: "text",
                     }}
                   >
-                    Not your data.
+                    Not their data.
                   </motion.span>
                 </div>
               </h1>
@@ -1404,45 +1370,6 @@ const LandingHero = () => {
                 Register Your Tag
                 <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform duration-200" />
               </motion.a>
-            </motion.div>
-
-            {/* Social proof */}
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.52, delay: 0.65, ease: [0.22, 1, 0.36, 1] }}
-              className="flex items-center gap-4"
-            >
-              <div className="flex -space-x-2.5">
-                {socialProofUsers.map((u, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, scale: 0 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.7 + i * 0.06, duration: 0.35 }}
-                    className="flex h-8 w-8 items-center justify-center rounded-full border-2 text-[11px] font-extrabold text-white"
-                    style={{
-                      background: u.color,
-                      borderColor: "hsl(var(--background))",
-                      zIndex: socialProofUsers.length - i,
-                      boxShadow: "0 2px 6px rgba(0,0,0,0.12)",
-                    }}
-                  >
-                    {String.fromCharCode(65 + i)}
-                  </motion.div>
-                ))}
-              </div>
-              <div>
-                <div className="flex items-center gap-1 mb-0.5">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-3 w-3 fill-amber-400 text-amber-400" />
-                  ))}
-                  <span className="ml-1 text-xs font-extrabold text-foreground">5.0</span>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  <span className="font-bold text-foreground">2,400+</span> tags active across India
-                </p>
-              </div>
             </motion.div>
 
             {/* Trust pills */}
@@ -1528,7 +1455,7 @@ const LandingHero = () => {
               transition={{ duration: 0.5, delay: 0.16 }}
               className="text-lg leading-8 text-muted-foreground max-w-xl mx-auto"
             >
-              Real-world use cases where being reachable doesn't mean being exposed.
+              Real-world use cases where staying connected doesn't mean sacrificing your privacy.
             </motion.p>
           </div>
 

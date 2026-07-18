@@ -259,7 +259,6 @@ const SLIDE_INTERVAL = 2000; // 3 seconds per slide
 const ProductCardItem = ({ product, categorySlug }: { product: ProductVariant & { categorySlug: string; colorVariants?: { color: string; image: string }[] }; categorySlug?: string }) => {
   const navigate = useNavigate();
   const [imageFailed, setImageFailed] = useState<Record<number, boolean>>({});
-  const badge = categorySlug ? categoryBadgePalette[categorySlug] : null;
   const productRoute = `/products/${categorySlug || product.categorySlug}/${product.id}`;
 
   // Collect all slideshow images: main image + color variant images
@@ -283,7 +282,6 @@ const ProductCardItem = ({ product, categorySlug }: { product: ProductVariant & 
   const [isPlaying, setIsPlaying] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const progressRef = useRef<HTMLDivElement | null>(null);
 
   // Manage auto-advance timer
   const startTimer = useCallback(() => {
@@ -333,191 +331,25 @@ const ProductCardItem = ({ product, categorySlug }: { product: ProductVariant & 
     setIsPlaying((prev) => !prev);
   };
 
+  const handleCardKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      navigate(productRoute);
+    }
+  };
+
   return (
     <>
-      <style>{`
-        .pm-card {
-          background: hsl(var(--card));
-          border-radius: 16px;
-          border: 1px solid hsl(var(--border));
-          overflow: hidden;
-          cursor: pointer;
-          transition: transform 0.28s cubic-bezier(0.4,0,0.2,1), box-shadow 0.28s cubic-bezier(0.4,0,0.2,1), border-color 0.28s ease;
-          box-shadow: 0 4px 24px rgba(26,20,16,0.07);
-          display: flex;
-          flex-direction: column;
-          height: 100%;
-          width: 100%;
-          box-sizing: border-box;
-          position: relative;
-          text-align: left;
-        }
-        .pm-card:hover {
-          transform: translateY(-6px);
-          box-shadow: 0 16px 48px rgba(26,20,16,0.13);
-          border-color: hsl(var(--primary));
-        }
-        .dark .pm-card:hover { box-shadow: 0 16px 48px rgba(0,0,0,0.4); }
-        .pm-card-img { transition: transform 0.4s ease; }
-
-        .pm-card-title {
-          font-family: system-ui, -apple-system, sans-serif;
-          font-size: 15px;
-          font-weight: 800;
-          color: hsl(var(--foreground));
-          margin-bottom: 6px;
-          line-height: 1.3;
-          letter-spacing: -0.01em;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-          height: 38px;
-        }
-
-        /* Slideshow styles */
-        .pm-slide-container {
-          position: relative;
-          width: 100%;
-          aspect-ratio: 4/3;
-          overflow: hidden;
-          background: ${SMOKE};
-        }
-        .pm-slide-item {
-          position: absolute;
-          inset: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          opacity: 0;
-          transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-          will-change: opacity;
-        }
-        .pm-slide-item.pm-slide-active {
-          opacity: 1;
-          z-index: 1;
-        }
-        .pm-slide-item img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          transition: transform 0.4s ease;
-        }
-        .pm-card:hover .pm-slide-item img {
-          transform: scale(1.05);
-        }
-
-        /* Dot indicators bar */
-        .pm-slide-indicators {
-          position: absolute;
-          bottom: 12px;
-          left: 50%;
-          transform: translateX(-50%);
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          z-index: 5;
-          background: rgba(255, 255, 255, 0.85);
-          backdrop-filter: blur(8px);
-          -webkit-backdrop-filter: blur(8px);
-          border-radius: 20px;
-          padding: 5px 8px;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-        }
-        .dark .pm-slide-indicators {
-          background: rgba(30, 28, 24, 0.85);
-        }
-
-        /* Individual dot */
-        .pm-slide-dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background: rgba(201, 169, 110, 0.3);
-          border: none;
-          padding: 0;
-          cursor: pointer;
-          transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-          -webkit-tap-highlight-color: transparent;
-          position: relative;
-          flex-shrink: 0;
-        }
-        .pm-slide-dot:hover {
-          background: rgba(201, 169, 110, 0.55);
-          transform: scale(1.15);
-        }
-
-        /* Active dot → pill shape */
-        .pm-slide-dot.pm-dot-active {
-          width: 24px;
-          border-radius: 10px;
-          background: ${GOLD_DEEP};
-          box-shadow: 0 0 8px rgba(201, 146, 42, 0.4);
-        }
-
-        /* Play/Pause button */
-        .pm-slide-play-btn {
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
-          border: none;
-          background: rgba(255, 255, 255, 0.9);
-          backdrop-filter: blur(8px);
-          -webkit-backdrop-filter: blur(8px);
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          position: absolute;
-          bottom: 12px;
-          right: 12px;
-          z-index: 5;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-          transition: transform 0.2s, background 0.2s;
-          -webkit-tap-highlight-color: transparent;
-          color: ${GOLD_DEEP};
-        }
-        .dark .pm-slide-play-btn {
-          background: rgba(30, 28, 24, 0.85);
-        }
-        .pm-slide-play-btn:hover {
-          transform: scale(1.1);
-          background: rgba(255, 255, 255, 1);
-        }
-        .dark .pm-slide-play-btn:hover {
-          background: rgba(40, 38, 34, 0.95);
-        }
-
-        /* Color label badge on slide */
-        .pm-slide-color-label {
-          position: absolute;
-          top: 10px;
-          left: 10px;
-          z-index: 5;
-          background: rgba(255, 255, 255, 0.88);
-          backdrop-filter: blur(8px);
-          -webkit-backdrop-filter: blur(8px);
-          border-radius: 6px;
-          padding: 3px 8px;
-          font-family: system-ui, -apple-system, sans-serif;
-          font-size: 10px;
-          font-weight: 700;
-          color: ${GOLD_DEEP};
-          letter-spacing: 0.03em;
-          opacity: 0;
-          transform: translateY(-4px);
-          transition: opacity 0.3s ease, transform 0.3s ease;
-          pointer-events: none;
-        }
-        .dark .pm-slide-color-label {
-          background: rgba(30, 28, 24, 0.85);
-        }
-        .pm-card:hover .pm-slide-color-label {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      `}</style>
-      <button type="button" className="pm-card" onClick={() => navigate(productRoute)} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+      <div
+        className="pm-card"
+        role="button"
+        tabIndex={0}
+        aria-label={`Open ${product.title}`}
+        onClick={() => navigate(productRoute)}
+        onKeyDown={handleCardKeyDown}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
         {hasSlideshow ? (
           <div className="pm-slide-container">
             {slideImages.map((slide, idx) => (
@@ -575,9 +407,9 @@ const ProductCardItem = ({ product, categorySlug }: { product: ProductVariant & 
             </button>
           </div>
         ) : (
-          <div style={{ background: SMOKE, aspectRatio: "4/3", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+          <div style={{ background: "hsl(var(--muted))", aspectRatio: "4/3", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
             {product.image && !imageFailed[0] ? (
-              <CompressedImg src={product.image} alt={product.title} loading="lazy" decoding="async" className="pm-card-img" onError={() => setImageFailed({ 0: true })} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <CompressedImg src={product.image} alt={product.title} loading="lazy" decoding="async" className="pm-card-img" onError={() => setImageFailed({ 0: true })} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
             ) : (
               <span className="pm-card-img" style={{ fontSize: 72, display: "block", textAlign: "center" }}>{product.emoji}</span>
             )}
@@ -586,19 +418,19 @@ const ProductCardItem = ({ product, categorySlug }: { product: ProductVariant & 
         <div style={{ padding: "16px 16px 14px", display: "flex", flexDirection: "column", flex: 1 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
             {product.popular && (
-              <span style={{ background: "rgba(201, 169, 110, 0.12)", color: GOLD_DEEP, fontFamily: "system-ui, -apple-system, sans-serif", fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 4, letterSpacing: "0.05em", textTransform: "uppercase" }}>
+              <span style={{ background: "hsl(var(--primary) / 0.14)", color: "hsl(var(--primary))", fontFamily: "system-ui, -apple-system, sans-serif", fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 4, letterSpacing: "0.05em", textTransform: "uppercase" }}>
                 ★ Best Seller
               </span>
             )}
             {categorySlug === "smart-keychain-tags" && product.tags && product.tags.length > 0 && (
               product.tags.map((tag, i) => (
-                <span key={i} style={{ background: "rgba(61, 80, 168, 0.12)", color: "#3d50a8", fontFamily: "system-ui, -apple-system, sans-serif", fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 3, letterSpacing: "0.02em", textTransform: "capitalize" }}>
+                <span key={i} style={{ background: "hsl(var(--primary) / 0.12)", color: "hsl(var(--primary))", fontFamily: "system-ui, -apple-system, sans-serif", fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 3, letterSpacing: "0.02em", textTransform: "capitalize" }}>
                   {tag}
                 </span>
               ))
             )}
             {hasSlideshow && (
-              <span style={{ background: "rgba(201, 169, 110, 0.10)", color: GOLD_DEEP, fontFamily: "system-ui, -apple-system, sans-serif", fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 3, letterSpacing: "0.03em" }}>
+              <span style={{ background: "hsl(var(--muted))", color: "hsl(var(--foreground))", fontFamily: "system-ui, -apple-system, sans-serif", fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 3, letterSpacing: "0.03em" }}>
                 {slideImages.length} Colors
               </span>
             )}
@@ -623,7 +455,7 @@ const ProductCardItem = ({ product, categorySlug }: { product: ProductVariant & 
             Tap to view details →
           </p>
         </div>
-      </button>
+      </div>
     </>
   );
 };
@@ -642,8 +474,6 @@ const Products = () => {
   const selectedCategory = categorySlug ? normalizeCategorySlug(categorySlug) : null;
   const [dbProducts, setDbProducts] = useState<DbProduct[]>([]);
   const [categoryMetadata, setCategoryMetadata] = useState<Record<string, { name?: string; description?: string; icon?: string; coverImage?: string; gradient?: string }>>({});
-  const [filterSlug, setFilterSlug] = useState<string>("all");
-  const [sortOrder, setSortOrder] = useState<string>("featured");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   useEffect(() => {
@@ -699,13 +529,11 @@ const Products = () => {
   }, [dbProducts, categoryMetadata]);
 
   const activeCategory = categories.find((c) => c.slug === selectedCategory);
-  const activeTutorial = useMemo(() => (activeCategory ? buildGenericCategoryTutorial(activeCategory.name) : null), [activeCategory]);
 
   const displayedProducts = useMemo(() => {
     if (!activeCategory) return [];
     let list = [...activeCategory.products];
 
-    // Filter by tags if smart-keychain-tags and tags are selected
     if (selectedCategory === "smart-keychain-tags" && selectedTags.length > 0) {
       list = list.filter((product) => {
         const productTags = product.tags || [];
@@ -713,12 +541,10 @@ const Products = () => {
       });
     }
 
-    if (sortOrder === "price-asc") list.sort((a, b) => parseFloat(a.price.replace(/[^\d.]/g, "")) - parseFloat(b.price.replace(/[^\d.]/g, "")));
-    else if (sortOrder === "price-desc") list.sort((a, b) => parseFloat(b.price.replace(/[^\d.]/g, "")) - parseFloat(a.price.replace(/[^\d.]/g, "")));
     return list;
-  }, [activeCategory, sortOrder, selectedTags, selectedCategory]);
+  }, [activeCategory, selectedTags, selectedCategory]);
 
-  const displayedCategories = useMemo(() => filterSlug === "all" ? categories : categories.filter((c) => c.slug === filterSlug), [categories, filterSlug]);
+  const displayedCategories = categories;
 
   return (
     <MainLayout>
@@ -742,6 +568,167 @@ const Products = () => {
           display: flex;
           flex-direction: column;
         }
+        .pm-card {
+          background: hsl(var(--card));
+          border-radius: 16px;
+          border: 1px solid hsl(var(--border));
+          overflow: hidden;
+          cursor: pointer;
+          transition: transform 0.28s cubic-bezier(0.4,0,0.2,1), box-shadow 0.28s cubic-bezier(0.4,0,0.2,1), border-color 0.28s ease;
+          box-shadow: 0 4px 24px rgba(26,20,16,0.07);
+          text-align: left;
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+          width: 100%;
+          position: relative;
+        }
+        .pm-card:hover {
+          transform: translateY(-6px);
+          box-shadow: 0 16px 48px rgba(26,20,16,0.13);
+          border-color: hsl(var(--primary));
+        }
+        .dark .pm-card {
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+          background: linear-gradient(180deg, hsl(var(--card)), hsl(var(--card) / 0.96));
+        }
+        .dark .pm-card:hover {
+          box-shadow: 0 18px 56px rgba(0, 0, 0, 0.45);
+          border-color: hsl(var(--primary));
+        }
+        .pm-card-title {
+          font-family: system-ui, -apple-system, sans-serif;
+          font-size: 15px;
+          font-weight: 800;
+          color: hsl(var(--foreground));
+          margin-bottom: 6px;
+          line-height: 1.3;
+          letter-spacing: -0.01em;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          height: 38px;
+        }
+        .pm-card-img { transition: transform 0.4s ease; }
+        .pm-slide-container {
+          position: relative;
+          width: 100%;
+          aspect-ratio: 4/3;
+          overflow: hidden;
+          background: hsl(var(--muted));
+        }
+        .dark .pm-slide-container { background: hsl(var(--muted) / 0.92); }
+        .pm-slide-item {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          opacity: 0;
+          transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+          will-change: opacity;
+        }
+        .pm-slide-item.pm-slide-active { opacity: 1; z-index: 1; }
+        .pm-slide-item img {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+          transition: transform 0.4s ease;
+        }
+        .pm-card:hover .pm-slide-item img { transform: scale(1.05); }
+        .pm-slide-indicators {
+          position: absolute;
+          bottom: 12px;
+          left: 50%;
+          transform: translateX(-50%);
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          z-index: 5;
+          background: rgba(255, 255, 255, 0.85);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          border-radius: 20px;
+          padding: 5px 8px;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+        .dark .pm-slide-indicators {
+          background: rgba(10, 10, 14, 0.88);
+          border: 1px solid hsl(var(--border) / 0.55);
+        }
+        .pm-slide-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: rgba(201, 169, 110, 0.3);
+          border: none;
+          padding: 0;
+          cursor: pointer;
+          transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+          -webkit-tap-highlight-color: transparent;
+          position: relative;
+          flex-shrink: 0;
+        }
+        .pm-slide-dot:hover { background: rgba(201, 169, 110, 0.55); transform: scale(1.15); }
+        .pm-slide-dot.pm-dot-active {
+          width: 24px;
+          border-radius: 10px;
+          background: ${GOLD_DEEP};
+          box-shadow: 0 0 8px rgba(201, 146, 42, 0.4);
+        }
+        .pm-slide-play-btn {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          border: none;
+          background: rgba(255, 255, 255, 0.9);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          position: absolute;
+          bottom: 12px;
+          right: 12px;
+          z-index: 5;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+          transition: transform 0.2s, background 0.2s;
+          -webkit-tap-highlight-color: transparent;
+          color: ${GOLD_DEEP};
+        }
+        .dark .pm-slide-play-btn {
+          background: rgba(10, 10, 14, 0.88);
+          border: 1px solid hsl(var(--border) / 0.55);
+        }
+        .pm-slide-play-btn:hover { transform: scale(1.1); background: rgba(255, 255, 255, 1); }
+        .dark .pm-slide-play-btn:hover { background: rgba(40, 38, 34, 0.95); }
+        .pm-slide-color-label {
+          position: absolute;
+          top: 10px;
+          left: 10px;
+          z-index: 5;
+          background: rgba(255, 255, 255, 0.88);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          border-radius: 6px;
+          padding: 3px 8px;
+          font-family: system-ui, -apple-system, sans-serif;
+          font-size: 10px;
+          font-weight: 700;
+          color: ${GOLD_DEEP};
+          letter-spacing: 0.03em;
+          opacity: 0;
+          transform: translateY(-4px);
+          transition: opacity 0.3s ease, transform 0.3s ease;
+          pointer-events: none;
+        }
+        .dark .pm-slide-color-label {
+          background: rgba(10, 10, 14, 0.88);
+          border: 1px solid hsl(var(--border) / 0.55);
+        }
+        .pm-card:hover .pm-slide-color-label { opacity: 1; transform: translateY(0); }
         .pm-cat-card:hover {
           transform: translateY(-6px);
           box-shadow: 0 16px 48px rgba(26,20,16,0.13);
@@ -858,7 +845,7 @@ const Products = () => {
             <p className="pm-fade pm-fade-2" style={{ fontFamily: "system-ui, -apple-system, sans-serif", fontSize: "clamp(13px, 1.5vw, 15px)", fontWeight: 400, color: TEXT_SEC, lineHeight: 1.4, maxWidth: 520, margin: "0 auto" }}>
               {selectedCategory
                 ? activeCategory?.description || "No products are available in this category yet."
-                : "QR and NFC tags designed to help people reach you — without exposing your personal details."}
+                : "QR and NFC cards that help people to reach you while protecting your privacy."}
             </p>
             <div className="pm-rule pm-fade pm-fade-3">
               <span style={{ color: GOLD_DEEP, fontSize: 12 }}>◆</span>
@@ -871,8 +858,8 @@ const Products = () => {
         <div style={{
           borderBottom: `1px solid ${MIST}`,
           padding: "10px 0",
-          background: "hsl(var(--card) / 0.3)",
-          backdropFilter: "blur(8px)",
+          background: "hsl(var(--card) / 0.65)",
+          backdropFilter: "blur(10px)",
           position: "relative",
           zIndex: 10,
         }}>
