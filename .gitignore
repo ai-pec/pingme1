@@ -37,6 +37,9 @@ Thumbs.db
 "functions/tmp_razorpay_secret.txt" 
 "**firebase-debug.log" 
 
+# Private scripts / operational utilities
+scripts/
+
 #razorpay
 functions/tmp_razorpay_id.txt
 functions/tmp_razorpay_secret.txt
